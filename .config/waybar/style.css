@@ -1,0 +1,10 @@
+* {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+window#waybar {
+  background: #111111;
+  color: #dddddd;
+}
+
