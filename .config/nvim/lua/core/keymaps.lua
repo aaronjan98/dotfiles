@@ -17,10 +17,10 @@ map("n", "<M-l>", ":tabnext<CR>", opts)
 -- Pane navigation across Neovim splits AND tmux panes (f held = Ctrl+Alt)
 -- Requires vim-tmux-navigator plugin
 -- -------------------------
-map("n", "<C-M-h>", ":TmuxNavigateLeft<CR>", opts)
-map("n", "<C-M-j>", ":TmuxNavigateDown<CR>", opts)
-map("n", "<C-M-k>", ":TmuxNavigateUp<CR>", opts)
-map("n", "<C-M-l>", ":TmuxNavigateRight<CR>", opts)
+map("n", "<M-H>", ":TmuxNavigateLeft<CR>", opts)
+map("n", "<M-J>", ":TmuxNavigateDown<CR>", opts)
+map("n", "<M-K>", ":TmuxNavigateUp<CR>", opts)
+map("n", "<M-L>", ":TmuxNavigateRight<CR>", opts)
 
 -- Save
 map("n", "<C-s>", ":w<CR>", opts)

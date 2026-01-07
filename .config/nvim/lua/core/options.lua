@@ -12,3 +12,10 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.updatetime = 200
 vim.opt.timeoutlen = 400
 
+-- Cursor shape & blinking
+vim.opt.guicursor =
+  "n-v-c:block," ..
+  "i-ci-ve:ver25," ..
+  "r-cr:hor20," ..
+  "o:hor20," ..
+  "a:blinkwait500-blinkoff500-blinkon500"
