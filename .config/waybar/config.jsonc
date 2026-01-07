@@ -4,14 +4,29 @@
 
   "modules-left": ["niri/workspaces"],
   "modules-center": ["clock"],
-  "modules-right": ["battery", "network", "pulseaudio"],
+  "modules-right": ["network", "pulseaudio", "battery", "tray"],
 
   "clock": {
     "format": "{:%H:%M}"
   },
 
+  "network": {
+    "format-wifi": "  {essid} {signalStrength}%",
+    "format-ethernet": "󰈀  {ipaddr}",
+    "format-disconnected": "󰖪  down"
+  },
+
+  "pulseaudio": {
+    "format": " {volume}%",
+    "format-muted": "󰝟 muted"
+  },
+
   "battery": {
-    "format": "{capacity}%"
+    "format": "  {capacity}%"
+  },
+
+  "tray": {
+    "spacing": 8
   }
 }
 
