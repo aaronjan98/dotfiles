@@ -1,4 +1,5 @@
 source $HOME/.bash_aliases
+export EDITOR=nvim
 
 # create dot command to manage dotfiles
 dot() {
