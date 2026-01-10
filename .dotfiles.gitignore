@@ -1,0 +1,27 @@
+# Never track secrets
+.ssh/
+.config/sops/
+.local/share/keyrings/
+.gnupg/
+.password-store
+
+# Common noise
+.cache/
+.compose-cache
+.local/share/Trash/
+.nix-profile
+nixos-config
+Desktop/
+Downloads/
+Music/
+Pictures/
+Public/
+Templates/
+Videos/
+.var/
+.viminfo
+
+# Optional
+.bash_history
+.nix-defexpr
+.gtkrc-2.0
