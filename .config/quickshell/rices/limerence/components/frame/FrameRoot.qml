@@ -9,6 +9,6 @@ Item {
 
   TopBar { screen: root.screen }
   LeftBar { screen: root.screen }
-  CornerCap { screen: root.screen }
+  CornerPatch { screen: root.screen }
 }
 

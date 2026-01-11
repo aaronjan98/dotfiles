@@ -3,9 +3,14 @@ import Quickshell.Wayland
 
 PanelWindow {
   required property string name
-  WlrLayershell.namespace: `aj-${name}`
 
-  // We'll draw everything ourselves
+  property int layer: WlrLayer.Top
+  property int exclusion: ExclusionMode.Auto
+
+  WlrLayershell.namespace: `aj-${name}`
+  WlrLayershell.layer: layer
+  WlrLayershell.exclusionMode: exclusion
+
   color: "transparent"
 }
 
