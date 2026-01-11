@@ -9,6 +9,7 @@
 .cache/
 .compose-cache
 .local/share/Trash/
+.mozilla
 .nix-profile
 nixos-config
 Desktop/
