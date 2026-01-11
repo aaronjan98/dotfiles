@@ -10,5 +10,6 @@ Item {
   TopBar { screen: root.screen }
   LeftBar { screen: root.screen }
   CornerPatch { screen: root.screen }
+  ContentFrame { screen: root.screen }
 }
 
