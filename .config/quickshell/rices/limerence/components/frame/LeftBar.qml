@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import QtQuick
 
 import "../../config" as C
@@ -26,5 +27,15 @@ PanelWindow {
 
     // (later) actual left-bar content goes here.
     // For now, leave it empty since you said: bars themselves are not colored.
+    Text {
+      anchors.centerIn: parent
+      color: "white"
+      text: {
+        const id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
+        const domain = Math.floor(id / 10)
+        const slot = id % 10
+        return `${id}\n ${domain}\n ${slot}`
+      }
+    }
 }
 

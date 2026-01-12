@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import QtQuick
 
 import "../../config" as C
@@ -24,5 +25,10 @@ PanelWindow {
     color: "transparent"
 
     // (later) top-bar content goes here.
+    Text {
+      anchors.centerIn: parent
+      color: "white"
+      text: Hyprland.focusedWorkspace ? (`ws: ${Hyprland.focusedWorkspace.id} ${Hyprland.focusedWorkspace.name}`) : "no ws"
+    }
 }
 

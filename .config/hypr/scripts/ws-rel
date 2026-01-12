@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+delta="${1:?use -1 or +1}"
+
+id="$(hyprctl activeworkspace -j | jq -r '.id')"
+
+if (( id <= 9 )); then
+  dom=1
+  curSlot="$id"
+  base=0
+else
+  dom=$(( id / 10 ))
+  curSlot=$(( id % 10 ))
+  base=$(( dom*10 ))
+fi
+
+# Determine maxSlot for this domain:
+# - at least 4 (your default dots)
+# - at most 9
+# - if more slots exist (because you created them), allow up to that
+maxExisting="$(
+  hyprctl workspaces -j \
+  | jq -r --argjson dom "$dom" '
+      .[]
+      | .id
+      | if $dom == 1 then
+          select(. >= 1 and . <= 9)
+        else
+          select(. >= ($dom*10 + 1) and . <= ($dom*10 + 9))
+        end
+    ' \
+  | awk '{s=$1%10; if(s>m)m=s} END{print (m?m:0)}'
+)"
+
+maxSlot="$maxExisting"
+(( maxSlot < 4 )) && maxSlot=4
+(( maxSlot > 9 )) && maxSlot=9
+
+next=$(( curSlot + delta ))
+if (( next < 1 )); then next="$maxSlot"; fi
+if (( next > maxSlot )); then next=1; fi
+
+# remember last slot
+state="${XDG_RUNTIME_DIR:-/tmp}/hypr-domain-last"
+mkdir -p "$state"
+file="$state/last.txt"
+touch "$file"
+tmp="$(mktemp)"
+awk -v dom="$dom" -v slot="$next" '
+  BEGIN{found=0}
+  $0 ~ ("^"dom"=") {print dom"="slot; found=1; next}
+  {print}
+  END{ if(!found) print dom"="slot }
+' "$file" > "$tmp"
+mv "$tmp" "$file"
+
+# dispatch target
+if (( dom == 1 )); then
+  target="$next"
+else
+  target=$(( base + next ))
+fi
+
+hyprctl dispatch workspace "$target"
+

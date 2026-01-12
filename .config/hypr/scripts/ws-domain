@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:?use up|down|set}"
+arg="${2:-}"
+
+base_domains=(1 2 3)
+
+state_dir="${XDG_RUNTIME_DIR:-/tmp}/hypr-domain-last"
+mkdir -p "$state_dir"
+last_file="$state_dir/last.txt"          # dom=slot
+visited_file="$state_dir/visited.txt"    # one dom per line
+touch "$last_file" "$visited_file"
+
+id="$(hyprctl activeworkspace -j | jq -r '.id')"
+if (( id <= 9 )); then curDom=1; else curDom=$(( id / 10 )); fi
+curSlot=$(( id % 10 )); (( curSlot == 0 )) && curSlot=1
+
+# Save current slot for current domain
+tmp="$(mktemp)"
+awk -v dom="$curDom" -v slot="$curSlot" '
+  BEGIN{found=0}
+  $0 ~ ("^"dom"=") {print dom"="slot; found=1; next}
+  {print}
+  END{ if(!found) print dom"="slot }
+' "$last_file" > "$tmp"
+mv "$tmp" "$last_file"
+
+# Domains with windows right now
+win_domains="$(
+  hyprctl workspaces -j \
+  | jq -r '
+      .[]
+      | select(.windows > 0)
+      | .id
+      | if . <= 9 then 1 else (./10|floor) end
+    ' 2>/dev/null \
+  | sort -n | uniq
+)"
+
+# Visited domains (session-only)
+vis_domains="$(sort -n "$visited_file" | uniq || true)"
+
+# Build active domain list = base + windowed + visited
+active="$(
+  {
+    printf "%s\n" "${base_domains[@]}"
+    printf "%s\n" "$win_domains"
+    printf "%s\n" "$vis_domains"
+  } | awk 'NF' | sort -n | uniq
+)"
+
+# Helper: does a domain have any windows?
+domain_has_windows() {
+  local dom="$1"
+  if (( dom == 1 )); then
+    hyprctl workspaces -j | jq -e '[.[] | select(.id>=1 and .id<=9 and .windows>0)] | length>0' >/dev/null
+  else
+    local lo=$(( dom*10 + 1 ))
+    local hi=$(( dom*10 + 9 ))
+    hyprctl workspaces -j | jq -e --argjson lo "$lo" --argjson hi "$hi" '[.[] | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' >/dev/null
+  fi
+}
+
+# Prune visited domains that are empty (not base, not current)
+# This is what makes “domain dot disappears if empty”
+tmpv="$(mktemp)"
+while read -r dom; do
+  [[ -z "${dom:-}" ]] && continue
+  # keep base domains always
+  if [[ " ${base_domains[*]} " == *" $dom "* ]]; then
+    echo "$dom" >> "$tmpv"
+    continue
+  fi
+  # keep current domain
+  if (( dom == curDom )); then
+    echo "$dom" >> "$tmpv"
+    continue
+  fi
+  # keep if has windows
+  if domain_has_windows "$dom"; then
+    echo "$dom" >> "$tmpv"
+  fi
+done < <(printf "%s\n" "$vis_domains")
+mv "$tmpv" "$visited_file"
+
+# Recompute active after pruning
+active="$(
+  {
+    printf "%s\n" "${base_domains[@]}"
+    printf "%s\n" "$win_domains"
+    sort -n "$visited_file" | uniq
+  } | awk 'NF' | sort -n | uniq
+)"
+
+# Convert active list to array
+mapfile -t doms < <(printf "%s\n" "$active")
+
+# Pick target domain
+case "$mode" in
+  set)
+    targetDom="$arg"
+    # Mark visited (so it shows up immediately)
+    echo "$targetDom" >> "$visited_file"
+    ;;
+  up|down)
+    # find index of current in doms
+    idx=0
+    for i in "${!doms[@]}"; do
+      if (( doms[i] == curDom )); then idx="$i"; break; fi
+    done
+    if [[ "$mode" == "down" ]]; then
+      idx=$(( (idx + 1) % ${#doms[@]} ))
+    else
+      idx=$(( (idx - 1 + ${#doms[@]}) % ${#doms[@]} ))
+    fi
+    targetDom="${doms[idx]}"
+    ;;
+  *)
+    echo "bad mode"; exit 2 ;;
+esac
+
+# Restore last slot in target domain (default 1)
+targetSlot="$(awk -F= -v dom="$targetDom" '$1==dom{print $2}' "$last_file" | tail -n1)"
+[[ -z "${targetSlot:-}" ]] && targetSlot=1
+(( targetSlot < 1 )) && targetSlot=1
+(( targetSlot > 9 )) && targetSlot=9
+
+# Compute workspace id
+if (( targetDom == 1 )); then
+  targetWs="$targetSlot"
+else
+  targetWs=$(( targetDom*10 + targetSlot ))
+fi
+
+hyprctl dispatch workspace "$targetWs"
+

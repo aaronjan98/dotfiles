@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+slot="${1:?slot 1-9 required}"
+
+id="$(hyprctl activeworkspace -j | jq -r '.id')"
+
+if (( id <= 9 )); then
+  dom=1
+  curSlot="$id"
+else
+  dom=$(( id / 10 ))
+  curSlot=$(( id % 10 ))
+  (( curSlot == 0 )) && curSlot=1  # just in case someone lands on x0
+fi
+
+# remember last slot for this domain (so domain-jumps can restore it)
+state="${XDG_RUNTIME_DIR:-/tmp}/hypr-domain-last"
+mkdir -p "$state"
+file="$state/last.txt"
+touch "$file"
+
+tmp="$(mktemp)"
+awk -v dom="$dom" -v slot="$slot" '
+  BEGIN{found=0}
+  $0 ~ ("^"dom"=") {print dom"="slot; found=1; next}
+  {print}
+  END{ if(!found) print dom"="slot }
+' "$file" > "$tmp"
+mv "$tmp" "$file"
+
+# dispatch
+if (( dom == 1 )); then
+  target="$slot"
+else
+  target=$(( dom*10 + slot ))
+fi
+
+hyprctl dispatch workspace "$target"
+
