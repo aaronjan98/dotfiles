@@ -5,6 +5,7 @@ import QtQuick
 
 import "../../config" as C
 import "../widgets" as W
+import "../state" as S
 
 PanelWindow {
   id: root
@@ -109,7 +110,13 @@ PanelWindow {
             occupied: occ
           }
 
-          onClicked: Hyprland.dispatch("workspace " + targetWs)
+          onClicked: {
+            // remember slot for current domain (slotN is 1..9)
+            S.DomainMemory.setLastSlot(root.domain, slotN)
+            S.DomainMemory.ensureVisited(root.domain)
+          
+            Hyprland.dispatch("workspace " + targetWs)
+          }
         }
       }
     }

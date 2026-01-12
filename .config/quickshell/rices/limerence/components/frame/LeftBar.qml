@@ -5,6 +5,7 @@ import QtQuick
 
 import "../../config" as C
 import "../widgets" as W
+import "../state" as S
 
 PanelWindow {
   id: root
@@ -91,7 +92,9 @@ PanelWindow {
           }
 
           onClicked: {
-            const target = (domN === 1) ? 1 : (domN * 10 + 1)
+            S.DomainMemory.ensureVisited(domN)
+            const s = S.DomainMemory.lastSlot(domN)
+            const target = (domN === 1) ? s : (domN * 10 + s)
             Hyprland.dispatch("workspace " + target)
           }
         }
