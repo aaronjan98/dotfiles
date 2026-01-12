@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+slot="${1:?slot 1-9 required}"
+
+id="$(hyprctl activeworkspace -j | jq -r '.id')"
+
+if (( id <= 9 )); then
+  dom=1
+else
+  dom=$(( id / 10 ))
+fi
+
+if (( dom == 1 )); then
+  target="$slot"
+else
+  target=$(( dom*10 + slot ))
+fi
+
+hyprctl dispatch movetoworkspace "$target"
+

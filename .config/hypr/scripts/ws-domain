@@ -41,15 +41,6 @@ win_domains="$(
 # Visited domains (session-only)
 vis_domains="$(sort -n "$visited_file" | uniq || true)"
 
-# Build active domain list = base + windowed + visited
-active="$(
-  {
-    printf "%s\n" "${base_domains[@]}"
-    printf "%s\n" "$win_domains"
-    printf "%s\n" "$vis_domains"
-  } | awk 'NF' | sort -n | uniq
-)"
-
 # Helper: does a domain have any windows?
 domain_has_windows() {
   local dom="$1"
@@ -58,25 +49,28 @@ domain_has_windows() {
   else
     local lo=$(( dom*10 + 1 ))
     local hi=$(( dom*10 + 9 ))
-    hyprctl workspaces -j | jq -e --argjson lo "$lo" --argjson hi "$hi" '[.[] | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' >/dev/null
+    hyprctl workspaces -j | jq -e --argjson lo "$lo" --argjson hi "$hi" \
+      '[.[] | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' >/dev/null
   fi
 }
 
 # Prune visited domains that are empty (not base, not current)
-# This is what makes “domain dot disappears if empty”
 tmpv="$(mktemp)"
 while read -r dom; do
   [[ -z "${dom:-}" ]] && continue
+
   # keep base domains always
   if [[ " ${base_domains[*]} " == *" $dom "* ]]; then
     echo "$dom" >> "$tmpv"
     continue
   fi
+
   # keep current domain
   if (( dom == curDom )); then
     echo "$dom" >> "$tmpv"
     continue
   fi
+
   # keep if has windows
   if domain_has_windows "$dom"; then
     echo "$dom" >> "$tmpv"
@@ -84,37 +78,37 @@ while read -r dom; do
 done < <(printf "%s\n" "$vis_domains")
 mv "$tmpv" "$visited_file"
 
-# Recompute active after pruning
-active="$(
-  {
-    printf "%s\n" "${base_domains[@]}"
-    printf "%s\n" "$win_domains"
-    sort -n "$visited_file" | uniq
-  } | awk 'NF' | sort -n | uniq
+# --- Compute maxDom (needed for sequential wrap 1..maxDom) ---
+
+maxWinDom="$(
+  hyprctl workspaces -j \
+  | jq -r '.[] | select(.windows > 0) | .id | if . <= 9 then 1 else (./10|floor) end' \
+  | sort -n | tail -n1
 )"
+maxWinDom="${maxWinDom:-0}"
 
-# Convert active list to array
-mapfile -t doms < <(printf "%s\n" "$active")
+maxVisDom="$(sort -n "$visited_file" 2>/dev/null | tail -n1)"
+maxVisDom="${maxVisDom:-0}"
 
-# Pick target domain
+maxDom="$curDom"
+(( maxDom < 3 )) && maxDom=3
+(( maxWinDom > maxDom )) && maxDom="$maxWinDom"
+(( maxVisDom > maxDom )) && maxDom="$maxVisDom"
+
+# --- Pick target domain ---
 case "$mode" in
   set)
     targetDom="$arg"
     # Mark visited (so it shows up immediately)
     echo "$targetDom" >> "$visited_file"
     ;;
-  up|down)
-    # find index of current in doms
-    idx=0
-    for i in "${!doms[@]}"; do
-      if (( doms[i] == curDom )); then idx="$i"; break; fi
-    done
-    if [[ "$mode" == "down" ]]; then
-      idx=$(( (idx + 1) % ${#doms[@]} ))
-    else
-      idx=$(( (idx - 1 + ${#doms[@]}) % ${#doms[@]} ))
-    fi
-    targetDom="${doms[idx]}"
+  down)
+    targetDom=$(( curDom + 1 ))
+    if (( targetDom > maxDom )); then targetDom=1; fi
+    ;;
+  up)
+    targetDom=$(( curDom - 1 ))
+    if (( targetDom < 1 )); then targetDom="$maxDom"; fi
     ;;
   *)
     echo "bad mode"; exit 2 ;;
