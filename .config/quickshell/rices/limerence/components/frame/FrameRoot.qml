@@ -1,29 +1,19 @@
 import Quickshell
 import QtQuick
-
 import "./" as Frame
 
 Item {
   id: root
   required property ShellScreen screen
 
-  // Order matters visually: bars (interactive) on top, frame (visual-only) behind or between.
-  // If your frame is masking/covering visually in the wrong place, swap ordering.
+  // Visual-only frame should be behind everything interactive.
+  Frame.ContentFrame { screen: root.screen }
 
-  Frame.TopBar {
-    screen: root.screen
-  }
+  // Bars above the frame (so frameBg never tints them)
+  Frame.TopBar { screen: root.screen }
+  Frame.LeftBar { screen: root.screen }
 
-  Frame.LeftBar {
-    screen: root.screen
-  }
-
-  Frame.CornerPatch {
-    screen: root.screen
-  }
-
-  Frame.ContentFrame {
-    screen: root.screen
-  }
+  // Overlay always top
+  Frame.CornerPatch { screen: root.screen }
 }
 

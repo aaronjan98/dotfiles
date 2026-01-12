@@ -10,7 +10,7 @@ PanelWindow {
   screen: screen
 
   // Visual-only overlay: never reserves space
-  WlrLayershell.layer: WlrLayer.Top
+  WlrLayershell.layer: WlrLayer.Bottom
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
   exclusiveZone: 0
 

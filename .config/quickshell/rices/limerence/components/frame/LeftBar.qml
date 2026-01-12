@@ -21,14 +21,11 @@ PanelWindow {
   implicitWidth: C.Appearance.leftW
   color: "transparent"
 
-  readonly property int bubbleSize: Math.min(C.Appearance.topH, C.Appearance.leftW) - 2
-
   readonly property var wsModel: Hyprland.workspaces
   readonly property var wsList: wsModel ? wsModel.values : []
 
   readonly property int wsId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
-  readonly property int slot: (wsId <= 9) ? wsId : (wsId % 10)
 
   function domainOfWorkspaceId(id) {
     return (id <= 9) ? 1 : Math.floor(id / 10)
@@ -50,12 +47,11 @@ PanelWindow {
     return m
   }
 
-  // Show 3 minimum; expand to include current domain and any domain with windows.
-  // Fill gaps: show 1..max.
+  // Show 3 minimum; expand to include current domain and any domain with windows; fill gaps 1..max
   function domainCountToShow() {
     var m = 3
-    m = Math.max(m, root.domain)          // show where you are even if empty
-    m = Math.max(m, maxDomainWithWindows()) // keep domains if windows exist
+    m = Math.max(m, root.domain)
+    m = Math.max(m, maxDomainWithWindows())
     return m
   }
 
@@ -70,32 +66,47 @@ PanelWindow {
   Item {
     anchors.fill: parent
 
-    Column {
+    // ONE bubble for the entire domain cluster
+    W.BubbleItem {
+      id: domainBubble
       anchors.verticalCenter: parent.verticalCenter
       anchors.horizontalCenter: parent.horizontalCenter
-      spacing: 8
 
-      Repeater {
-        model: root.domainCountToShow()
+      Column {
+        spacing: 6
 
-        delegate: W.BubbleItem {
-          bubbleSize: root.bubbleSize
+        Repeater {
+          model: root.domainCountToShow()
 
-          readonly property int domN: modelData + 1
-          readonly property bool occ: root.domainOccupied(domN)
+          delegate: Item {
+            readonly property int domN: modelData + 1
+            readonly property bool occ: root.domainOccupied(domN)
 
-          W.WorkspaceDot {
-            anchors.centerIn: parent
-            dotSize: 7
-            active: (root.domain === domN)
-            occupied: occ
-          }
+            width: 14
+            height: 14
 
-          onClicked: {
-            S.DomainMemory.ensureVisited(domN)
-            const s = S.DomainMemory.lastSlot(domN)
-            const target = (domN === 1) ? s : (domN * 10 + s)
-            Hyprland.dispatch("workspace " + target)
+            W.WorkspaceDot {
+              anchors.centerIn: parent
+              dotSize: 7
+              active: (root.domain === domN)
+              occupied: occ
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                // Ensure this domain is considered "visited" for scripts/UI
+                S.DomainMemory.ensureVisited(domN)
+
+                // Jump to the last slot used in that domain
+                const s = S.DomainMemory.lastSlot(domN)
+                const target = (domN === 1) ? s : (domN * 10 + s)
+
+                Hyprland.dispatch("workspace " + target)
+              }
+            }
           }
         }
       }

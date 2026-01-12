@@ -4,37 +4,40 @@ import "../../config" as C
 Rectangle {
   id: bubble
 
-  // Let bars control size; default fits in the bar thickness.
-  // (We reuse the SAME bubble styling tokens from Appearance.qml)
+  // If >0, forces square size. If 0, bubble auto-sizes to content.
   property int bubbleSize: 0
-  readonly property int _size: bubbleSize > 0 ? bubbleSize : 0
 
-  // Click handler hook
+  // NEW: only add a click-catcher if you actually want the bubble itself clickable
+  property bool clickable: false
+
   signal clicked()
-
-  implicitWidth:  _size > 0 ? _size : 20
-  implicitHeight: _size > 0 ? _size : 20
 
   radius: C.Appearance.bubbleRadius
   color: C.Appearance.bubbleBg
   antialiasing: true
   clip: true
 
-  // You removed bubbleBorderCol previously; keep border subtle using borderCol.
   border.width: C.Appearance.bubbleBorderW
   border.color: C.Appearance.borderCol
 
-  // Content goes inside, padded like your Nix icon container
+  implicitWidth: bubbleSize > 0 ? bubbleSize : (contentBox.implicitWidth + C.Appearance.bubblePad * 2)
+  implicitHeight: bubbleSize > 0 ? bubbleSize : (contentBox.implicitHeight + C.Appearance.bubblePad * 2)
+
   Item {
     id: contentBox
-    anchors.fill: parent
+    anchors.left: parent.left
+    anchors.top: parent.top
     anchors.margins: C.Appearance.bubblePad
+    implicitWidth: childrenRect.width
+    implicitHeight: childrenRect.height
   }
 
   default property alias content: contentBox.data
 
+  // This MouseArea should NOT block children unless you explicitly want it.
   MouseArea {
     anchors.fill: parent
+    enabled: bubble.clickable
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     onClicked: bubble.clicked()

@@ -21,12 +21,8 @@ PanelWindow {
   implicitHeight: C.Appearance.topH
   color: "transparent"
 
-  // Bubble size that fits in the top bar lane
-  readonly property int bubbleSize: Math.min(C.Appearance.topH, C.Appearance.leftW) - 2
-
   // Hyprland workspace model (ObjectModel)
   readonly property var wsModel: Hyprland.workspaces
-  // Safer JS-iterable list (QList<QObject*> exposed by Quickshell ObjectModel)
   readonly property var wsList: wsModel ? wsModel.values : []
 
   // Active workspace math (domain/slot)
@@ -43,8 +39,6 @@ PanelWindow {
       var w = wsList[i]
       if (!w) continue
       if (w.id === id) {
-        // HyprlandWorkspace.toplevels is an ObjectModel (windows on that workspace)
-        // Use .count if present; otherwise fall back to .values.length.
         if (w.toplevels && w.toplevels.count !== undefined) return w.toplevels.count
         if (w.toplevels && w.toplevels.values !== undefined) return w.toplevels.values.length
         return 0
@@ -67,7 +61,7 @@ PanelWindow {
       if (count <= 0) continue
 
       if (dom === 1) {
-        if (id >= 1 && id <= 9) m = Math.max(m, id) // slot == id
+        if (id >= 1 && id <= 9) m = Math.max(m, id)
       } else {
         var lo = dom * 10 + 1
         var hi = dom * 10 + 9
@@ -78,44 +72,60 @@ PanelWindow {
   }
 
   // Show 4 minimum; expand to include current slot and any slot that has windows; cap at 9.
-  // This is what keeps dots visible after you leave, as long as windows remain there.
   function slotCountToShow() {
     var m = 4
-    m = Math.max(m, root.slot) // always show current slot while you're there
-    m = Math.max(m, maxSlotWithWindowsInDomain(root.domain)) // keep extended slots if windows exist
+    m = Math.max(m, root.slot)
+    m = Math.max(m, maxSlotWithWindowsInDomain(root.domain))
     return Math.min(9, m)
   }
 
   Item {
     anchors.fill: parent
 
-    Row {
+    // ONE bubble for the entire slot cluster
+    W.BubbleItem {
+      id: slotBubble
       anchors.centerIn: parent
-      spacing: 6
 
-      Repeater {
-        model: root.slotCountToShow()
+      // extra tight padding for a cluster bubble
+      // (keeps your global token but makes the cluster look snug)
+      // If you want it tighter still, drop dotCell and spacing a bit.
+      Row {
+        id: slotRow
+        spacing: 4
 
-        delegate: W.BubbleItem {
-          bubbleSize: root.bubbleSize
+        Repeater {
+          model: root.slotCountToShow()
 
-          readonly property int slotN: modelData + 1
-          readonly property int targetWs: root.workspaceIdFor(root.domain, slotN)
-          readonly property bool occ: root.toplevelCountForWorkspaceId(targetWs) > 0
+          delegate: Item {
+            // Clickable "cell" per dot inside the shared bubble
+            // Keeping this slightly larger makes clicking easier.
+            readonly property int slotN: modelData + 1
+            readonly property int targetWs: root.workspaceIdFor(root.domain, slotN)
+            readonly property bool occ: root.toplevelCountForWorkspaceId(targetWs) > 0
 
-          W.WorkspaceDot {
-            anchors.centerIn: parent
-            dotSize: 7
-            active: (root.slot === slotN)
-            occupied: occ
-          }
+            width: 14
+            height: 14
 
-          onClicked: {
-            // remember slot for current domain (slotN is 1..9)
-            S.DomainMemory.setLastSlot(root.domain, slotN)
-            S.DomainMemory.ensureVisited(root.domain)
-          
-            Hyprland.dispatch("workspace " + targetWs)
+            W.WorkspaceDot {
+              anchors.centerIn: parent
+              dotSize: 7
+              active: (root.slot === slotN)
+              occupied: occ
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                // Keep UI and scripts aligned:
+                S.DomainMemory.setLastSlot(root.domain, slotN)
+                S.DomainMemory.ensureVisited(root.domain)
+
+                Hyprland.dispatch("workspace " + targetWs)
+              }
+            }
           }
         }
       }
