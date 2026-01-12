@@ -3,13 +3,16 @@ import QtQuick
 
 import "components/frame" as Frame
 
-ShellRoot {
-  Variants {
-    model: Quickshell.screens
+Variants {
+  model: Quickshell.screens
 
-    Scope {
-      required property ShellScreen modelData
-      Frame.FrameRoot { screen: modelData }
+  delegate: Item {
+    // Variants will set this automatically
+    required property var modelData
+
+    // Pass screen explicitly (FrameRoot does NOT need modelData)
+    Frame.FrameRoot {
+      screen: modelData
     }
   }
 }

@@ -1,27 +1,28 @@
-import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import QtQuick
 
-import "../containers"
 import "../../config" as C
 
-StyledWindow {
-  name: "topbar"
-  required property ShellScreen screen
-  screen: screen
+PanelWindow {
+    id: root
+    required property ShellScreen screen
+    screen: screen
 
-  exclusion: ExclusionMode.Auto
-  layer: WlrLayer.Top
+    exclusionMode: ExclusionMode.Auto
+    anchors.top: true
+    anchors.left: true
+    anchors.right: true
 
-  anchors { top: true; left: true; right: true }
-  implicitHeight: C.Appearance.topH
-  exclusiveZone: C.Appearance.topH
+    // Leave space on the left for the corner patch + left bar lane.
+    // This prevents the top bar from occupying the top-left square.
+    margins.left: C.Appearance.leftW
+    margins.top: 0
+    margins.right: 0
 
-  Rectangle {
-    anchors.fill: parent
-    color: C.Appearance.bg
-    radius: 0
-    antialiasing: true
-  }
+    implicitHeight: C.Appearance.topH
+    color: "transparent"
+
+    // (later) top-bar content goes here.
 }
 

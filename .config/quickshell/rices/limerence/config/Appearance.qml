@@ -2,34 +2,40 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-  // ----- Sizing tokens -----
-  property int topH: 30
-  property int leftW: 33
+  // ---- bar thickness ----
+  property int topH: 24
+  property int leftW: 26
 
-  // inner padding for content inside bars
-  property int innerPad: 1
+  // ---- content frame geometry ----
+  property int framePadRight: 2
+  property int framePadBottom: 2
 
-  // border ring thickness
-  property int border: 5
+  // The hole radius (content cutout)
+  property int frameRadius: 7
 
-  // rounding tokens
-  property int rSmall: 12
-  property int rNormal: 17
-  property int rLarge: 25
+  // Border ring thickness + where to place it INSIDE the hole
+  property int border: 1
+  property int borderInset: -2
 
-  // ----- Transparency -----
-  property real panelAlpha: 0.70
+  // ---- palette (make it readable while testing) ----
+  // This is the "ring tint" color (outside the hole). Lower alpha = subtler.
+  property color frameBg: Qt.rgba(20/255, 16/255, 35/255, 0.35)
 
-  // ----- Palette (limerence-ish: blue/purple/violet) -----
-  property color bg: Qt.rgba(180/255, 16/255, 28/255, panelAlpha) //tempory
-  // property color bg: Qt.rgba(18/255, 16/255, 28/255, panelAlpha)   // deep violet
-  property color borderCol: Qt.rgba(180/255, 175/255, 255/255, 0.22) // soft lavender ring
+  // Crisp inner border line
+  property color borderCol: Qt.rgba(210/255, 190/255, 255/255, 0.35)
 
-  // (we'll use these later for active dots, accents, etc.)
-  property color accentBlue: "#7aa2f7"
-  property color accentViolet: "#a78bfa"
-  property color accentPink: "#f0abfc"
-  // property color fg: "#cfd6ff"
-  property color fg: "#111018" //temporary
+  // inward glow strokes
+  property color glow1: Qt.rgba(160/255, 120/255, 255/255, 0.27)
+  property color glow2: Qt.rgba(120/255, 190/255, 255/255, 0.12)
+  property color glow3: Qt.rgba(255/255, 140/255, 220/255, 0.08)
+
+  // ---- bubbles ----
+  property color bubbleBg: Qt.rgba(35/255, 26/255, 60/255, 0.90)
+  property color bubbleBorder: Qt.rgba(210/255, 190/255, 255/255, 0.25)
+  property int bubblePad: 4
+
+  // Nix bubble sizing
+  property int nixBubbleSize: 35     // size of the square bubble
+  property int nixIconPad: 5         // padding inside the bubble
 }
 

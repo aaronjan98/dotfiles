@@ -1,49 +1,47 @@
-import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import QtQuick
 
-import "../containers"
 import "../../config" as C
 
-StyledWindow {
-  id: root
-  name: "cornerpatch"
+PanelWindow {
+    id: root
+    required property ShellScreen screen
+    screen: screen
 
-  required property ShellScreen screen
-  screen: screen
+    exclusionMode: ExclusionMode.Ignore
+    anchors.top: true
+    anchors.left: true
 
-  // Put this ABOVE TopBar/LeftBar so it receives clicks.
-  WlrLayershell.layer: WlrLayer.Overlay
-  WlrLayershell.exclusionMode: ExclusionMode.Ignore
+    implicitWidth: C.Appearance.leftW
+    implicitHeight: C.Appearance.topH
+    color: "transparent"
 
-  anchors { top: true; left: true }
-  implicitWidth: C.Appearance.leftW
-  implicitHeight: C.Appearance.topH
+    Rectangle {
+      id: bubble
+      anchors.centerIn: parent
+      width: C.Appearance.nixBubbleSize
+      height: C.Appearance.nixBubbleSize
+      radius: 6
+      color: C.Appearance.bubbleBg
+      border.width: 1
+      border.color: C.Appearance.bubbleBorder
+      antialiasing: true
+    
+      Image {
+        anchors.fill: parent
+        anchors.margins: C.Appearance.nixIconPad
+        source: "../../assets/nix-snowflake-colours.svg"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+      }
+    }
 
-  // Solid background so we definitely have an input region
-  Rectangle {
-    anchors.fill: parent
-    color: C.Appearance.bg
-    radius: 0
-    antialiasing: true
-  }
-
-  Image {
-    anchors.centerIn: parent
-    source: "../../assets/nix-snowflake-colours.svg"
-    width: parent.width - (C.Appearance.innerPad * 2)
-    height: parent.height - (C.Appearance.innerPad * 2)
-    fillMode: Image.PreserveAspectFit
-    smooth: true
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    acceptedButtons: Qt.AllButtons
-    cursorShape: Qt.PointingHandCursor
-    onEntered: console.log("entered cornerpatch")
-    onClicked: (mouse) => console.log("NIX clicked button=", mouse.button, "x=", mouse.x, "y=", mouse.y)
-  }
+    MouseArea {
+        anchors.fill: bubble
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: console.log("Nix icon clicked")
+    }
 }
 

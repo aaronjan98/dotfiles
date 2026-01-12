@@ -1,29 +1,30 @@
-import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import QtQuick
 
-import "../containers"
 import "../../config" as C
 
-StyledWindow {
-  name: "leftbar"
-  required property ShellScreen screen
-  screen: screen
+PanelWindow {
+    id: root
+    required property ShellScreen screen
+    screen: screen
 
-  exclusion: ExclusionMode.Auto
-  layer: WlrLayer.Top
+    // Layershell / panel behavior
+    exclusionMode: ExclusionMode.Auto
+    anchors.left: true
+    anchors.top: true
+    anchors.bottom: true
 
-  anchors { top: true; left: true; bottom: true }
-  implicitWidth: C.Appearance.leftW
-  exclusiveZone: C.Appearance.leftW
+    // IMPORTANT: PanelWindow uses `margins`, not anchors.topMargin
+    // This makes the left bar start *below* the top bar, without overlapping.
+    margins.top: C.Appearance.topH
+    margins.left: 0
+    margins.bottom: 0
 
-  // draw only below the top bar
-  Rectangle {
-    anchors.fill: parent
-    anchors.topMargin: C.Appearance.topH
-    color: C.Appearance.bg
-    radius: 0
-    antialiasing: true
-  }
+    implicitWidth: C.Appearance.leftW
+    color: "transparent"
+
+    // (later) actual left-bar content goes here.
+    // For now, leave it empty since you said: bars themselves are not colored.
 }
 
