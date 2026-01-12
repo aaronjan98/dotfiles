@@ -30,8 +30,9 @@ PanelWindow {
     antialiasing: true
     clip: true
 
-    border.width: C.Appearance.bubbleBorderW
-    border.color: C.Appearance.bubbleBorderCol
+    border.width: C.Appearance.bubbleBorderEnabled ? C.Appearance.bubbleBorderW : 0
+    border.color: C.Appearance.bubbleBorderEnabled ? C.Appearance.bubbleBorderCol : "transparent"
+
 
     // Icon container so padding is consistent and alignment is easy
     Item {

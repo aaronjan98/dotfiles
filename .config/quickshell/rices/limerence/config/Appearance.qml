@@ -19,7 +19,7 @@ QtObject {
 
   // ---- palette (make it readable while testing) ----
   // This is the "ring tint" color (outside the hole). Lower alpha = subtler.
-  property color frameBg: Qt.rgba(20/255, 16/255, 35/255, 0.25)
+  property color frameBg: Qt.rgba(20/255, 16/255, 35/255, 0.35)
 
   // Crisp inner border line
   property color borderCol: Qt.rgba(210/255, 190/255, 255/255, 0.35)
