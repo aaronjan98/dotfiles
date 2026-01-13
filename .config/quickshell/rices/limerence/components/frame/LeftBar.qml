@@ -27,6 +27,49 @@ PanelWindow {
   readonly property int wsId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
 
+  // --- UI count latch (expand immediately, shrink later) ---
+  property int displayDomains: 3
+  property int targetDomains: 3
+
+  Timer {
+    id: shrinkDomainsTimer
+    interval: 350
+    repeat: false
+    onTriggered: root.displayDomains = root.targetDomains
+  }
+
+  Timer {
+    id: domainsPollTimer
+    interval: 500
+    repeat: true
+    running: true
+    onTriggered: root.updateDomainsUI()
+  }
+
+  function updateDomainsUI() {
+    const t = domainCountToShow()
+    targetDomains = t
+
+    if (t > displayDomains) {
+      displayDomains = t
+      shrinkDomainsTimer.stop()
+    } else if (t < displayDomains) {
+      shrinkDomainsTimer.restart()
+    }
+  }
+
+  property int lastDomainSeen: domain
+  onDomainChanged: {
+    S.NavState.prevDomain = lastDomainSeen
+    lastDomainSeen = domain
+    updateDomainsUI()
+  }
+
+  Component.onCompleted: {
+    displayDomains = domainCountToShow()
+    targetDomains = displayDomains
+  }
+
   function domainOfWorkspaceId(id) {
     return (id <= 9) ? 1 : Math.floor(id / 10)
   }
@@ -47,7 +90,6 @@ PanelWindow {
     return m
   }
 
-  // Show 3 minimum; expand to include current domain and any domain with windows; fill gaps 1..max
   function domainCountToShow() {
     var m = 3
     m = Math.max(m, root.domain)
@@ -66,48 +108,31 @@ PanelWindow {
   Item {
     anchors.fill: parent
 
-    // ONE bubble for the entire domain cluster
     W.BubbleItem {
-      id: domainBubble
       anchors.verticalCenter: parent.verticalCenter
       anchors.horizontalCenter: parent.horizontalCenter
 
-      Column {
-        spacing: 6
+      W.DotTrack {
+        axis: "v"
+        count: root.displayDomains
+        activeIndex: root.domain - 1
+        dotSize: 7
+        pillFactor: 2.1
+        gap: 6
+        animMs: 140
 
-        Repeater {
-          model: root.domainCountToShow()
+        occupiedFn: function(i) {
+          var domN = i + 1
+          return root.domainOccupied(domN)
+        }
 
-          delegate: Item {
-            readonly property int domN: modelData + 1
-            readonly property bool occ: root.domainOccupied(domN)
+        onClicked: function(i) {
+          var domN = i + 1
+          S.DomainMemory.ensureVisited(domN)
 
-            width: 14
-            height: 14
-
-            W.WorkspaceDot {
-              anchors.centerIn: parent
-              dotSize: 7
-              active: (root.domain === domN)
-              occupied: occ
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                // Ensure this domain is considered "visited" for scripts/UI
-                S.DomainMemory.ensureVisited(domN)
-
-                // Jump to the last slot used in that domain
-                const s = S.DomainMemory.lastSlot(domN)
-                const target = (domN === 1) ? s : (domN * 10 + s)
-
-                Hyprland.dispatch("workspace " + target)
-              }
-            }
-          }
+          var s = S.DomainMemory.lastSlot(domN)
+          var target = (domN === 1) ? s : (domN * 10 + s)
+          Hyprland.dispatch("workspace " + target)
         }
       }
     }

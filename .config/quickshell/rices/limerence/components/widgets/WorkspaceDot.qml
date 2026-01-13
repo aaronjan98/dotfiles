@@ -3,25 +3,28 @@ import QtQuick
 Item {
   id: root
   property bool active: false
-  property bool occupied: false  // later you can wire this to windows>0
+  property bool occupied: false
+  property int dotSize: 7
 
-  // simple dot sizing
-  property int dotSize: 8
+  width: dotSize
+  height: dotSize
 
-  implicitWidth: dotSize
-  implicitHeight: dotSize
+  // For the hybrid: when active, we dim the dot a bit so the pill reads as the "active" mark.
+  // If you want the dot to disappear entirely under the pill, set activeOpacity to 0.0.
+  property real activeOpacity: 0.15
 
   Rectangle {
-    anchors.centerIn: parent
-    width: root.dotSize
-    height: root.dotSize
+    anchors.fill: parent
     radius: root.dotSize / 2
     antialiasing: true
+    color: "white"
+    opacity: root.active
+      ? root.activeOpacity
+      : (root.occupied ? 0.60 : 0.35)
 
-    // Active: solid. Occupied-but-not-active: outlined. Empty: dim.
-    color: root.active ? "white" : "transparent"
-    border.width: root.active ? 0 : (root.occupied ? 1 : 1)
-    border.color: root.occupied ? Qt.rgba(1,1,1,0.7) : Qt.rgba(1,1,1,0.25)
+    Behavior on opacity {
+      NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+    }
   }
 }
 

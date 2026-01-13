@@ -21,17 +21,60 @@ PanelWindow {
   implicitHeight: C.Appearance.topH
   color: "transparent"
 
-  // Hyprland workspace model (ObjectModel)
   readonly property var wsModel: Hyprland.workspaces
   readonly property var wsList: wsModel ? wsModel.values : []
 
-  // Active workspace math (domain/slot)
   readonly property int wsId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
   readonly property int slot: (wsId <= 9) ? wsId : (wsId % 10)
 
-  function workspaceIdFor(dom, slot) {
-    return (dom === 1) ? slot : (dom * 10 + slot)
+  // --- UI count latch (expand immediately, shrink later) ---
+  property int displaySlots: 4
+  property int targetSlots: 4
+
+  Timer {
+    id: shrinkSlotsTimer
+    interval: 350
+    repeat: false
+    onTriggered: root.displaySlots = root.targetSlots
+  }
+
+  // Poll because wsList changes don't reliably emit wsListChanged
+  Timer {
+    id: slotsPollTimer
+    interval: 500
+    repeat: true
+    running: true
+    onTriggered: root.updateSlotsUI()
+  }
+
+  function updateSlotsUI() {
+    const t = slotCountToShow()
+    targetSlots = t
+
+    if (t > displaySlots) {
+      displaySlots = t              // grow now
+      shrinkSlotsTimer.stop()
+    } else if (t < displaySlots) {
+      shrinkSlotsTimer.restart()    // shrink later
+    }
+  }
+
+  // Keep “seen” slot so scripts + UI can share direction/state if needed later.
+  property int lastSlotSeen: slot
+  onSlotChanged: {
+    S.NavState.prevSlot = lastSlotSeen
+    lastSlotSeen = slot
+    updateSlotsUI()
+  }
+
+  Component.onCompleted: {
+    displaySlots = slotCountToShow()
+    targetSlots = displaySlots
+  }
+
+  function workspaceIdFor(dom, slotN) {
+    return (dom === 1) ? slotN : (dom * 10 + slotN)
   }
 
   function toplevelCountForWorkspaceId(id) {
@@ -57,7 +100,6 @@ PanelWindow {
       var count = 0
       if (w.toplevels && w.toplevels.count !== undefined) count = w.toplevels.count
       else if (w.toplevels && w.toplevels.values !== undefined) count = w.toplevels.values.length
-
       if (count <= 0) continue
 
       if (dom === 1) {
@@ -71,7 +113,6 @@ PanelWindow {
     return m
   }
 
-  // Show 4 minimum; expand to include current slot and any slot that has windows; cap at 9.
   function slotCountToShow() {
     var m = 4
     m = Math.max(m, root.slot)
@@ -82,51 +123,31 @@ PanelWindow {
   Item {
     anchors.fill: parent
 
-    // ONE bubble for the entire slot cluster
     W.BubbleItem {
-      id: slotBubble
       anchors.centerIn: parent
 
-      // extra tight padding for a cluster bubble
-      // (keeps your global token but makes the cluster look snug)
-      // If you want it tighter still, drop dotCell and spacing a bit.
-      Row {
-        id: slotRow
-        spacing: 4
+      W.DotTrack {
+        axis: "h"
+        count: root.displaySlots
+        activeIndex: root.slot - 1
+        dotSize: 7
+        pillFactor: 2.1
+        gap: 4
+        animMs: 140
 
-        Repeater {
-          model: root.slotCountToShow()
+        occupiedFn: function(i) {
+          var slotN = i + 1
+          var ws = root.workspaceIdFor(root.domain, slotN)
+          return root.toplevelCountForWorkspaceId(ws) > 0
+        }
 
-          delegate: Item {
-            // Clickable "cell" per dot inside the shared bubble
-            // Keeping this slightly larger makes clicking easier.
-            readonly property int slotN: modelData + 1
-            readonly property int targetWs: root.workspaceIdFor(root.domain, slotN)
-            readonly property bool occ: root.toplevelCountForWorkspaceId(targetWs) > 0
+        onClicked: function(i) {
+          var slotN = i + 1
+          var targetWs = root.workspaceIdFor(root.domain, slotN)
 
-            width: 14
-            height: 14
-
-            W.WorkspaceDot {
-              anchors.centerIn: parent
-              dotSize: 7
-              active: (root.slot === slotN)
-              occupied: occ
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                // Keep UI and scripts aligned:
-                S.DomainMemory.setLastSlot(root.domain, slotN)
-                S.DomainMemory.ensureVisited(root.domain)
-
-                Hyprland.dispatch("workspace " + targetWs)
-              }
-            }
-          }
+          S.DomainMemory.setLastSlot(root.domain, slotN)
+          S.DomainMemory.ensureVisited(root.domain)
+          Hyprland.dispatch("workspace " + targetWs)
         }
       }
     }

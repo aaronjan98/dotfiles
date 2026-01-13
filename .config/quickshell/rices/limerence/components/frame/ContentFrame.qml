@@ -33,7 +33,7 @@ PanelWindow {
     anchors.leftMargin: C.Appearance.leftW
     anchors.topMargin: C.Appearance.topH
 
-    // allow extra frame visible on right/bottom if you want it
+    // allow extra frame visible on right/bottom
     anchors.rightMargin: C.Appearance.framePadRight
     anchors.bottomMargin: C.Appearance.framePadBottom
   }

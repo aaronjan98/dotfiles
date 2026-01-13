@@ -1,2 +1,3 @@
 singleton DomainMemory 1.0 DomainMemory.qml
+singleton NavState 1.0 NavState.qml
 

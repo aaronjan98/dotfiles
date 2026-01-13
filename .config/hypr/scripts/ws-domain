@@ -12,9 +12,12 @@ last_file="$state_dir/last.txt"          # dom=slot
 visited_file="$state_dir/visited.txt"    # one dom per line
 touch "$last_file" "$visited_file"
 
-id="$(hyprctl activeworkspace -j | jq -r '.id')"
-if (( id <= 9 )); then curDom=1; else curDom=$(( id / 10 )); fi
-curSlot=$(( id % 10 )); (( curSlot == 0 )) && curSlot=1
+# --- capture hypr state ONCE ---
+ws_json="$(hyprctl workspaces -j 2>/dev/null || echo '[]')"
+active_id="$(hyprctl activeworkspace -j 2>/dev/null | jq -r '.id // 1')"
+
+if (( active_id <= 9 )); then curDom=1; else curDom=$(( active_id / 10 )); fi
+curSlot=$(( active_id % 10 )); (( curSlot == 0 )) && curSlot=1
 
 # Save current slot for current domain
 tmp="$(mktemp)"
@@ -26,66 +29,52 @@ awk -v dom="$curDom" -v slot="$curSlot" '
 ' "$last_file" > "$tmp"
 mv "$tmp" "$last_file"
 
-# Domains with windows right now
-win_domains="$(
-  hyprctl workspaces -j \
-  | jq -r '
-      .[]
-      | select(.windows > 0)
-      | .id
-      | if . <= 9 then 1 else (./10|floor) end
-    ' 2>/dev/null \
-  | sort -n | uniq
-)"
+# Domains with windows right now (single jq pass)
+win_domains="$(jq -r '
+  .[]
+  | select(.windows > 0)
+  | .id
+  | if . <= 9 then 1 else (./10|floor) end
+' <<<"$ws_json" | sort -n | uniq || true)"
 
-# Visited domains (session-only)
+# Visited domains
 vis_domains="$(sort -n "$visited_file" | uniq || true)"
 
-# Helper: does a domain have any windows?
+# helper: domain has windows? (check against captured JSON)
 domain_has_windows() {
   local dom="$1"
   if (( dom == 1 )); then
-    hyprctl workspaces -j | jq -e '[.[] | select(.id>=1 and .id<=9 and .windows>0)] | length>0' >/dev/null
+    jq -e '[.[] | select(.id>=1 and .id<=9 and .windows>0)] | length>0' \
+      <<<"$ws_json" >/dev/null
   else
     local lo=$(( dom*10 + 1 ))
     local hi=$(( dom*10 + 9 ))
-    hyprctl workspaces -j | jq -e --argjson lo "$lo" --argjson hi "$hi" \
-      '[.[] | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' >/dev/null
+    jq -e --argjson lo "$lo" --argjson hi "$hi" \
+      '[.[] | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' \
+      <<<"$ws_json" >/dev/null
   fi
 }
 
-# Prune visited domains that are empty (not base, not current)
+# prune visited domains that are empty (not base, not current)
 tmpv="$(mktemp)"
 while read -r dom; do
   [[ -z "${dom:-}" ]] && continue
-
-  # keep base domains always
   if [[ " ${base_domains[*]} " == *" $dom "* ]]; then
-    echo "$dom" >> "$tmpv"
-    continue
+    echo "$dom" >> "$tmpv"; continue
   fi
-
-  # keep current domain
   if (( dom == curDom )); then
-    echo "$dom" >> "$tmpv"
-    continue
+    echo "$dom" >> "$tmpv"; continue
   fi
-
-  # keep if has windows
   if domain_has_windows "$dom"; then
     echo "$dom" >> "$tmpv"
   fi
 done < <(printf "%s\n" "$vis_domains")
 mv "$tmpv" "$visited_file"
 
-# --- Compute maxDom (needed for sequential wrap 1..maxDom) ---
-
-maxWinDom="$(
-  hyprctl workspaces -j \
-  | jq -r '.[] | select(.windows > 0) | .id | if . <= 9 then 1 else (./10|floor) end' \
-  | sort -n | tail -n1
-)"
-maxWinDom="${maxWinDom:-0}"
+# compute maxima (single jq uses captured json)
+maxWinDom="$(jq -r '
+  [ .[] | select(.windows>0) | (.id | if .<=9 then 1 else (./10|floor) end) ] | max // 0
+' <<<"$ws_json")"
 
 maxVisDom="$(sort -n "$visited_file" 2>/dev/null | tail -n1)"
 maxVisDom="${maxVisDom:-0}"
@@ -95,32 +84,35 @@ maxDom="$curDom"
 (( maxWinDom > maxDom )) && maxDom="$maxWinDom"
 (( maxVisDom > maxDom )) && maxDom="$maxVisDom"
 
-# --- Pick target domain ---
+# --- decide target domain ---
 case "$mode" in
   set)
     targetDom="$arg"
-    # Mark visited (so it shows up immediately)
     echo "$targetDom" >> "$visited_file"
     ;;
-  down)
-    targetDom=$(( curDom + 1 ))
-    if (( targetDom > maxDom )); then targetDom=1; fi
-    ;;
-  up)
-    targetDom=$(( curDom - 1 ))
+  up|down)
+    if [[ "$mode" == "down" ]]; then
+      targetDom=$(( curDom + 1 ))
+    else
+      targetDom=$(( curDom - 1 ))
+    fi
+
     if (( targetDom < 1 )); then targetDom="$maxDom"; fi
+    if (( targetDom > maxDom )); then targetDom=1; fi
+
+    echo "$targetDom" >> "$visited_file"
     ;;
   *)
     echo "bad mode"; exit 2 ;;
 esac
 
-# Restore last slot in target domain (default 1)
+# restore last slot in target domain (default 1)
 targetSlot="$(awk -F= -v dom="$targetDom" '$1==dom{print $2}' "$last_file" | tail -n1)"
 [[ -z "${targetSlot:-}" ]] && targetSlot=1
 (( targetSlot < 1 )) && targetSlot=1
 (( targetSlot > 9 )) && targetSlot=9
 
-# Compute workspace id
+# compute workspace id
 if (( targetDom == 1 )); then
   targetWs="$targetSlot"
 else
