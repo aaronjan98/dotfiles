@@ -2,41 +2,66 @@
 set -euo pipefail
 
 delta="${1:?use -1 or +1}"
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
 
-id="$(hyprctl activeworkspace -j | jq -r '.id')"
-
-if (( id <= 9 )); then
-  dom=1
-  curSlot="$id"
-  base=0
-else
-  dom=$(( id / 10 ))
-  curSlot=$(( id % 10 ))
-  base=$(( dom*10 ))
+# --- ensure we can talk to Hyprland even from systemd user services ---
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE-}" ]; then
+  sig_dir="/run/user/$(id -u)/hypr"
+  if [ -d "$sig_dir" ]; then
+    sig="$(ls -1 "$sig_dir" 2>/dev/null | head -n1 || true)"
+    if [ -n "$sig" ]; then
+      export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+    fi
+  fi
 fi
 
-# Determine maxSlot for this domain:
-# - at least 4 (your default dots)
-# - at most 9
-# - if more slots exist (because you created them), allow up to that
+# --- fetch JSON once (and validate) ---
+ws_json="$("$HYPRCTL" workspaces -j 2>/dev/null || echo '[]')"
+if ! jq -e . >/dev/null 2>&1 <<<"$ws_json"; then
+  ws_json='[]'
+fi
+
+active_id="$("$HYPRCTL" activeworkspace -j 2>/dev/null | jq -r '.id // 1' 2>/dev/null || echo 1)"
+if ! [[ "$active_id" =~ ^[0-9]+$ ]]; then active_id=1; fi
+
+# current domain/slot
+if (( active_id <= 9 )); then
+  dom=1
+  curSlot="$active_id"
+  base=0
+else
+  dom=$(( active_id / 10 ))
+  curSlot=$(( active_id % 10 ))
+  (( curSlot == 0 )) && curSlot=1
+  base=$(( dom * 10 ))
+fi
+
+# highest existing workspace id in this domain (from ws_json)
 maxExisting="$(
-  hyprctl workspaces -j \
-  | jq -r --argjson dom "$dom" '
-      .[]
+  jq -r --argjson dom "$dom" '
+    [ .[]
       | .id
       | if $dom == 1 then
           select(. >= 1 and . <= 9)
         else
           select(. >= ($dom*10 + 1) and . <= ($dom*10 + 9))
         end
-    ' \
-  | awk '{s=$1%10; if(s>m)m=s} END{print (m?m:0)}'
+    ] | max // 0
+  ' <<<"$ws_json" 2>/dev/null || echo 0
 )"
 
-maxSlot="$maxExisting"
+# convert to slot
+if (( dom == 1 )); then
+  maxSlot="$maxExisting"          # 1..9
+else
+  maxSlot=$(( maxExisting % 10 )) # 1..9
+fi
+
+# baseline + clamp
 (( maxSlot < 4 )) && maxSlot=4
 (( maxSlot > 9 )) && maxSlot=9
 
+# compute next slot (wrap within domain only)
 next=$(( curSlot + delta ))
 if (( next < 1 )); then next="$maxSlot"; fi
 if (( next > maxSlot )); then next=1; fi
@@ -55,12 +80,12 @@ awk -v dom="$dom" -v slot="$next" '
 ' "$file" > "$tmp"
 mv "$tmp" "$file"
 
-# dispatch target
+# dispatch
 if (( dom == 1 )); then
   target="$next"
 else
   target=$(( base + next ))
 fi
 
-hyprctl dispatch workspace "$target"
+"$HYPRCTL" dispatch workspace "$target" >/dev/null
 

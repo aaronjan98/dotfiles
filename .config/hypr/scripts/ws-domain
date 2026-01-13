@@ -4,6 +4,19 @@ set -euo pipefail
 mode="${1:?use up|down|set}"
 arg="${2:-}"
 
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+
+# --- ensure we can talk to Hyprland even from a systemd user service ---
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE-}" ]; then
+  sig_dir="/run/user/$(id -u)/hypr"
+  if [ -d "$sig_dir" ]; then
+    sig="$(ls -1 "$sig_dir" 2>/dev/null | head -n1 || true)"
+    if [ -n "$sig" ]; then
+      export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+    fi
+  fi
+fi
+
 base_domains=(1 2 3)
 
 state_dir="${XDG_RUNTIME_DIR:-/tmp}/hypr-domain-last"
@@ -12,9 +25,16 @@ last_file="$state_dir/last.txt"          # dom=slot
 visited_file="$state_dir/visited.txt"    # one dom per line
 touch "$last_file" "$visited_file"
 
-# --- capture hypr state ONCE ---
-ws_json="$(hyprctl workspaces -j 2>/dev/null || echo '[]')"
-active_id="$(hyprctl activeworkspace -j 2>/dev/null | jq -r '.id // 1')"
+# --- capture hypr state ONCE (and force JSON fallback) ---
+ws_json="$("$HYPRCTL" workspaces -j 2>/dev/null || echo '[]')"
+# If hyprctl returned something non-JSON, guard it
+if ! jq -e . >/dev/null 2>&1 <<<"$ws_json"; then
+  ws_json='[]'
+fi
+
+active_id="$("$HYPRCTL" activeworkspace -j 2>/dev/null | jq -r '.id // 1' 2>/dev/null || echo 1)"
+# If active_id is not numeric, bail to 1
+if ! [[ "$active_id" =~ ^[0-9]+$ ]]; then active_id=1; fi
 
 if (( active_id <= 9 )); then curDom=1; else curDom=$(( active_id / 10 )); fi
 curSlot=$(( active_id % 10 )); (( curSlot == 0 )) && curSlot=1
@@ -37,10 +57,8 @@ win_domains="$(jq -r '
   | if . <= 9 then 1 else (./10|floor) end
 ' <<<"$ws_json" | sort -n | uniq || true)"
 
-# Visited domains
 vis_domains="$(sort -n "$visited_file" | uniq || true)"
 
-# helper: domain has windows? (check against captured JSON)
 domain_has_windows() {
   local dom="$1"
   if (( dom == 1 )); then
@@ -71,10 +89,9 @@ while read -r dom; do
 done < <(printf "%s\n" "$vis_domains")
 mv "$tmpv" "$visited_file"
 
-# compute maxima (single jq uses captured json)
 maxWinDom="$(jq -r '
   [ .[] | select(.windows>0) | (.id | if .<=9 then 1 else (./10|floor) end) ] | max // 0
-' <<<"$ws_json")"
+' <<<"$ws_json" 2>/dev/null || echo 0)"
 
 maxVisDom="$(sort -n "$visited_file" 2>/dev/null | tail -n1)"
 maxVisDom="${maxVisDom:-0}"
@@ -84,7 +101,6 @@ maxDom="$curDom"
 (( maxWinDom > maxDom )) && maxDom="$maxWinDom"
 (( maxVisDom > maxDom )) && maxDom="$maxVisDom"
 
-# --- decide target domain ---
 case "$mode" in
   set)
     targetDom="$arg"
@@ -96,28 +112,24 @@ case "$mode" in
     else
       targetDom=$(( curDom - 1 ))
     fi
-
     if (( targetDom < 1 )); then targetDom="$maxDom"; fi
     if (( targetDom > maxDom )); then targetDom=1; fi
-
     echo "$targetDom" >> "$visited_file"
     ;;
   *)
     echo "bad mode"; exit 2 ;;
 esac
 
-# restore last slot in target domain (default 1)
 targetSlot="$(awk -F= -v dom="$targetDom" '$1==dom{print $2}' "$last_file" | tail -n1)"
 [[ -z "${targetSlot:-}" ]] && targetSlot=1
 (( targetSlot < 1 )) && targetSlot=1
 (( targetSlot > 9 )) && targetSlot=9
 
-# compute workspace id
 if (( targetDom == 1 )); then
   targetWs="$targetSlot"
 else
   targetWs=$(( targetDom*10 + targetSlot ))
 fi
 
-hyprctl dispatch workspace "$targetWs"
+"$HYPRCTL" dispatch workspace "$targetWs" >/dev/null
 

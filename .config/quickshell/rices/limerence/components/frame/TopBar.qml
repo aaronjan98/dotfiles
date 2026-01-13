@@ -32,13 +32,6 @@ PanelWindow {
   property int displaySlots: 4
   property int targetSlots: 4
 
-  Timer {
-    id: shrinkSlotsTimer
-    interval: 350
-    repeat: false
-    onTriggered: root.displaySlots = root.targetSlots
-  }
-
   // Poll because wsList changes don't reliably emit wsListChanged
   Timer {
     id: slotsPollTimer
@@ -51,13 +44,7 @@ PanelWindow {
   function updateSlotsUI() {
     const t = slotCountToShow()
     targetSlots = t
-
-    if (t > displaySlots) {
-      displaySlots = t              // grow now
-      shrinkSlotsTimer.stop()
-    } else if (t < displaySlots) {
-      shrinkSlotsTimer.restart()    // shrink later
-    }
+    displaySlots = t
   }
 
   // Keep “seen” slot so scripts + UI can share direction/state if needed later.
