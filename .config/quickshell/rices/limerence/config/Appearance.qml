@@ -3,8 +3,8 @@ import QtQuick
 
 QtObject {
   // ---- bar thickness ----
-  property int topH: 24
-  property int leftW: 26
+  property int topH: 26
+  property int leftW: 28
 
   // ---- content frame geometry ----
   property int framePadRight: 2
@@ -45,5 +45,15 @@ QtObject {
   // If you set this, your CornerPatch window must also be that big or it will clip.
   property int nixBubbleSize: 30
   property int nixIconPad: 3
+
+  // ---- pills (small islands for text) ----
+  property int pillPadX: 10
+  property int pillPadY: 2
+  property int pillRadius: 999        // 999 => always pill
+  property int pillFont: 10
+
+  // pill border
+  property int pillBorderW: 1
+  property color pillBorderCol: Qt.rgba(210/255, 190/255, 255/255, 0.35)
 }
 

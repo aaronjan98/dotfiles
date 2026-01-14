@@ -32,6 +32,8 @@ PanelWindow {
   property int displaySlots: 4
   property int targetSlots: 4
 
+  property bool showSideIslands: true
+
   Timer {
     id: slotsPollTimer
     interval: 500
@@ -112,30 +114,32 @@ PanelWindow {
     anchors.fill: parent
 
     // ---- LEFT: CPU + Mem ----
-    W.BubbleItem {
+    W.Pill {
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
       anchors.leftMargin: 6
-
-      RowLayout {
+    
+      useBackground: root.showSideIslands
+    
+      Row {
         spacing: 8
-
+    
         Text {
           text: "CPU " + stats.cpuUsage + "%"
           color: "white"
-          font.pixelSize: 12
+          font.pixelSize: C.Appearance.pillFont
         }
-
+    
         Rectangle {
           width: 1
           height: 12
           color: Qt.rgba(1, 1, 1, 0.18)
         }
-
+    
         Text {
           text: "MEM " + stats.memUsage + "%"
           color: "white"
-          font.pixelSize: 12
+          font.pixelSize: C.Appearance.pillFont
         }
       }
     }
@@ -171,19 +175,17 @@ PanelWindow {
     }
 
     // ---- RIGHT: timer/clock ----
-    W.BubbleItem {
+    W.Pill {
       anchors.verticalCenter: parent.verticalCenter
       anchors.right: parent.right
       anchors.rightMargin: 6
-
-      RowLayout {
-        spacing: 8
-
-        W.Clock {
-          color: "white"
-          font.pixelSize: 12
-          format: "ddd, MMM dd HH:mm:ss"
-        }
+    
+      useBackground: root.showSideIslands
+    
+      W.Clock {
+        color: "white"
+        font.pixelSize: C.Appearance.pillFont
+        format: "ddd, MMM dd HH:mm:ss"
       }
     }
   }
