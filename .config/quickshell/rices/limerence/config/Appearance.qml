@@ -2,6 +2,10 @@ pragma Singleton
 import QtQuick
 
 QtObject {
+  // ---- fonts ----
+  // Must be installed and visible to Qt (fc-list should show it)
+  property string iconFont: "JetBrainsMono Nerd Font"
+
   // ---- bar thickness ----
   property int topH: 26
   property int leftW: 28

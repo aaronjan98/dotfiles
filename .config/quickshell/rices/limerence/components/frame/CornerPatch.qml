@@ -47,7 +47,7 @@ PanelWindow {
         anchors.horizontalCenterOffset: 0
         anchors.verticalCenterOffset: 0
 
-        source: "qs:@/qs/assets/nix-snowflake-colours.svg"
+        source: "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
 
         width: Math.min(parent.width, parent.height) * 0.95
         height: width

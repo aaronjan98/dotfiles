@@ -35,6 +35,8 @@ PanelWindow {
 
   property bool showSideIslands: true
 
+  property bool wifiPopupOpen: false
+
   Timer {
     id: slotsPollTimer
     interval: 500
@@ -175,7 +177,7 @@ PanelWindow {
       }
     }
 
-    // ---- RIGHT: timer/clock ----
+    // ---- RIGHT: wifi + clock ----
     W.Pill {
       anchors.verticalCenter: parent.verticalCenter
       anchors.right: parent.right
@@ -186,7 +188,9 @@ PanelWindow {
       Row {
         spacing: 8
     
-        W.WifiIcon { }
+        W.WifiIcon {
+          onClicked: root.wifiPopupOpen = !root.wifiPopupOpen
+        }
     
         Rectangle { width: 1; height: 12; color: Qt.rgba(1,1,1,0.18) }
     
@@ -196,6 +200,11 @@ PanelWindow {
           format: "ddd, MMM dd HH:mm:ss"
         }
       }
+    }
+
+    W.WifiPopup {
+      screen: root.screen
+      open: root.wifiPopupOpen
     }
   }
 }
