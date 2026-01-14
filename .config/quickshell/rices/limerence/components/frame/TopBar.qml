@@ -201,11 +201,11 @@ PanelWindow {
         }
       }
     }
+  }
 
-    W.WifiPopup {
-      screen: root.screen
-      open: root.wifiPopupOpen
-    }
+  W.WifiPopup {
+    screen: root.screen
+    open: root.wifiPopupOpen
   }
 }
 

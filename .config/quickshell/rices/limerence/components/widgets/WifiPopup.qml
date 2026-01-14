@@ -15,26 +15,27 @@ PanelWindow {
 
   anchors.top: true
   anchors.right: true
-  // Popout appears just below the top bar
-  margins.top: C.Appearance.topH + 6
-  margins.right: 8
+
+  // Drop it below the top bar
+  margins.top: C.Appearance.topH + 10
+  margins.right: 10
 
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
   exclusiveZone: 0
 
-  implicitWidth: 320
-  implicitHeight: container.implicitHeight
+  // Make sure the window actually has size
+  implicitWidth: 340
+  implicitHeight: Math.max(220, body.implicitHeight)
 
   color: "transparent"
   visible: open
 
-  // The window itself stays untransformed; we animate this inner container.
+  // Animate inner container (PanelWindow has no scale property)
   Item {
     id: container
     anchors.fill: parent
 
-    // animate open/close
     opacity: win.open ? 1 : 0
     scale: win.open ? 1 : 0.92
 
@@ -45,12 +46,18 @@ PanelWindow {
       id: body
       anchors.fill: parent
       radius: 14
+
       color: Qt.rgba(35/255, 26/255, 60/255, 0.88)
+
       border.width: 1
       border.color: Qt.rgba(210/255, 190/255, 255/255, 0.35)
       antialiasing: true
 
+      // Let this rectangle have a meaningful implicit height
+      implicitHeight: content.implicitHeight + 24
+
       ColumnLayout {
+        id: content
         anchors.fill: parent
         anchors.margins: 12
         spacing: 10
@@ -70,11 +77,10 @@ PanelWindow {
 
           Text {
             text: Sv.WifiNm.wifiEnabled ? "On" : "Off"
-            color: Qt.rgba(1,1,1,0.75)
+            color: Qt.rgba(1,1,1,0.85)
             font.pixelSize: 12
           }
 
-          // Simple toggle switch
           Rectangle {
             width: 44
             height: 22
@@ -104,7 +110,7 @@ PanelWindow {
         Text {
           Layout.fillWidth: true
           text: Sv.WifiNm.connected ? ("Connected: " + Sv.WifiNm.ssid) : "Not connected"
-          color: Qt.rgba(1,1,1,0.85)
+          color: Qt.rgba(1,1,1,0.9)
           font.pixelSize: 12
           elide: Text.ElideRight
         }
@@ -117,9 +123,9 @@ PanelWindow {
             Layout.preferredHeight: 28
             Layout.fillWidth: true
             radius: 10
-            color: Qt.rgba(1,1,1,0.10)
+            color: Qt.rgba(1,1,1,0.12)
             border.width: 1
-            border.color: Qt.rgba(1,1,1,0.12)
+            border.color: Qt.rgba(1,1,1,0.15)
 
             Text {
               anchors.centerIn: parent
@@ -140,9 +146,9 @@ PanelWindow {
             Layout.preferredHeight: 28
             Layout.preferredWidth: 110
             radius: 10
-            color: Qt.rgba(1,1,1,0.10)
+            color: Qt.rgba(1,1,1,0.12)
             border.width: 1
-            border.color: Qt.rgba(1,1,1,0.12)
+            border.color: Qt.rgba(1,1,1,0.15)
 
             Text { anchors.centerIn: parent; text: "Disconnect"; color: "white"; font.pixelSize: 12 }
 
@@ -155,7 +161,6 @@ PanelWindow {
           }
         }
 
-        // Networks list
         ColumnLayout {
           Layout.fillWidth: true
           spacing: 6
@@ -167,9 +172,9 @@ PanelWindow {
               Layout.fillWidth: true
               Layout.preferredHeight: 34
               radius: 10
-              color: modelData.active ? Qt.rgba(1,1,1,0.14) : Qt.rgba(1,1,1,0.07)
+              color: modelData.active ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.10)
               border.width: 1
-              border.color: Qt.rgba(1,1,1,0.10)
+              border.color: Qt.rgba(1,1,1,0.15)
 
               RowLayout {
                 anchors.fill: parent
@@ -183,12 +188,14 @@ PanelWindow {
                      modelData.strength >= 25 ? "󰤢" : "󰤟")
                   color: "white"
                   font.pixelSize: 14
+                  font.family: C.Appearance.iconFont
                 }
 
                 Text {
                   text: modelData.secure ? "󰌾" : ""
                   color: Qt.rgba(1,1,1,0.75)
                   font.pixelSize: 13
+                  font.family: C.Appearance.iconFont
                 }
 
                 Text {
@@ -202,7 +209,7 @@ PanelWindow {
 
                 Text {
                   text: modelData.active ? "Connected" : ""
-                  color: Qt.rgba(1,1,1,0.60)
+                  color: Qt.rgba(1,1,1,0.75)
                   font.pixelSize: 11
                 }
               }
@@ -213,12 +220,8 @@ PanelWindow {
                 enabled: Sv.WifiNm.wifiEnabled
 
                 onClicked: {
-                  if (modelData.active) {
-                    Sv.WifiNm.disconnect()
-                  } else {
-                    // Tries saved/open networks without prompting.
-                    Sv.WifiNm.connect(modelData.ssid, "")
-                  }
+                  if (modelData.active) Sv.WifiNm.disconnect()
+                  else Sv.WifiNm.connect(modelData.ssid, "")
                 }
               }
             }

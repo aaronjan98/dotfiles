@@ -6,7 +6,7 @@ Item {
   id: root
   signal clicked()
 
-  property int size: C.Appearance.pillFont + 8
+  property int size: C.Appearance.pillFont + 2
 
   implicitWidth: size
   implicitHeight: size
