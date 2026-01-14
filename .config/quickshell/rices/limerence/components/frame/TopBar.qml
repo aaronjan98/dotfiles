@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import "../../config" as C
 import "../widgets" as W
 import "../state" as S
+import "../services" as Sv
 
 PanelWindow {
   id: root
@@ -182,10 +183,18 @@ PanelWindow {
     
       useBackground: root.showSideIslands
     
-      W.Clock {
-        color: "white"
-        font.pixelSize: C.Appearance.pillFont
-        format: "ddd, MMM dd HH:mm:ss"
+      Row {
+        spacing: 8
+    
+        W.WifiIcon { }
+    
+        Rectangle { width: 1; height: 12; color: Qt.rgba(1,1,1,0.18) }
+    
+        W.Clock {
+          color: "white"
+          font.pixelSize: C.Appearance.pillFont
+          format: "ddd, MMM dd HH:mm:ss"
+        }
       }
     }
   }

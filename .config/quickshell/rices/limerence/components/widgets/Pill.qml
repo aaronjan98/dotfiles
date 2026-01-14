@@ -10,31 +10,30 @@ Item {
 
   default property alias content: contentHost.data
 
-  // Let padding affect size, not content position
-  implicitWidth: contentHost.implicitWidth + (useBackground ? padX * 2 : 0)
-  implicitHeight: contentHost.implicitHeight + (useBackground ? padY * 2 : 0)
+  readonly property int px: useBackground ? padX : 0
+  readonly property int py: useBackground ? padY : 0
 
-  // Critical for Item
+  implicitWidth: contentHost.implicitWidth + px * 2
+  implicitHeight: contentHost.implicitHeight + py * 2
+
   width: implicitWidth
   height: implicitHeight
 
   Rectangle {
-    id: bg
     visible: root.useBackground
     anchors.fill: parent
     radius: C.Appearance.pillRadius
     color: C.Appearance.bubbleBg
     antialiasing: true
-  
-    border.width: C.Appearance.pillBorderW
-    border.color: C.Appearance.pillBorderCol
+
+    // Border (matches your frame/bubble language)
+    border.width: (C.Appearance.pillBorderW !== undefined) ? C.Appearance.pillBorderW : 1
+    border.color: (C.Appearance.pillBorderCol !== undefined) ? C.Appearance.pillBorderCol : Qt.rgba(210/255, 190/255, 255/255, 0.35)
   }
 
   Item {
     id: contentHost
     anchors.centerIn: parent
-
-    // Make sure this item reports size from children
     implicitWidth: childrenRect.width
     implicitHeight: childrenRect.height
   }

@@ -15,7 +15,7 @@ QtObject {
 
   // Border ring thickness + where to place it INSIDE the hole
   property int border: 1
-  property int borderInset: -2
+  property int borderInset: -1
 
   // ---- palette (make it readable while testing) ----
   // This is the "ring tint" color (outside the hole). Lower alpha = subtler.
@@ -39,7 +39,7 @@ QtObject {
   property int bubbleBorderW: 1
   // property color bubbleBorderCol: Qt.rgba(210/255, 190/255, 255/255, 0.95)
 
-  property int bubblePad: 6
+  property int bubblePad: 5
   property int bubbleRadius: 17
 
   // If you set this, your CornerPatch window must also be that big or it will clip.
@@ -48,7 +48,7 @@ QtObject {
 
   // ---- pills (small islands for text) ----
   property int pillPadX: 10
-  property int pillPadY: 2
+  property int pillPadY: 1
   property int pillRadius: 999        // 999 => always pill
   property int pillFont: 10
 
