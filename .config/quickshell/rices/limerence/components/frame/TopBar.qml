@@ -7,7 +7,6 @@ import QtQuick.Layouts
 import "../../config" as C
 import "../widgets" as W
 import "../state" as S
-import "../services" as Sv
 
 PanelWindow {
   id: root
@@ -34,7 +33,6 @@ PanelWindow {
   property int targetSlots: 4
 
   property bool showSideIslands: true
-
   property bool wifiPopupOpen: false
 
   Timer {
@@ -108,37 +106,37 @@ PanelWindow {
     return Math.min(9, m)
   }
 
-  // ---- NEW: system stats provider (no visuals) ----
-  W.SystemStats {
-    id: stats
-  }
+  // ---- system stats provider ----
+  W.SystemStats { id: stats }
 
   Item {
     anchors.fill: parent
+
+    // Popup window (positioned relative to THIS PanelWindow)
+    W.WifiPopup {
+      parentWindow: root
+      open: root.wifiPopupOpen
+      onDismissed: root.wifiPopupOpen = false
+    }
 
     // ---- LEFT: CPU + Mem ----
     W.Pill {
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
       anchors.leftMargin: 6
-    
       useBackground: root.showSideIslands
-    
+
       Row {
         spacing: 8
-    
+
         Text {
           text: "CPU " + stats.cpuUsage + "%"
           color: "white"
           font.pixelSize: C.Appearance.pillFont
         }
-    
-        Rectangle {
-          width: 1
-          height: 12
-          color: Qt.rgba(1, 1, 1, 0.18)
-        }
-    
+
+        Rectangle { width: 1; height: 12; color: Qt.rgba(1, 1, 1, 0.18) }
+
         Text {
           text: "MEM " + stats.memUsage + "%"
           color: "white"
@@ -147,7 +145,7 @@ PanelWindow {
       }
     }
 
-    // ---- CENTER: your existing workspace island ----
+    // ---- CENTER: workspace island ----
     W.BubbleItem {
       anchors.centerIn: parent
 
@@ -182,18 +180,17 @@ PanelWindow {
       anchors.verticalCenter: parent.verticalCenter
       anchors.right: parent.right
       anchors.rightMargin: 6
-    
       useBackground: root.showSideIslands
-    
+
       Row {
         spacing: 8
-    
+
         W.WifiIcon {
           onClicked: root.wifiPopupOpen = !root.wifiPopupOpen
         }
-    
+
         Rectangle { width: 1; height: 12; color: Qt.rgba(1,1,1,0.18) }
-    
+
         W.Clock {
           color: "white"
           font.pixelSize: C.Appearance.pillFont
@@ -201,11 +198,6 @@ PanelWindow {
         }
       }
     }
-  }
-
-  W.WifiPopup {
-    screen: root.screen
-    open: root.wifiPopupOpen
   }
 }
 

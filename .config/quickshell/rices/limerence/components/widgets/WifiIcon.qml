@@ -4,18 +4,14 @@ import "../services" as Sv
 
 Item {
   id: root
+  implicitWidth: 18
+  implicitHeight: 18
+
   signal clicked()
 
-  property int size: C.Appearance.pillFont + 2
-
-  implicitWidth: size
-  implicitHeight: size
-
   function glyph() {
-    if (!Sv.WifiNm.ok) return "󰤭"
-    if (!Sv.WifiNm.wifiEnabled) return "󰤮"
-    if (!Sv.WifiNm.connected) return "󰤯"
-
+    if (!Sv.WifiNm.wifiEnabled) return "󰤮"   // off
+    if (!Sv.WifiNm.connected) return "󰤯"     // no connection
     const s = Sv.WifiNm.strength
     if (s >= 75) return "󰤨"
     if (s >= 50) return "󰤥"
@@ -27,8 +23,8 @@ Item {
     anchors.centerIn: parent
     text: root.glyph()
     color: "white"
-    font.pixelSize: root.size
     font.family: C.Appearance.iconFont
+    font.pixelSize: 14
   }
 
   MouseArea {

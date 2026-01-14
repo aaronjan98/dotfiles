@@ -6,226 +6,424 @@ import QtQuick.Layouts
 import "../../config" as C
 import "../services" as Sv
 
-PanelWindow {
-  id: win
-  required property ShellScreen screen
+Item {
+  id: api
+
+  required property QtObject parentWindow   // TopBar PanelWindow
   property bool open: false
+  signal dismissed()
 
-  screen: screen
+  // password / connect UI state
+  property string passwordSsid: ""
+  property bool showPassword: false
+  property string errorText: ""
+  property string connectingSsid: ""
 
-  anchors.top: true
-  anchors.right: true
+  function requestClose() {
+    dismissed() // TopBar sets wifiPopupOpen = false
+  }
 
-  // Drop it below the top bar
-  margins.top: C.Appearance.topH + 10
-  margins.right: 10
+  function openPasswordFor(ssid) {
+    errorText = ""
+    passwordSsid = ssid
+    showPassword = true
+  }
 
-  WlrLayershell.layer: WlrLayer.Top
-  WlrLayershell.exclusionMode: ExclusionMode.Ignore
-  exclusiveZone: 0
+  function clearPassword() {
+    showPassword = false
+    passwordSsid = ""
+    errorText = ""
+  }
 
-  // Make sure the window actually has size
-  implicitWidth: 340
-  implicitHeight: Math.max(220, body.implicitHeight)
+  function beginConnect(ssid, password) {
+    connectingSsid = ssid
+    errorText = ""
+    Sv.WifiNm.connect(ssid, password || "")
+  }
 
-  color: "transparent"
-  visible: open
+  // -------------------------------------------------
+  // SCRIM (fullscreen) – BEHIND popup
+  // -------------------------------------------------
+  PanelWindow {
+    id: scrim
+    screen: api.parentWindow.screen
+    visible: api.open
 
-  // Animate inner container (PanelWindow has no scale property)
-  Item {
-    id: container
-    anchors.fill: parent
+    anchors.top: true
+    anchors.bottom: true
+    anchors.left: true
+    anchors.right: true
 
-    opacity: win.open ? 1 : 0
-    scale: win.open ? 1 : 0.92
+    // IMPORTANT: Scrim is lower than popup
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    Behavior on opacity { NumberAnimation { duration: 140 } }
-    Behavior on scale { NumberAnimation { duration: 140 } }
+    // IMPORTANT: never steal keyboard focus
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    exclusiveZone: 0
+
+    color: "transparent"
+
+    Item {
+      anchors.fill: parent
+      focus: api.open
+
+      Keys.onEscapePressed: api.requestClose()
+
+      // click outside closes
+      MouseArea {
+        anchors.fill: parent
+        onClicked: api.requestClose()
+      }
+    }
+  }
+
+  // -------------------------------------------------
+  // POPUP as PanelWindow – ABOVE scrim, takes keyboard
+  // -------------------------------------------------
+  PanelWindow {
+    id: pop
+    screen: api.parentWindow.screen
+    visible: api.open
+
+    WlrLayershell.layer: WlrLayer.Overlay          // <-- ABOVE scrim
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.keyboardFocus: api.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    exclusiveZone: 0
+
+    anchors.top: true
+    anchors.left: true
+
+    // Position: below top bar, right-aligned to screen
+    margins.top: C.Appearance.topH + 10
+    margins.left: Math.max(0, api.parentWindow.screen.width - implicitWidth - 10)
+
+    color: "transparent"
+
+    implicitWidth: 360
+    implicitHeight: panel.implicitHeight
+
+    onVisibleChanged: {
+      if (visible) focusRoot.forceActiveFocus()
+      if (!visible) {
+        api.clearPassword()
+        api.connectingSsid = ""
+      }
+    }
 
     Rectangle {
-      id: body
-      anchors.fill: parent
+      id: panel
+      width: pop.implicitWidth
       radius: 14
-
-      color: Qt.rgba(35/255, 26/255, 60/255, 0.88)
-
+      color: Qt.rgba(35/255, 26/255, 60/255, 0.97)
       border.width: 1
       border.color: Qt.rgba(210/255, 190/255, 255/255, 0.35)
       antialiasing: true
 
-      // Let this rectangle have a meaningful implicit height
       implicitHeight: content.implicitHeight + 24
 
-      ColumnLayout {
-        id: content
+      // Open anim
+      opacity: api.open ? 1 : 0
+      scale: api.open ? 1 : 0.92
+      Behavior on opacity { NumberAnimation { duration: 140 } }
+      Behavior on scale { NumberAnimation { duration: 140 } }
+
+      // Ensure clicks inside do NOT close anything
+      MouseArea {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 10
+        onClicked: function(mouse) { mouse.accepted = true }
+      }
 
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 8
+      Item {
+        id: focusRoot
+        anchors.fill: parent
+        focus: api.open
 
-          Text {
-            text: "Wi-Fi"
-            color: "white"
-            font.pixelSize: 14
-            font.weight: 600
-          }
-
-          Item { Layout.fillWidth: true }
-
-          Text {
-            text: Sv.WifiNm.wifiEnabled ? "On" : "Off"
-            color: Qt.rgba(1,1,1,0.85)
-            font.pixelSize: 12
-          }
-
-          Rectangle {
-            width: 44
-            height: 22
-            radius: 999
-            color: Sv.WifiNm.wifiEnabled ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.08)
-            border.width: 1
-            border.color: Qt.rgba(1,1,1,0.18)
-
-            Rectangle {
-              width: 18
-              height: 18
-              radius: 999
-              y: 2
-              x: Sv.WifiNm.wifiEnabled ? (parent.width - width - 2) : 2
-              color: "white"
-              Behavior on x { NumberAnimation { duration: 120 } }
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: Sv.WifiNm.toggleWifi(!Sv.WifiNm.wifiEnabled)
-            }
-          }
-        }
-
-        Text {
-          Layout.fillWidth: true
-          text: Sv.WifiNm.connected ? ("Connected: " + Sv.WifiNm.ssid) : "Not connected"
-          color: Qt.rgba(1,1,1,0.9)
-          font.pixelSize: 12
-          elide: Text.ElideRight
-        }
-
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 8
-
-          Rectangle {
-            Layout.preferredHeight: 28
-            Layout.fillWidth: true
-            radius: 10
-            color: Qt.rgba(1,1,1,0.12)
-            border.width: 1
-            border.color: Qt.rgba(1,1,1,0.15)
-
-            Text {
-              anchors.centerIn: parent
-              text: Sv.WifiNm.scanning ? "Scanning…" : "Rescan"
-              color: "white"
-              font.pixelSize: 12
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              enabled: Sv.WifiNm.wifiEnabled && !Sv.WifiNm.scanning
-              cursorShape: Qt.PointingHandCursor
-              onClicked: Sv.WifiNm.rescan()
-            }
-          }
-
-          Rectangle {
-            Layout.preferredHeight: 28
-            Layout.preferredWidth: 110
-            radius: 10
-            color: Qt.rgba(1,1,1,0.12)
-            border.width: 1
-            border.color: Qt.rgba(1,1,1,0.15)
-
-            Text { anchors.centerIn: parent; text: "Disconnect"; color: "white"; font.pixelSize: 12 }
-
-            MouseArea {
-              anchors.fill: parent
-              enabled: Sv.WifiNm.connected
-              cursorShape: Qt.PointingHandCursor
-              onClicked: Sv.WifiNm.disconnect()
-            }
-          }
+        Keys.onEscapePressed: {
+          if (api.showPassword) api.clearPassword()
+          else api.requestClose()
         }
 
         ColumnLayout {
-          Layout.fillWidth: true
-          spacing: 6
+          id: content
+          anchors.fill: parent
+          anchors.margins: 12
+          spacing: 10
 
-          Repeater {
-            model: Sv.WifiNm.networks
+          // Header
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Text { text: "Wi-Fi"; color: "white"; font.pixelSize: 14; font.weight: 600 }
+            Item { Layout.fillWidth: true }
+            Text { text: Sv.WifiNm.wifiEnabled ? "On" : "Off"; color: Qt.rgba(1,1,1,0.85); font.pixelSize: 12 }
 
             Rectangle {
-              Layout.fillWidth: true
-              Layout.preferredHeight: 34
-              radius: 10
-              color: modelData.active ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.10)
-              border.width: 1
-              border.color: Qt.rgba(1,1,1,0.15)
+              width: 44; height: 22; radius: 999
+              color: Sv.WifiNm.wifiEnabled ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.08)
+              border.width: 1; border.color: Qt.rgba(1,1,1,0.18)
 
-              RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
-
-                Text {
-                  text:
-                    (modelData.strength >= 75 ? "󰤨" :
-                     modelData.strength >= 50 ? "󰤥" :
-                     modelData.strength >= 25 ? "󰤢" : "󰤟")
-                  color: "white"
-                  font.pixelSize: 14
-                  font.family: C.Appearance.iconFont
-                }
-
-                Text {
-                  text: modelData.secure ? "󰌾" : ""
-                  color: Qt.rgba(1,1,1,0.75)
-                  font.pixelSize: 13
-                  font.family: C.Appearance.iconFont
-                }
-
-                Text {
-                  Layout.fillWidth: true
-                  text: modelData.ssid
-                  color: "white"
-                  font.pixelSize: 12
-                  elide: Text.ElideRight
-                  font.weight: modelData.active ? 600 : 400
-                }
-
-                Text {
-                  text: modelData.active ? "Connected" : ""
-                  color: Qt.rgba(1,1,1,0.75)
-                  font.pixelSize: 11
-                }
+              Rectangle {
+                width: 18; height: 18; radius: 999
+                y: 2
+                x: Sv.WifiNm.wifiEnabled ? (parent.width - width - 2) : 2
+                color: "white"
+                Behavior on x { NumberAnimation { duration: 120 } }
               }
 
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                enabled: Sv.WifiNm.wifiEnabled
+                onClicked: Sv.WifiNm.toggleWifi(!Sv.WifiNm.wifiEnabled)
+              }
+            }
+          }
 
-                onClicked: {
-                  if (modelData.active) Sv.WifiNm.disconnect()
-                  else Sv.WifiNm.connect(modelData.ssid, "")
+          Text {
+            Layout.fillWidth: true
+            text: Sv.WifiNm.connected ? ("Connected: " + Sv.WifiNm.ssid) : "Not connected"
+            color: Qt.rgba(1,1,1,0.9)
+            font.pixelSize: 12
+            elide: Text.ElideRight
+          }
+
+          Text {
+            Layout.fillWidth: true
+            visible: api.errorText.length > 0
+            text: api.errorText
+            color: Qt.rgba(1, 0.55, 0.55, 0.95)
+            font.pixelSize: 11
+            wrapMode: Text.Wrap
+          }
+
+          // Actions
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Rectangle {
+              Layout.fillWidth: true
+              Layout.preferredHeight: 28
+              radius: 10
+              color: Qt.rgba(1,1,1,0.12)
+              border.width: 1
+              border.color: Qt.rgba(1,1,1,0.15)
+
+              Text { anchors.centerIn: parent; text: Sv.WifiNm.scanning ? "Scanning…" : "Rescan"; color: "white"; font.pixelSize: 12 }
+
+              MouseArea {
+                anchors.fill: parent
+                enabled: Sv.WifiNm.wifiEnabled && !Sv.WifiNm.scanning
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Sv.WifiNm.rescan()
+              }
+            }
+
+            Rectangle {
+              Layout.preferredWidth: 110
+              Layout.preferredHeight: 28
+              radius: 10
+              color: Qt.rgba(1,1,1,0.12)
+              border.width: 1
+              border.color: Qt.rgba(1,1,1,0.15)
+
+              Text { anchors.centerIn: parent; text: "Close"; color: "white"; font.pixelSize: 12 }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: api.requestClose()
+              }
+            }
+          }
+
+          // Network list
+          Flickable {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 320
+            clip: true
+
+            contentWidth: width
+            contentHeight: listCol.implicitHeight
+
+            ColumnLayout {
+              id: listCol
+              width: parent.width
+              spacing: 6
+
+              Repeater {
+                model: Sv.WifiNm.networks
+
+                ColumnLayout {
+                  Layout.fillWidth: true
+                  spacing: 6
+
+                  Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 34
+                    radius: 10
+                    color: modelData.active ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.10)
+                    border.width: 1
+                    border.color: Qt.rgba(1,1,1,0.15)
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 8
+                      spacing: 8
+
+                      Text {
+                        text:
+                          (modelData.strength >= 75 ? "󰤨" :
+                           modelData.strength >= 50 ? "󰤥" :
+                           modelData.strength >= 25 ? "󰤢" : "󰤟")
+                        color: "white"
+                        font.pixelSize: 14
+                        font.family: C.Appearance.iconFont
+                      }
+
+                      Text {
+                        text: modelData.secure ? "󰌾" : ""
+                        color: Qt.rgba(1,1,1,0.75)
+                        font.pixelSize: 13
+                        font.family: C.Appearance.iconFont
+                      }
+
+                      Text {
+                        Layout.fillWidth: true
+                        text: modelData.ssid
+                        color: "white"
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                        font.weight: modelData.active ? 600 : 400
+                      }
+
+                      Text {
+                        text: (api.connectingSsid === modelData.ssid) ? "…" : ""
+                        color: Qt.rgba(1,1,1,0.75)
+                        font.pixelSize: 12
+                      }
+                    }
+
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      enabled: Sv.WifiNm.wifiEnabled
+
+                      onClicked: {
+                        api.errorText = ""
+
+                        if (modelData.active) {
+                          Sv.WifiNm.disconnect()
+                          api.clearPassword()
+                          return
+                        }
+
+                        if (modelData.secure) {
+                          api.openPasswordFor(modelData.ssid)
+                          return
+                        }
+
+                        api.clearPassword()
+                        api.beginConnect(modelData.ssid, "")
+                      }
+                    }
+                  }
+
+                  Rectangle {
+                    visible: api.showPassword && api.passwordSsid === modelData.ssid
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: visible ? inner.implicitHeight + 20 : 0
+                    opacity: visible ? 1 : 0
+                    radius: 10
+                    color: Qt.rgba(0,0,0,0.30)
+                    border.width: 1
+                    border.color: Qt.rgba(1,1,1,0.18)
+
+                    ColumnLayout {
+                      id: inner
+                      anchors.left: parent.left
+                      anchors.right: parent.right
+                      anchors.top: parent.top
+                      anchors.margins: 10
+                      spacing: 8
+
+                      Text {
+                        Layout.fillWidth: true
+                        text: "Password for: " + modelData.ssid
+                        color: "white"
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                      }
+
+                      Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 32
+                        radius: 8
+                        color: Qt.rgba(0,0,0,0.45)
+                        border.width: 1
+                        border.color: Qt.rgba(1,1,1,0.22)
+
+                        TextInput {
+                          id: pwLocal
+                          anchors.fill: parent
+                          anchors.margins: 8
+                          color: "white"
+                          echoMode: TextInput.Password
+                          cursorVisible: true
+                          font.pixelSize: 12
+                          Component.onCompleted: pwLocal.forceActiveFocus()
+                          Keys.onReturnPressed: api.beginConnect(modelData.ssid, pwLocal.text)
+                          Keys.onEscapePressed: api.clearPassword()
+                        }
+                      }
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Rectangle {
+                          Layout.fillWidth: true
+                          Layout.preferredHeight: 28
+                          radius: 8
+                          color: Qt.rgba(1,1,1,0.10)
+                          border.width: 1
+                          border.color: Qt.rgba(1,1,1,0.14)
+
+                          Text { anchors.centerIn: parent; text: "Cancel"; color: "white"; font.pixelSize: 12 }
+                          MouseArea { anchors.fill: parent; onClicked: api.clearPassword() }
+                        }
+
+                        Rectangle {
+                          Layout.fillWidth: true
+                          Layout.preferredHeight: 28
+                          radius: 8
+                          color: Qt.rgba(1,1,1,0.18)
+                          border.width: 1
+                          border.color: Qt.rgba(1,1,1,0.16)
+
+                          Text { anchors.centerIn: parent; text: "Connect"; color: "white"; font.pixelSize: 12 }
+                          MouseArea { anchors.fill: parent; onClicked: api.beginConnect(modelData.ssid, pwLocal.text) }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
           }
+        }
+      }
+    }
+
+    Connections {
+      target: Sv.WifiNm
+      function onConnectFinished(ssid, success, message) {
+        if (api.connectingSsid === ssid) api.connectingSsid = ""
+        if (success) {
+          api.clearPassword()
+        } else {
+          api.errorText = (message && message.length) ? message : "Failed to connect."
         }
       }
     }
