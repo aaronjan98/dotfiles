@@ -9,7 +9,7 @@ PanelWindow {
   required property ShellScreen screen
   screen: screen
 
-  WlrLayershell.layer: WlrLayer.Overlay
+  WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
   exclusiveZone: 0
 

@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import QtQuick
+import QtQuick.Layouts
 
 import "../../config" as C
 import "../widgets" as W
@@ -28,11 +29,9 @@ PanelWindow {
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
   readonly property int slot: (wsId <= 9) ? wsId : (wsId % 10)
 
-  // --- UI count latch (expand immediately, shrink later) ---
   property int displaySlots: 4
   property int targetSlots: 4
 
-  // Poll because wsList changes don't reliably emit wsListChanged
   Timer {
     id: slotsPollTimer
     interval: 500
@@ -47,7 +46,6 @@ PanelWindow {
     displaySlots = t
   }
 
-  // Keep “seen” slot so scripts + UI can share direction/state if needed later.
   property int lastSlotSeen: slot
   onSlotChanged: {
     S.NavState.prevSlot = lastSlotSeen
@@ -60,9 +58,7 @@ PanelWindow {
     targetSlots = displaySlots
   }
 
-  function workspaceIdFor(dom, slotN) {
-    return (dom === 1) ? slotN : (dom * 10 + slotN)
-  }
+  function workspaceIdFor(dom, slotN) { return (dom === 1) ? slotN : (dom * 10 + slotN) }
 
   function toplevelCountForWorkspaceId(id) {
     for (var i = 0; i < wsList.length; i++) {
@@ -107,9 +103,44 @@ PanelWindow {
     return Math.min(9, m)
   }
 
+  // ---- NEW: system stats provider (no visuals) ----
+  W.SystemStats {
+    id: stats
+  }
+
   Item {
     anchors.fill: parent
 
+    // ---- LEFT: CPU + Mem ----
+    W.BubbleItem {
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+      anchors.leftMargin: 6
+
+      RowLayout {
+        spacing: 8
+
+        Text {
+          text: "CPU " + stats.cpuUsage + "%"
+          color: "white"
+          font.pixelSize: 12
+        }
+
+        Rectangle {
+          width: 1
+          height: 12
+          color: Qt.rgba(1, 1, 1, 0.18)
+        }
+
+        Text {
+          text: "MEM " + stats.memUsage + "%"
+          color: "white"
+          font.pixelSize: 12
+        }
+      }
+    }
+
+    // ---- CENTER: your existing workspace island ----
     W.BubbleItem {
       anchors.centerIn: parent
 
@@ -135,6 +166,23 @@ PanelWindow {
           S.DomainMemory.setLastSlot(root.domain, slotN)
           S.DomainMemory.ensureVisited(root.domain)
           Hyprland.dispatch("workspace " + targetWs)
+        }
+      }
+    }
+
+    // ---- RIGHT: timer/clock ----
+    W.BubbleItem {
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      anchors.rightMargin: 6
+
+      RowLayout {
+        spacing: 8
+
+        W.Clock {
+          color: "white"
+          font.pixelSize: 12
+          format: "ddd, MMM dd HH:mm:ss"
         }
       }
     }
