@@ -4,8 +4,8 @@ import "../services" as Sv
 
 Item {
   id: root
-  implicitWidth: 18
-  implicitHeight: 18
+  implicitWidth: 10
+  implicitHeight: 14
 
   signal clicked()
 

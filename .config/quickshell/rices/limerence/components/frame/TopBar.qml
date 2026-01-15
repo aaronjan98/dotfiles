@@ -34,6 +34,7 @@ PanelWindow {
 
   property bool showSideIslands: true
   property bool wifiPopupOpen: false
+  property bool btPopupOpen: false
 
   Timer {
     id: slotsPollTimer
@@ -119,6 +120,13 @@ PanelWindow {
       onDismissed: root.wifiPopupOpen = false
     }
 
+    // Popup window for Bluetooth
+    W.BluetoothPopup {
+      parentWindow: root
+      open: root.btPopupOpen
+      onDismissed: root.btPopupOpen = false
+    }
+
     // ---- LEFT: CPU + Mem ----
     W.Pill {
       anchors.verticalCenter: parent.verticalCenter
@@ -135,7 +143,7 @@ PanelWindow {
           font.pixelSize: C.Appearance.pillFont
         }
 
-        Rectangle { width: 1; height: 12; color: Qt.rgba(1, 1, 1, 0.18) }
+        Rectangle { width: 1; height: 14; color: Qt.rgba(1, 1, 1, 0.18) }
 
         Text {
           text: "MEM " + stats.memUsage + "%"
@@ -189,7 +197,13 @@ PanelWindow {
           onClicked: root.wifiPopupOpen = !root.wifiPopupOpen
         }
 
-        Rectangle { width: 1; height: 12; color: Qt.rgba(1,1,1,0.18) }
+        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+
+        W.BluetoothIcon {
+          onClicked: root.btPopupOpen = !root.btPopupOpen
+        }
+
+        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
 
         W.Clock {
           color: "white"

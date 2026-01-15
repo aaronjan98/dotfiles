@@ -3,7 +3,7 @@ import QtQuick
 
 QtObject {
   // ---- bar thickness ----
-  property int topH: 26
+  property int topH: 30
   property int leftW: 28
 
   // ---- content frame geometry ----
