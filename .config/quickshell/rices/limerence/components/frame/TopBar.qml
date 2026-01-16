@@ -137,6 +137,10 @@ PanelWindow {
       Row {
         spacing: 8
 
+        W.BatteryIcon { }
+
+        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+
         Text {
           text: "CPU " + stats.cpuUsage + "%"
           color: "white"
