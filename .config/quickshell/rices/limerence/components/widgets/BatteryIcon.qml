@@ -76,7 +76,6 @@ Item {
     var t = Math.max(0, Math.min(1, p / 100.0))
 
     // a simple RGB lerp: red -> green
-    // (you can swap to HSV if you want different feel)
     var r = (1.0 - t) * 1.0 + t * 0.35
     var g = (1.0 - t) * 0.25 + t * 1.0
     var b = (1.0 - t) * 0.25 + t * 0.55

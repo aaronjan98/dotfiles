@@ -1,3 +1,5 @@
 singleton WifiNm 1.0 WifiNm.qml
 singleton VolumeCtl 1.0 VolumeCtl.qml
 singleton BatterySys 1.0 BatterySys.qml
+singleton BrightnessCtl 1.0 BrightnessCtl.qml
+singleton GammaCtl 1.0 GammaCtl.qml

@@ -36,6 +36,8 @@ PanelWindow {
   property bool wifiPopupOpen: false
   property bool btPopupOpen: false
 
+  property bool brightPopupOpen: false
+
   Timer {
     id: slotsPollTimer
     interval: 500
@@ -127,6 +129,13 @@ PanelWindow {
       onDismissed: root.btPopupOpen = false
     }
 
+    // Display brightness and keyboard backlight
+    W.BrightnessPopup {
+      parentWindow: root
+      open: root.brightPopupOpen
+      onDismissed: root.brightPopupOpen = false
+    }
+
     // ---- LEFT: CPU + Mem ----
     W.Pill {
       anchors.verticalCenter: parent.verticalCenter
@@ -210,6 +219,12 @@ PanelWindow {
         Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
 
         W.VolumeIcon { }
+
+        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+        
+        W.BrightnessIcon {
+          onClicked: root.brightPopupOpen = !root.brightPopupOpen
+        }
 
         Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
 
