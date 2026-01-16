@@ -1,2 +1,2 @@
 singleton WifiNm 1.0 WifiNm.qml
-
+singleton VolumeCtl 1.0 VolumeCtl.qml

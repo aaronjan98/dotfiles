@@ -1,6 +1,6 @@
 import QtQuick
 import "../../config" as C
-import "../services" as Sv
+import "../services" 1.0 as Sv
 
 Item {
   id: root
