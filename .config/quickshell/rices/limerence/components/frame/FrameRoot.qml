@@ -13,6 +13,9 @@ Item {
   Frame.TopBar { screen: root.screen }
   Frame.LeftBar { screen: root.screen }
 
+  // Notification toast & center window
+  Frame.NotifLayer { screen: root.screen }
+
   // Overlay always top
   Frame.CornerPatch { screen: root.screen }
 }

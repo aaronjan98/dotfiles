@@ -3,3 +3,5 @@ singleton VolumeCtl 1.0 VolumeCtl.qml
 singleton BatterySys 1.0 BatterySys.qml
 singleton BrightnessCtl 1.0 BrightnessCtl.qml
 singleton GammaCtl 1.0 GammaCtl.qml
+singleton Notifs 1.0 Notifs.qml
+NotifsIpc 1.0 NotifsIpc.qml

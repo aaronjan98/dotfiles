@@ -1,0 +1,1 @@
+/home/aj/.config/quickshell/rices/limerence/shell.qml

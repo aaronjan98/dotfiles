@@ -228,6 +228,10 @@ PanelWindow {
 
         Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
 
+        W.NotificationIcon { }
+
+        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+
         W.Clock {
           color: "white"
           font.pixelSize: C.Appearance.pillFont
