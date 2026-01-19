@@ -31,6 +31,9 @@ PanelWindow {
   property int displayDomains: 3
   property int targetDomains: 3
 
+  // Power popup state
+  property bool powerOpen: false
+
   Timer {
     id: shrinkDomainsTimer
     interval: 350
@@ -108,6 +111,7 @@ PanelWindow {
   Item {
     anchors.fill: parent
 
+    // ----- Center domain dots -----
     W.BubbleItem {
       anchors.verticalCenter: parent.verticalCenter
       anchors.horizontalCenter: parent.horizontalCenter
@@ -136,6 +140,24 @@ PanelWindow {
         }
       }
     }
+
+    // ----- Bottom power button -----
+    W.PowerIcon {
+      id: powerIcon
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.bottom: parent.bottom
+      anchors.bottomMargin: 6
+
+      active: root.powerOpen
+      onClicked: root.powerOpen = !root.powerOpen
+    }
+  }
+
+  // IMPORTANT: Popup is its OWN window so it can draw outside this LeftBar lane
+  W.PowerPopup {
+    screen: root.screen
+    open: root.powerOpen
+    onDismissed: root.powerOpen = false
   }
 }
 

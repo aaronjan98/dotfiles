@@ -5,3 +5,5 @@ singleton BrightnessCtl 1.0 BrightnessCtl.qml
 singleton GammaCtl 1.0 GammaCtl.qml
 singleton Notifs 1.0 Notifs.qml
 NotifsIpc 1.0 NotifsIpc.qml
+PowerIcon 1.0 PowerIcon.qml
+PowerPopup 1.0 PowerPopup.qml

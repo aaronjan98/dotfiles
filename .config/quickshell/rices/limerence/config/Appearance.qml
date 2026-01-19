@@ -28,6 +28,15 @@ QtObject {
   property int nixBubbleSize: 30
   property int nixIconPad: 3
 
+  // ---- popups ----
+  // Make this notably more opaque than bubbleBg so popups match WiFi popup readability.
+  property color popupBg: Qt.rgba(35/255, 26/255, 60/255, 0.95)
+  // Dark glaze on top of popupBg to deepen it further.
+  property real popupOverlayA: 0.28
+  // match wifi popup spacing
+  property int popupPad: 12
+  property int popupRowGap: 8
+
   // ---- pills ----
   property int pillPadX: 10
   property int pillPadY: 3
@@ -39,7 +48,6 @@ QtObject {
   property color pillBorderCol: Qt.rgba(210/255, 190/255, 255/255, 0.35)
 
   // ---- fonts ----
-  // After installing nerd-fonts.symbols-only, set to exactly what fc-list shows.
   property string iconFont: "Symbols Nerd Font"
 }
 
