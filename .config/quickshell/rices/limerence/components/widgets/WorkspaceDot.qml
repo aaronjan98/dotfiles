@@ -1,10 +1,13 @@
 import QtQuick
+import "../../config" as C
 
 Item {
   id: root
   property bool active: false
   property bool occupied: false
-  property int dotSize: 7
+
+  // Default now scaled via Appearance
+  property int dotSize: C.Appearance.dotSize
 
   width: dotSize
   height: dotSize
@@ -22,8 +25,9 @@ Item {
       ? root.activeOpacity
       : (root.occupied ? 0.60 : 0.35)
 
+    // Time should not scale; use Appearance token for consistency
     Behavior on opacity {
-      NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+      NumberAnimation { duration: C.Appearance.animMsFast; easing.type: Easing.OutCubic }
     }
   }
 }

@@ -4,8 +4,8 @@ import Quickshell.Bluetooth
 
 Item {
   id: root
-  implicitWidth: 12
-  implicitHeight: 14
+  implicitWidth: C.Appearance.topbarIconBoxW
+  implicitHeight: C.Appearance.topbarIconBoxH
 
   signal clicked()
 
@@ -35,7 +35,7 @@ Item {
       : Qt.rgba(1,1,1,0.55)
 
     font.family: C.Appearance.iconFont
-    font.pixelSize: 14
+    font.pixelSize: C.Appearance.topbarIconPx
   }
 
   MouseArea {

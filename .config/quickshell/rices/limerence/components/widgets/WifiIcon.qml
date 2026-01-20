@@ -4,8 +4,8 @@ import "../services" 1.0 as Sv
 
 Item {
   id: root
-  implicitWidth: 10
-  implicitHeight: 14
+  implicitWidth: C.Appearance.topbarIconBoxW
+  implicitHeight: C.Appearance.topbarIconBoxH
 
   signal clicked()
 
@@ -24,7 +24,7 @@ Item {
     text: root.glyph()
     color: "white"
     font.family: C.Appearance.iconFont
-    font.pixelSize: 14
+    font.pixelSize: C.Appearance.topbarIconPx
   }
 
   MouseArea {

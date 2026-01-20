@@ -35,7 +35,6 @@ PanelWindow {
   property bool showSideIslands: true
   property bool wifiPopupOpen: false
   property bool btPopupOpen: false
-
   property bool brightPopupOpen: false
 
   Timer {
@@ -115,21 +114,19 @@ PanelWindow {
   Item {
     anchors.fill: parent
 
-    // Popup window (positioned relative to THIS PanelWindow)
+    // Popup windows (positioned relative to THIS PanelWindow)
     W.WifiPopup {
       parentWindow: root
       open: root.wifiPopupOpen
       onDismissed: root.wifiPopupOpen = false
     }
 
-    // Popup window for Bluetooth
     W.BluetoothPopup {
       parentWindow: root
       open: root.btPopupOpen
       onDismissed: root.btPopupOpen = false
     }
 
-    // Display brightness and keyboard backlight
     W.BrightnessPopup {
       parentWindow: root
       open: root.brightPopupOpen
@@ -140,15 +137,15 @@ PanelWindow {
     W.Pill {
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
-      anchors.leftMargin: 6
+      anchors.leftMargin: C.Appearance.m6
       useBackground: root.showSideIslands
 
       Row {
-        spacing: 8
+        spacing: C.Appearance.m8
 
         W.BatteryIcon { }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
         Text {
           text: "CPU " + stats.cpuUsage + "%"
@@ -156,7 +153,7 @@ PanelWindow {
           font.pixelSize: C.Appearance.pillFont
         }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1, 1, 1, 0.18) }
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
         Text {
           text: "MEM " + stats.memUsage + "%"
@@ -174,10 +171,8 @@ PanelWindow {
         axis: "h"
         count: root.displaySlots
         activeIndex: root.slot - 1
-        dotSize: 7
-        pillFactor: 2.1
-        gap: 4
-        animMs: 140
+
+        // Use DotTrack defaults (scaled): dotSize/gap/pillFactor/animMs
 
         occupiedFn: function(i) {
           var slotN = i + 1
@@ -200,37 +195,31 @@ PanelWindow {
     W.Pill {
       anchors.verticalCenter: parent.verticalCenter
       anchors.right: parent.right
-      anchors.rightMargin: 6
+      anchors.rightMargin: C.Appearance.m6
       useBackground: root.showSideIslands
 
       Row {
-        spacing: 8
+        spacing: C.Appearance.m8
 
-        W.WifiIcon {
-          onClicked: root.wifiPopupOpen = !root.wifiPopupOpen
-        }
+        W.WifiIcon { onClicked: root.wifiPopupOpen = !root.wifiPopupOpen }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
-        W.BluetoothIcon {
-          onClicked: root.btPopupOpen = !root.btPopupOpen
-        }
+        W.BluetoothIcon { onClicked: root.btPopupOpen = !root.btPopupOpen }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
         W.VolumeIcon { }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
-        
-        W.BrightnessIcon {
-          onClicked: root.brightPopupOpen = !root.brightPopupOpen
-        }
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+        W.BrightnessIcon { onClicked: root.brightPopupOpen = !root.brightPopupOpen }
+
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
         W.NotificationIcon { }
 
-        Rectangle { width: 1; height: 14; color: Qt.rgba(1,1,1,0.18) }
+        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
         W.Clock {
           color: "white"

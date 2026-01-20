@@ -10,7 +10,7 @@ Item {
   width: implicitWidth
   height: implicitHeight
 
-  // How many % per scroll notch
+  // How many % per scroll notch (behavior, do not scale)
   property int step: 5
 
   function glyph() {
@@ -33,20 +33,20 @@ Item {
 
     Row {
       id: row
-      spacing: 6
+      spacing: C.Appearance.m6
 
       Text {
         text: root.glyph()
         color: "white"
         font.family: C.Appearance.iconFont
-        font.pixelSize: C.Appearance.pillFont + 4   // icon a bit bigger
+        font.pixelSize: C.Appearance.pillIconPx   // scaled icon size
       }
-      
+
       Text {
         visible: Sv.VolumeCtl && Sv.VolumeCtl.ok
         text: Sv.VolumeCtl ? (Sv.VolumeCtl.percent + "%") : ""
         color: "white"
-        font.pixelSize: C.Appearance.pillFont       // matches your bar text
+        font.pixelSize: C.Appearance.pillFont
       }
     }
   }

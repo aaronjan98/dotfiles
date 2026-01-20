@@ -1,18 +1,22 @@
 import QtQuick
-import "../widgets" as W
+import "../../config" as C
 
 Item {
   id: root
 
   // public API
   property int count: 4
-  property int activeIndex: 0          // 0-based
+  property int activeIndex: 0                          // 0-based
   property var occupiedFn: function(i){ return false }  // (i)->bool
-  property string axis: "h"            // "h" or "v"
-  property int dotSize: 7
-  property real pillFactor: 2.1
-  property int gap: 4
-  property int animMs: 140
+  property string axis: "h"                            // "h" or "v"
+
+  // Defaults now come from Appearance (scaled)
+  property int dotSize: C.Appearance.dotSize
+  property real pillFactor: C.Appearance.pillFactor     // ratio; do not scale
+  property int gap: (axis === "v") ? C.Appearance.dotGapV : C.Appearance.dotGapH
+
+  // Time should not scale
+  property int animMs: C.Appearance.animMsFast
 
   signal clicked(int index)
 
@@ -63,8 +67,8 @@ Item {
         return py
       }
 
-      Behavior on x { NumberAnimation { duration: root.animMs; easing.type: Easing.OutCubic } }
-      Behavior on y { NumberAnimation { duration: root.animMs; easing.type: Easing.OutCubic } }
+      Behavior on x      { NumberAnimation { duration: root.animMs; easing.type: Easing.OutCubic } }
+      Behavior on y      { NumberAnimation { duration: root.animMs; easing.type: Easing.OutCubic } }
       Behavior on width  { NumberAnimation { duration: root.animMs; easing.type: Easing.OutCubic } }
       Behavior on height { NumberAnimation { duration: root.animMs; easing.type: Easing.OutCubic } }
 

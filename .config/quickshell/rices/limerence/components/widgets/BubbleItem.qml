@@ -7,7 +7,7 @@ Rectangle {
   // If >0, forces square size. If 0, bubble auto-sizes to content.
   property int bubbleSize: 0
 
-  // NEW: only add a click-catcher if you actually want the bubble itself clickable
+  // Only add a click-catcher if you actually want the bubble itself clickable
   property bool clickable: false
 
   signal clicked()
@@ -17,7 +17,7 @@ Rectangle {
   antialiasing: true
   clip: true
 
-  border.width: C.Appearance.bubbleBorderW
+  border.width: Math.max(1, C.Appearance.bubbleBorderW)
   border.color: C.Appearance.borderCol
 
   implicitWidth: bubbleSize > 0 ? bubbleSize : (contentBox.implicitWidth + C.Appearance.bubblePad * 2)
@@ -38,9 +38,16 @@ Rectangle {
   MouseArea {
     anchors.fill: parent
     enabled: bubble.clickable
-    hoverEnabled: true
-    cursorShape: Qt.PointingHandCursor
-    onClicked: bubble.clicked()
+    hoverEnabled: bubble.clickable
+    cursorShape: bubble.clickable ? Qt.PointingHandCursor : Qt.ArrowCursor
+
+    acceptedButtons: Qt.LeftButton
+    propagateComposedEvents: true
+
+    onClicked: {
+      bubble.clicked()
+      mouse.accepted = true
+    }
   }
 }
 

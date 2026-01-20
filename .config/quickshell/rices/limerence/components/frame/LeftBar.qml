@@ -120,10 +120,8 @@ PanelWindow {
         axis: "v"
         count: root.displayDomains
         activeIndex: root.domain - 1
-        dotSize: 7
-        pillFactor: 2.1
-        gap: 6
-        animMs: 140
+
+        // Use DotTrack defaults (scaled): dotSize/gap/pillFactor/animMs
 
         occupiedFn: function(i) {
           var domN = i + 1
@@ -146,7 +144,7 @@ PanelWindow {
       id: powerIcon
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.bottom: parent.bottom
-      anchors.bottomMargin: 6
+      anchors.bottomMargin: C.Appearance.m6
 
       active: root.powerOpen
       onClicked: root.powerOpen = !root.powerOpen

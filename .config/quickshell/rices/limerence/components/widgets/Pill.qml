@@ -25,10 +25,11 @@ Item {
     radius: C.Appearance.pillRadius
     color: C.Appearance.bubbleBg
     antialiasing: true
+    clip: true
 
     // Border (matches your frame/bubble language)
-    border.width: (C.Appearance.pillBorderW !== undefined) ? C.Appearance.pillBorderW : 1
-    border.color: (C.Appearance.pillBorderCol !== undefined) ? C.Appearance.pillBorderCol : Qt.rgba(210/255, 190/255, 255/255, 0.35)
+    border.width: root.useBackground ? Math.max(1, C.Appearance.pillBorderW) : 0
+    border.color: C.Appearance.pillBorderCol
   }
 
   Item {
