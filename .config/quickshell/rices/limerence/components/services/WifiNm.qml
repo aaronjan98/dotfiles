@@ -22,8 +22,12 @@ QtObject {
   // ---------------------------
   function refresh() {
     wifiGeneralProc.running = true
-    wifiActiveProc.running = true
     wifiDevProc.running = true
+    wifiActiveProc.running = true
+
+    // update signal for the currently connected AP
+    // without forcing a rescan.
+    wifiSignalProc.running = true
   }
 
   function rescan() {
@@ -65,7 +69,6 @@ QtObject {
 
   function runNext() {
     if (_queue.length === 0) {
-      // done
       root.refresh()
       root.rescan()
       root.connectFinished(_queueSsid, !_queueHadError, _queueErr)
@@ -131,29 +134,11 @@ QtObject {
         root.ok = true
         if (!data) return
         root.wifiEnabled = data.trim() === "enabled"
-      }
-    }
-    stderr: SplitParser { onRead: _ => root.ok = false }
-  }
-
-  property var wifiActiveProc: Process {
-    // "yes:<ssid>:<signal>" or empty
-    command: ["sh", "-c", "nmcli -t -f ACTIVE,SSID,SIGNAL dev wifi | sed -n 's/^yes://p' | head -n1"]
-    stdout: SplitParser {
-      onRead: data => {
-        root.ok = true
-        const line = (data || "").trim()
-        if (!line) {
+        if (!root.wifiEnabled) {
           root.connected = false
           root.ssid = ""
           root.strength = 0
-          return
         }
-        const parts = line.split(":")
-        root.connected = true
-        root.ssid = parts[0] || ""
-        const sig = parseInt(parts[1])
-        root.strength = isNaN(sig) ? 0 : sig
       }
     }
     stderr: SplitParser { onRead: _ => root.ok = false }
@@ -165,6 +150,86 @@ QtObject {
       onRead: data => {
         root.ok = true
         root.wifiDevice = (data || "").trim()
+      }
+    }
+    stderr: SplitParser { onRead: _ => root.ok = false }
+  }
+
+  // Authoritative connection state (connected/disconnected)
+  property var wifiActiveProc: Process {
+    command: ["sh", "-c",
+      "dev=$(nmcli -t -f DEVICE,TYPE dev | awk -F: '$2==\"wifi\"{print $1; exit}'); " +
+      "if [ -n \"$dev\" ]; then nmcli -t -f GENERAL.STATE,GENERAL.CONNECTION dev show \"$dev\"; fi"
+    ]
+
+    stdout: SplitParser {
+      id: activeParser
+      property int state: 0
+      property string con: ""
+
+      onRead: data => {
+        root.ok = true
+        const line = (data || "").trim()
+        if (!line) return
+
+        if (line.indexOf("GENERAL.STATE:") === 0) {
+          const v = line.split(":").slice(1).join(":").trim()
+          const n = parseInt(v)
+          activeParser.state = isNaN(n) ? 0 : n
+        } else if (line.indexOf("GENERAL.CONNECTION:") === 0) {
+          activeParser.con = line.split(":").slice(1).join(":").trim()
+        }
+      }
+    }
+
+    onRunningChanged: {
+      if (!running) {
+        const st = activeParser.state
+        const c = activeParser.con
+
+        const nowConnected = (st === 100) && c && c !== "--"
+        root.connected = nowConnected
+
+        // NOTE: GENERAL.CONNECTION is the connection profile name.
+        // We'll overwrite root.ssid with the real SSID in wifiSignalProc when possible.
+        if (!nowConnected) {
+          root.ssid = ""
+          root.strength = 0
+        }
+
+        activeParser.state = 0
+        activeParser.con = ""
+      }
+    }
+
+    stderr: SplitParser { onRead: _ => root.ok = false }
+  }
+
+  // NEW: fetch signal/SSID of currently associated AP WITHOUT rescanning.
+  // This is what drives the icon bars in real time.
+  property var wifiSignalProc: Process {
+    command: ["sh", "-c", "nmcli -t -f IN-USE,SSID,SIGNAL dev wifi list --rescan no | sed -n 's/^\\*://p' | head -n1"]
+    stdout: SplitParser {
+      onRead: data => {
+        root.ok = true
+        const line = (data || "").trim()
+        if (!line) {
+          // No active AP line (either disconnected or NM not ready)
+          if (!root.connected) root.strength = 0
+          return
+        }
+
+        // line is "SSID:SIGNAL"
+        const parts = line.split(":")
+        const apSsid = parts[0] || ""
+        const sig = parseInt(parts[1])
+
+        // If we are connected, this should be the authoritative signal.
+        // Also set SSID to match the actual network name.
+        if (root.connected) {
+          root.ssid = apSsid
+          root.strength = isNaN(sig) ? 0 : sig
+        }
       }
     }
     stderr: SplitParser { onRead: _ => root.ok = false }
@@ -245,6 +310,9 @@ QtObject {
 
         root.networks = deduped.slice(0, 12)
         listParser.rows = []
+
+        // Also refresh connected signal right after a scan (keeps things in sync)
+        wifiSignalProc.running = true
       }
     }
 
@@ -292,17 +360,11 @@ QtObject {
         const pw = connectProc._password
 
         if (msg.indexOf("key-mgmt") !== -1 && pw && pw.length > 0) {
-          // Explicitly define wpa-psk connection and bring it up.
-          // We use a distinct con-name to avoid reusing a broken profile.
           const conName = "qs-" + ssid
-
           var cmds = []
 
-          // Try to delete any existing conName silently (ignore failure)
           cmds.push(["nmcli", "connection", "delete", conName])
 
-          // Add wifi connection
-          // nmcli connection add type wifi ifname <dev> con-name <name> ssid <ssid>
           if (root.wifiDevice && root.wifiDevice.length > 0) {
             cmds.push(["nmcli", "connection", "add", "type", "wifi",
                        "ifname", root.wifiDevice,
@@ -314,22 +376,18 @@ QtObject {
                        "ssid", ssid])
           }
 
-          // Set WPA2 PSK explicitly
           cmds.push(["nmcli", "connection", "modify", conName,
                      "wifi-sec.key-mgmt", "wpa-psk",
                      "wifi-sec.psk", pw])
 
-          // Bring it up
           cmds.push(["nmcli", "--wait", "15", "connection", "up", conName])
 
-          // run queue
           root._queueErr = ""
           root._queueHadError = false
           runQueue(ssid, cmds)
           return
         }
 
-        // Otherwise, report original error
         root.refresh()
         root.rescan()
         root.connectFinished(connectProc._ssid, false, connectProc._errMsg)
@@ -359,7 +417,6 @@ QtObject {
       if (!running) {
         if (queueProc._hadError) {
           root._queueHadError = true
-          // keep the last non-empty error
           root._queueErr = queueProc._errMsg
         }
         runNext()

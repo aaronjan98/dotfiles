@@ -10,10 +10,16 @@ Item {
   signal clicked()
 
   function glyph() {
-    if (!Sv.WifiNm.wifiEnabled) return "󰤮"   // off
-    if (!Sv.WifiNm.connected) return "󰤯"     // no connection
-    const s = Sv.WifiNm.strength
-    if (s >= 75) return "󰤨"
+    if (!Sv.WifiNm.wifiEnabled)
+      return "󰤮"   // radio off
+
+    if (!Sv.WifiNm.connected)
+      return "󰤯"   // disconnected
+
+    const s = Sv.WifiNm.strength | 0
+
+    if (s <= 0)  return "󰤟"
+    if (s >= 70) return "󰤨"
     if (s >= 50) return "󰤥"
     if (s >= 25) return "󰤢"
     return "󰤟"
@@ -25,6 +31,9 @@ Item {
     color: "white"
     font.family: C.Appearance.iconFont
     font.pixelSize: C.Appearance.topbarIconPx
+
+    // Slightly dim when not connected / off
+    opacity: (!Sv.WifiNm.wifiEnabled || !Sv.WifiNm.connected) ? 0.75 : 1.0
   }
 
   MouseArea {
