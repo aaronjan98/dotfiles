@@ -108,5 +108,9 @@ QtObject {
 
   // ---- fonts ----
   property string iconFont: "Symbols Nerd Font"
+
+  // ---- wired icon (nerd font) ----
+  // Replace this glyph string with the wired glyph you prefer from your nerd font.
+  property string wiredIcon: "󰈚"
 }
 

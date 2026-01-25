@@ -10,6 +10,11 @@ Item {
   signal clicked()
 
   function glyph() {
+    // If the system is actually routing via ethernet, show ethernet icon.
+    if (Sv.WifiNm.activeType === "ethernet")
+      return "󰈀"  // ethernet (Nerd Font / MDI)
+
+    // Otherwise fall back to Wi-Fi status
     if (!Sv.WifiNm.wifiEnabled)
       return "󰤮"   // radio off
 
@@ -32,8 +37,10 @@ Item {
     font.family: C.Appearance.iconFont
     font.pixelSize: C.Appearance.topbarIconPx
 
-    // Slightly dim when not connected / off
-    opacity: (!Sv.WifiNm.wifiEnabled || !Sv.WifiNm.connected) ? 0.75 : 1.0
+    // Slightly dim when not connected / off (but keep ethernet fully bright)
+    opacity: (Sv.WifiNm.activeType === "ethernet")
+      ? 1.0
+      : ((!Sv.WifiNm.wifiEnabled || !Sv.WifiNm.connected) ? 0.75 : 1.0)
   }
 
   MouseArea {

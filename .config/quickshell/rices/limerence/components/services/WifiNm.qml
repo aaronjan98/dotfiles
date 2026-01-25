@@ -15,6 +15,11 @@ QtObject {
   property var networks: []      // [{ssid,strength,secure,active}]
   property bool scanning: false
 
+  // NEW: default-route (what the system is ACTUALLY using)
+  // activeType is "ethernet" or "wifi" (from nmcli device type)
+  property string activeDevice: ""
+  property string activeType: ""
+
   signal connectFinished(string ssid, bool success, string message)
 
   // ---------------------------
@@ -28,6 +33,9 @@ QtObject {
     // update signal for the currently connected AP
     // without forcing a rescan.
     wifiSignalProc.running = true
+
+    // NEW: update default-route device/type (ethernet vs wifi)
+    defaultRouteProc.running = true
   }
 
   function rescan() {
@@ -155,7 +163,7 @@ QtObject {
     stderr: SplitParser { onRead: _ => root.ok = false }
   }
 
-  // Authoritative connection state (connected/disconnected)
+  // Authoritative Wi-Fi connection state (connected/disconnected)
   property var wifiActiveProc: Process {
     command: ["sh", "-c",
       "dev=$(nmcli -t -f DEVICE,TYPE dev | awk -F: '$2==\"wifi\"{print $1; exit}'); " +
@@ -205,8 +213,7 @@ QtObject {
     stderr: SplitParser { onRead: _ => root.ok = false }
   }
 
-  // NEW: fetch signal/SSID of currently associated AP WITHOUT rescanning.
-  // This is what drives the icon bars in real time.
+  // Fetch signal/SSID of currently associated AP WITHOUT rescanning.
   property var wifiSignalProc: Process {
     command: ["sh", "-c", "nmcli -t -f IN-USE,SSID,SIGNAL dev wifi list --rescan no | sed -n 's/^\\*://p' | head -n1"]
     stdout: SplitParser {
@@ -214,7 +221,6 @@ QtObject {
         root.ok = true
         const line = (data || "").trim()
         if (!line) {
-          // No active AP line (either disconnected or NM not ready)
           if (!root.connected) root.strength = 0
           return
         }
@@ -224,12 +230,34 @@ QtObject {
         const apSsid = parts[0] || ""
         const sig = parseInt(parts[1])
 
-        // If we are connected, this should be the authoritative signal.
-        // Also set SSID to match the actual network name.
         if (root.connected) {
           root.ssid = apSsid
           root.strength = isNaN(sig) ? 0 : sig
         }
+      }
+    }
+    stderr: SplitParser { onRead: _ => root.ok = false }
+  }
+
+  // NEW: Determine which interface is actually used for routing (default route)
+  // Output format: "DEV:TYPE" e.g. "enp5s0:ethernet" or "wlp3s0:wifi"
+  property var defaultRouteProc: Process {
+    command: ["sh", "-c",
+      "dev=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i==\"dev\"){print $(i+1); exit}}'); " +
+      "if [ -z \"$dev\" ]; then exit 0; fi; " +
+      "type=$(nmcli -t -f DEVICE,TYPE dev 2>/dev/null | awk -F: -v d=\"$dev\" '$1==d{print $2; exit}'); " +
+      "echo \"$dev:$type\""
+    ]
+
+    stdout: SplitParser {
+      onRead: data => {
+        root.ok = true
+        const line = (data || "").trim()
+        if (!line) return
+
+        const parts = line.split(":")
+        root.activeDevice = (parts[0] || "").trim()
+        root.activeType = (parts[1] || "").trim()
       }
     }
     stderr: SplitParser { onRead: _ => root.ok = false }

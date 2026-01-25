@@ -180,6 +180,17 @@ Item {
             }
           }
 
+          // NEW: show what’s actually being used for routing
+          Text {
+            Layout.fillWidth: true
+            text: (Sv.WifiNm.activeType && Sv.WifiNm.activeDevice)
+              ? ("Active route: " + Sv.WifiNm.activeType + " (" + Sv.WifiNm.activeDevice + ")")
+              : "Active route: (unknown)"
+            color: Qt.rgba(1,1,1,0.75)
+            font.pixelSize: 11
+            elide: Text.ElideRight
+          }
+
           Text {
             Layout.fillWidth: true
             text: Sv.WifiNm.connected ? ("Connected: " + Sv.WifiNm.ssid) : "Not connected"
