@@ -243,10 +243,28 @@ QtObject {
   // Output format: "DEV:TYPE" e.g. "enp5s0:ethernet" or "wlp3s0:wifi"
   property var defaultRouteProc: Process {
     command: ["sh", "-c",
-      "dev=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i==\"dev\"){print $(i+1); exit}}'); " +
-      "if [ -z \"$dev\" ]; then exit 0; fi; " +
-      "type=$(nmcli -t -f DEVICE,TYPE dev 2>/dev/null | awk -F: -v d=\"$dev\" '$1==d{print $2; exit}'); " +
-      "echo \"$dev:$type\""
+      // Pick the lowest-metric IPv4 default route, extract its dev.
+      // (ip route show default is not per-destination cached like `ip route get`.)
+      "dev=$(ip -4 route show default 2>/dev/null "
+        + "| awk '"
+        + "  $1==\"default\" { "
+        + "    m=1e9; "
+        + "    for(i=1;i<=NF;i++) if($i==\"metric\"){m=$(i+1)}; "
+        + "    print m, $0 "
+        + "  }' "
+        + "| sort -n "
+        + "| head -n1 "
+        + "| awk '{for(i=1;i<=NF;i++) if($i==\"dev\"){print $(i+1); exit}}'); "
+      +
+      // Guardrails
+      "if [ -z \"$dev\" ] || [ \"$dev\" = \"lo\" ]; then exit 0; fi; "
+      +
+      // Map that dev -> NM type (ethernet/wifi) if NM knows it
+      "type=$(nmcli -t -f DEVICE,TYPE dev 2>/dev/null "
+        + "| awk -F: -v d=\"$dev\" '$1==d{print $2; exit}'); "
+      +
+      // Fallback if nmcli didn't return a type (still report device)
+      "echo \"$dev:${type:-unknown}\""
     ]
 
     stdout: SplitParser {
