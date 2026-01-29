@@ -104,7 +104,11 @@ Item {
     implicitHeight: panel.implicitHeight
 
     onVisibleChanged: {
-      if (visible) focusRoot.forceActiveFocus()
+      if (visible) {
+        focusRoot.forceActiveFocus()
+        // Auto-refresh list when opening the popup
+        Sv.WifiNm.rescan()
+      }
       if (!visible) {
         api.clearPassword()
         api.connectingSsid = ""
