@@ -43,6 +43,6 @@
 [color "branch"]
   remote = yellow
 [init]
-  defaultBranch = main
+	defaultBranch = main
 [safe]
   directory = /srv/git/repos/zettelkasten.git
