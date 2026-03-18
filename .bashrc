@@ -5,3 +5,6 @@ export EDITOR=nvim
 dot() {
   git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" "$@"
 }
+
+### Apps ###
+eval "$(zoxide init bash)"
