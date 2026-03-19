@@ -1,7 +1,7 @@
 # Routing Rules
 
 ## Routing layers
-1. Broad router: `~/Repositories/router.md`
+1. Broad router: `~/Repositories/ROUTER.md`
 2. Area router: area-level `CONTEXT.md` files such as `~/Repositories/school/CONTEXT.md`
 3. Project router: repo-local `CONTEXT.md`
 4. Project memory: repo-local `MEMORY.md`
