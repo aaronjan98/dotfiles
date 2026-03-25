@@ -7,4 +7,9 @@ dot() {
 }
 
 ### Apps ###
+
+## Zoxide ##
 eval "$(zoxide init bash)"
+zq() {
+  zoxide query "$@"
+}
