@@ -17,9 +17,11 @@
 - [Common mistake 3]
 
 ## Main directories
-- `[path-or-dir]` — [what it contains]
-- `[path-or-dir]` — [what it contains]
-- `[path-or-dir]` — [what it contains]
+- `memory/` — date-stamped session logs (YYYY-MM-DD.md)
+- `project-memory/` — goal-specific durable files (named after the goal, not the date)
+- `spec/` — requirements, specs, implementation plans
+- `notes/` — reference material (human-facing; agents read when relevant)
+- [add or remove directories as needed]
 
 ## Working rules
 - Start with the files most directly related to the task.
