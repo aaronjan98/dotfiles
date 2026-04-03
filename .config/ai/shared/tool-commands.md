@@ -39,6 +39,46 @@ Returns the path if tracked, empty if not.
 
 **For new files** — `ls-files` won't help since the file isn't tracked yet. Use the top-level directory list above to determine whether `dot` applies.
 
+### Initializing a new repository
+
+Follow these steps in order when creating a new git-tracked project:
+
+**Step 1 — Initialize:**
+```bash
+cd /path/to/project/root
+g init
+```
+
+**Step 2 — Add `.gitignore`, then make the initial commit:**
+```bash
+g add .gitignore <any other files ready to commit>
+g ci -m "initial project scaffold"
+```
+
+**Step 3 — Create bare repo on local git server and add remote:**
+```bash
+sudo -u git git init --bare /srv/git/repos/<repo-name>.git
+g remote add local ssh://git@localhost/srv/git/repos/<repo-name>.git
+```
+
+**Step 4 — Create bare repo on homelab and add remote:**
+```bash
+ssh -t aj@sweetpea "sudo -u git git init --bare /srv/git/repos/<repo-name>.git"
+g remote add home ssh://git@ssh.aaronjanovitch.com:2222/srv/git/repos/<repo-name>.git
+```
+
+**Step 5 — Push to home (sets upstream):**
+```bash
+g push -u home main
+```
+
+After this, `g pushall` will push to all remotes.
+
+> Note: Step 4 requires the homelab (sweetpea) to be reachable. If it is not,
+> skip it and inform the user so they can run it manually when available.
+
+---
+
 ### Regular repos (use `g`)
 
 Use the `g` alias for all standard git operations.

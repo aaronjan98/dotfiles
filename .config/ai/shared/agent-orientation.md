@@ -51,9 +51,19 @@ Structure:
   self-hosted/
   etc.
 
+Area-level CONTEXT.md files:
+- Every area directory contains a CONTEXT.md that acts as a directory overview
+- It lists each repository/subdirectory it contains with a brief description
+- It notes the current state of each: active (currently being worked on),
+  maintained (stable, not actively developed), or inactive/archived
+- Agents use this to decide whether to enter a subdirectory or skip it
+- When a new area directory is created, a CONTEXT.md must be created alongside it
+- When a new repo is added to an area, the area CONTEXT.md must be updated
+
 Rules:
 - Always consult ROUTER.md if unsure where to start
-- Do not inspect unrelated repositories by default
+- Read the area CONTEXT.md before deciding which repo to enter
+- Do not inspect repositories marked inactive or unrelated to the current task
 
 ---
 
