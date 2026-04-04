@@ -21,7 +21,7 @@ Contains:
 - shared principles
 - routing rules
 - memory model
-- skills
+- skills (see `~/.config/ai/skills/CONTEXT.md` for available skills and when to use them)
 - model routing rules (local vs cloud)
 
 Rules:
