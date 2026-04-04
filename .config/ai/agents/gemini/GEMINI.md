@@ -1,4 +1,4 @@
-# Claude Bootstrap
+# Gemini Bootstrap
 
 ## System architecture
 This machine uses a structured, agent-agnostic AI workspace.
@@ -24,10 +24,10 @@ Full rules are at: ~/.config/ai/shared/agent-orientation.md
 
 ## Memory storage — always follow this
 
-Store session notes in:       memory/YYYY-MM-DD.md    (append, never overwrite)
-Store durable knowledge in:   MEMORY.md               (promote only when appropriate)
+Store session notes in:       memory/YYYY-MM-DD topic.md  (new file per topic, append if same topic)
+Store durable knowledge in:   MEMORY.md                   (promote only when appropriate)
 
-Do NOT store memories in ~/.claude/projects/ — use project-local files only.
+Do NOT store memories outside of project-local files.
 Use the save-session skill (~/.config/ai/skills/save-session/) at end of session.
 
 ---

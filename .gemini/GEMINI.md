@@ -1,0 +1,1 @@
+/home/aj/.config/ai/agents/gemini/GEMINI.md
