@@ -24,10 +24,15 @@ Full rules are at: ~/.config/ai/shared/agent-orientation.md
 
 ## Memory storage — always follow this
 
+This system uses file-based memory shared across all agents. Do NOT use save_memory
+for session notes, project facts, or user preferences — that store is Gemini-only
+and invisible to other agents.
+
 Store session notes in:       memory/YYYY-MM-DD topic.md  (new file per topic, append if same topic)
 Store durable knowledge in:   MEMORY.md                   (promote only when appropriate)
 
-Do NOT store memories outside of project-local files.
+Use save_memory ONLY for Gemini-specific behavioral preferences (e.g. output formatting)
+that have no equivalent in the shared file system and would never be needed by another agent.
 Use the save-session skill (~/.config/ai/skills/save-session/) at end of session.
 
 ---
