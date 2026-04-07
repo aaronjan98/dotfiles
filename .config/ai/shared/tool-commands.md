@@ -114,6 +114,15 @@ dot ci -m "imperative present-tense summary of changes"
 dot pushall
 ```
 
+**Path gotcha — staging files from inside `~/.config/`:**
+The dotfiles work tree is `$HOME`, so tracked paths are like `.config/ghostty/config`.
+When the CWD is `~/.config/`, git interprets relative paths against the CWD and
+double-nests them (e.g. `.config/README.md` → looks for `.config/.config/README.md`).
+Always use absolute paths when staging from within `~/.config/`:
+```
+git --git-dir="/home/aj/.dotfiles/" --work-tree="/home/aj" add /home/aj/.config/some/file
+```
+
 ## Installing local AI models (llmfit + llama.cpp)
 
 Models are downloaded and served via llmfit and llama.cpp. All llama tools (llama-server, llama-bench, llama-cli) are already installed via the `llama-cpp` nixpkgs package.

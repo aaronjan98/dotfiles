@@ -33,3 +33,4 @@ Directories not listed (KDE/Plasma system files, app data dirs, etc.) are system
 
 - Do not use `git` or `g` for dotfiles — always use `dot`.
 - Each actively maintained subdirectory should have its own `CONTEXT.md` for agent orientation.
+- **Staging gotcha:** the dotfiles work tree is `$HOME`, not `~/.config/`. When running `dot add` from inside `~/.config/`, use absolute paths (`/home/aj/.config/...`) or git will double-nest the path and fail. See `ai/shared/tool-commands.md` for details.
