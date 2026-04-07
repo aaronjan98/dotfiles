@@ -2,6 +2,6 @@ background = 1a0810
 background-opacity = 0.85
 
 cursor-style = block
-cursor-color = #E62600
+cursor-color = #FF2800
 cursor-opacity = 0
 custom-shader = /home/aj/.config/ghostty/shaders/cursor_smear.glsl
