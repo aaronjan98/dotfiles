@@ -30,10 +30,6 @@ float getSdfParallelogram(in vec2 p, in vec2 v0, in vec2 v1, in vec2 v2, in vec2
     return s * sqrt(d);
 }
 
-float antialising(float distance) {
-    return 1.0 - smoothstep(0.0, 2.0, distance);
-}
-
 float determineStartVertexFactor(vec2 a, vec2 b) {
     float condition1 = step(b.x, a.x) * step(a.y, b.y);
     float condition2 = step(a.x, b.x) * step(b.y, a.y);
@@ -44,22 +40,19 @@ float ease(float x) {
     return pow(1.0 - x, 3.0);
 }
 
-#define TRAIL_COLOR vec4(1.0, 0.157, 0.0, 1.0)
+#define TRAIL_COLOR vec3(1.0, 0.157, 0.0)
 const float DURATION = 0.12; 
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 terminalColor = texture(iChannel0, fragCoord / iResolution.xy);
     
-    // Cursor positions in pixel coordinates
     vec2 curXY = iCurrentCursor.xy;
     vec2 curZW = iCurrentCursor.zw;
     vec2 prevXY = iPreviousCursor.xy;
     
-    // Normalization factors
     float vertexFactor = determineStartVertexFactor(curXY, prevXY);
     float invVertexFactor = 1.0 - vertexFactor;
 
-    // Define parallelogram vertices for the trail
     vec2 v0 = vec2(curXY.x + curZW.x * vertexFactor, curXY.y - curZW.y);
     vec2 v1 = vec2(curXY.x + curZW.x * invVertexFactor, curXY.y);
     vec2 v2 = vec2(prevXY.x + curZW.x * invVertexFactor, prevXY.y);
@@ -70,17 +63,27 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     float progress = clamp((iTime - iTimeCursorChange) / DURATION, 0.0, 1.0);
     float easedProgress = ease(progress);
-    
     float lineLength = distance(curXY, prevXY);
+
+    // 1. Sharp Masks
+    float cursorActive = step(sdfCursor, 0.0);
+    // Explicit 1-pixel margin (step(1.0, sdfCursor)) ensures trail never creates a border around the cursor
+    float trailActive = step(sdfTrail, 0.0) * step(1.0, sdfCursor) * step(sdfCursor, easedProgress * lineLength);
+
+    // 2. Manual Shader Blink Timer (1Hz)
+    float blink = step(0.5, mod(iTime, 1.0));
+
+    // 3. Luminance-Agnostic Inversion (Tmux-Proof)
+    // This logic produces a legible result regardless of whether tmux has inverted the cell.
+    // Text becomes black-on-red (standard) OR red-on-black (if already inverted).
+    vec3 onColor = TRAIL_COLOR * (1.0 - terminalColor.rgb);
+
+    // 4. Final Color Assembly
+    // Start with background/trail smear
+    vec3 result = mix(terminalColor.rgb, TRAIL_COLOR, trailActive);
     
-    // Mix the colors
-    vec4 finalColor = terminalColor;
-    
-    // Draw the trail
-    finalColor = mix(finalColor, TRAIL_COLOR, antialising(sdfTrail));
-    // Draw the cursor
-    finalColor = mix(finalColor, TRAIL_COLOR, antialising(sdfCursor));
-    
-    // Final composite based on movement progress
-    fragColor = mix(terminalColor, finalColor, step(sdfCursor, easedProgress * lineLength + 1.0));
+    // Blinking logic: if blink is 1, show the inverted cursor block; else show original terminal
+    vec3 finalRGB = mix(result, onColor, cursorActive * blink);
+
+    fragColor = vec4(finalRGB, 1.0);
 }
