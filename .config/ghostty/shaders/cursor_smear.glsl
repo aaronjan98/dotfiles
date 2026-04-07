@@ -45,11 +45,11 @@ const float DURATION = 0.12;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 terminalColor = texture(iChannel0, fragCoord / iResolution.xy);
-    
+
     vec2 curXY = iCurrentCursor.xy;
     vec2 curZW = iCurrentCursor.zw;
     vec2 prevXY = iPreviousCursor.xy;
-    
+
     float vertexFactor = determineStartVertexFactor(curXY, prevXY);
     float invVertexFactor = 1.0 - vertexFactor;
 
@@ -65,25 +65,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float easedProgress = ease(progress);
     float lineLength = distance(curXY, prevXY);
 
-    // 1. Sharp Masks
-    float cursorActive = step(sdfCursor, 0.0);
-    // Explicit 1-pixel margin (step(1.0, sdfCursor)) ensures trail never creates a border around the cursor
+    // Trail only — cursor block is rendered natively by Ghostty.
+    // 1-pixel margin ensures the trail never bleeds into the cursor cell.
     float trailActive = step(sdfTrail, 0.0) * step(1.0, sdfCursor) * step(sdfCursor, easedProgress * lineLength);
 
-    // 2. Manual Shader Blink Timer (1Hz)
-    float blink = step(0.5, mod(iTime, 1.0));
-
-    // 3. Luminance-Agnostic Inversion (Tmux-Proof)
-    // This logic produces a legible result regardless of whether tmux has inverted the cell.
-    // Text becomes black-on-red (standard) OR red-on-black (if already inverted).
-    vec3 onColor = TRAIL_COLOR * (1.0 - terminalColor.rgb);
-
-    // 4. Final Color Assembly
-    // Start with background/trail smear
-    vec3 result = mix(terminalColor.rgb, TRAIL_COLOR, trailActive);
-    
-    // Blinking logic: if blink is 1, show the inverted cursor block; else show original terminal
-    vec3 finalRGB = mix(result, onColor, cursorActive * blink);
-
-    fragColor = vec4(finalRGB, 1.0);
+    fragColor = vec4(mix(terminalColor.rgb, TRAIL_COLOR, trailActive), 1.0);
 }

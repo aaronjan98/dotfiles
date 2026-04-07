@@ -1,0 +1,35 @@
+# ~/.config — Area Context
+
+## Overview
+
+User config directory. Tracked selectively via a bare git repo at `~/.dotfiles` using the `dot` alias (not `git` or `g`). Files and directories are spread across the system — this is the primary area agents should use to find terminal, editor, WM, and AI configuration.
+
+See `~/.config/ai/shared/tool-commands.md` for how to determine whether a given file is tracked by dotfiles.
+
+---
+
+## Key Directories for Agent Work
+
+| Directory | Purpose | State |
+|---|---|---|
+| `ai/` | Agent configuration, shared rules, skills, model routing | Active |
+| `ghostty/` | Ghostty terminal emulator — config, GLSL cursor shader | Active |
+| `nvim/` | Neovim configuration | Active |
+| `tmux/` | tmux configuration | Active |
+| `hypr/` | Hyprland WM configuration | Active |
+| `fuzzel/` | App launcher configuration | Maintained |
+| `kitty/` | Kitty terminal (secondary/backup terminal) | Maintained |
+| `lazygit/` | Lazygit configuration | Maintained |
+| `git/` | Git global configuration | Maintained |
+| `quickshell/` | Quickshell widget/shell configuration | Active |
+| `btop/` | btop system monitor theme/config | Maintained |
+| `systemd/` | User systemd units | Maintained |
+
+Directories not listed (KDE/Plasma system files, app data dirs, etc.) are system-managed and not relevant for agent work unless explicitly asked.
+
+---
+
+## Notes
+
+- Do not use `git` or `g` for dotfiles — always use `dot`.
+- Each actively maintained subdirectory should have its own `CONTEXT.md` for agent orientation.

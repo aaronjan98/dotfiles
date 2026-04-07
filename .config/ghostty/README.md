@@ -10,12 +10,16 @@ General configuration for Ghostty terminal emulator.
 
 ## Cursor Animation
 
-- Implementation: Custom GLSL shader (`shaders/cursor_smear.glsl`).
-- Effect: Calculates a parallelogram "bridge" between current (`iCurrentCursor`) and previous (`iPreviousCursor`) positions.
-- Color: Hardcoded to Ferrari Red (#FF2800) (`vec4(1.0, 0.157, 0.0, 1.0)`) for visibility with `0` hardware opacity.
-- Timing: `0.12s` duration with cubic easing for a snappy feel.
-- Antialiasing: 2-pixel smoothstep for crisp edges.
-- Hardware Settings: `cursor-style = block` and `cursor-opacity = 0` to prevent double-rendering.
+Cursor rendering is split: Ghostty owns the cursor block; the shader owns the smear trail.
+
+**Ghostty (native):**
+- `cursor-style = block`, `cursor-style-blink = true`, `cursor-color = #FF2800`, `cursor-text = #000000`
+- Handles blinking and character inversion (black text on red cursor block).
+
+**Shader (`shaders/cursor_smear.glsl`):**
+- Draws a parallelogram "bridge" between `iPreviousCursor` and `iCurrentCursor` positions.
+- Trail color: Ferrari Red (`#FF2800`), duration `0.12s`, cubic ease-out.
+- Does NOT touch the cursor block itself — Ghostty pre-renders the cursor into `iChannel0` before the shader runs, making the character underneath inaccessible. Attempting cursor inversion in the shader produces incorrect results (inverting the cursor color, not the character).
 
 ## Maintenance & Debugging
 
