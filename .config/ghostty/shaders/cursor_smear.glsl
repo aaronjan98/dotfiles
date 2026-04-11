@@ -69,5 +69,5 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // 1-pixel margin ensures the trail never bleeds into the cursor cell.
     float trailActive = step(sdfTrail, 0.0) * step(1.0, sdfCursor) * step(sdfCursor, easedProgress * lineLength);
 
-    fragColor = vec4(mix(terminalColor.rgb, TRAIL_COLOR, trailActive), 1.0);
+    fragColor = vec4(mix(terminalColor.rgb, TRAIL_COLOR, trailActive), terminalColor.a);
 }
