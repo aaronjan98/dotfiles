@@ -29,6 +29,17 @@ Directories not listed (KDE/Plasma system files, app data dirs, etc.) are system
 
 ---
 
+## Individually Tracked Files
+
+Some files at the root of `~/.config/` are tracked directly (not as part of a subdirectory):
+
+| File | Purpose |
+|---|---|
+| `mimeapps.list` | XDG default application associations. Gwenview is set for all image types. Do not set eog — it is not installed on this system. |
+| `okularpartrc` | Okular document viewer settings. `ChangeColors=false` is intentional — the recolor mode was causing a red overlay on all images. |
+
+---
+
 ## Notes
 
 - Do not use `git` or `g` for dotfiles — always use `dot`.
