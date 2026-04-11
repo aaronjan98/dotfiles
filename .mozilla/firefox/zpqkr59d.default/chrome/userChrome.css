@@ -1,0 +1,43 @@
+/* Transparent Firefox chrome — blur comes from Hyprland compositor */
+
+/* Root transparency */
+:root {
+  --glass-bg: rgba(20, 10, 16, 0.30);
+  --glass-bg-hover: rgba(20, 10, 16, 0.45);
+}
+
+/* Main toolbar and tab strip */
+#navigator-toolbox {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(0px) !important; /* blur handled by Hyprland */
+}
+
+/* Tab bar */
+#TabsToolbar {
+  background: transparent !important;
+}
+
+/* Individual tabs */
+.tab-background {
+  background: var(--glass-bg) !important;
+}
+
+.tab-background[selected] {
+  background: var(--glass-bg-hover) !important;
+}
+
+/* URL bar */
+#urlbar,
+#urlbar-background {
+  background: var(--glass-bg) !important;
+}
+
+/* Navigation bar */
+#nav-bar {
+  background: transparent !important;
+}
+
+/* Sidebar */
+#sidebar-box {
+  background: var(--glass-bg) !important;
+}

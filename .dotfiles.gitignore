@@ -10,6 +10,11 @@
 .compose-cache
 .local/share/Trash/
 .mozilla
+!.mozilla/
+!.mozilla/firefox/
+!.mozilla/firefox/*/
+!.mozilla/firefox/*/chrome/
+!.mozilla/firefox/*/chrome/userChrome.css
 .nix-profile
 nixos-config
 Desktop/

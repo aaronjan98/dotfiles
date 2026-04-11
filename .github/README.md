@@ -14,6 +14,7 @@ Configuration for a Hyprland desktop on NixOS. Managed as a bare git repo (`~/.d
 | `quickshell/` | Quickshell status shell — multi-rice system, active rice: *limerence* |
 | `kitty/` | Kitty terminal — fonts, colors, keybindings |
 | `fuzzel/` | Fuzzel app launcher config |
+| `firefox/` | Firefox `userChrome.css` — transparent toolbar/tabs via Wayland compositor blur |
 | `ai/` | Agent-first AI workspace — shared rules, skills, and model routing for Claude and Gemini |
 | tmux | Managed in NixOS config — see [`modules/tmux.nix`](https://github.com/aaronjan98/nixos-config/blob/main/modules/tmux.nix) |
 
@@ -50,3 +51,11 @@ dot checkout
 ```
 
 Package management is handled separately via NixOS — see [aaronjan98/nixos-config](https://github.com/aaronjan98/nixos-config). This repo tracks only configuration files.
+
+### Firefox profile path
+
+`userChrome.css` is tracked under a profile-specific path (e.g. `zpqkr59d.default`) which Firefox generates randomly per installation. On a new machine, `dot checkout` will place the file under the old profile name — you'll need to copy it manually to the new profile directory. Find the correct path via `about:support` → *Profile Directory*.
+
+Also required in `about:config`:
+- `toolkit.legacyUserProfileCustomizations.stylesheets` → `true`
+- `widget.gtk.transparent-background` → `true`
