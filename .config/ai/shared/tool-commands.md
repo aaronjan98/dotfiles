@@ -118,10 +118,12 @@ dot pushall
 The dotfiles work tree is `$HOME`, so tracked paths are like `.config/ghostty/config`.
 When the CWD is `~/.config/`, git interprets relative paths against the CWD and
 double-nests them (e.g. `.config/README.md` → looks for `.config/.config/README.md`).
-Always use absolute paths when staging from within `~/.config/`:
+Use the full `git --git-dir=` form **only for the `add` step**, then commit with `dot ci` as normal:
 ```
 git --git-dir="/home/aj/.dotfiles/" --work-tree="/home/aj" add /home/aj/.config/some/file
+dot ci -m "imperative present-tense summary of changes"
 ```
+Do NOT use the full `git --git-dir=` form for `ci` or any other step — `dot` handles those.
 
 ## Installing local AI models (llmfit + llama.cpp)
 
