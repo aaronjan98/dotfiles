@@ -102,8 +102,28 @@ Always load context in this order:
    - ROUTER.md
    - area CONTEXT.md
 
-3. Global rules:
-   - ~/.config/ai/shared/
+3. Global rules — `~/.config/ai/`:
+
+   ### Read at session start
+   - `shared/agent-orientation.md` — this file. System architecture, routing, and operational rules.
+   - `shared/tool-commands.md` — canonical commands for git, file operations, and other tasks. Read once so you know what it covers and when to refer back to it.
+
+   ### Refer to when the topic arises
+   - `shared/principles.md` — core workspace principles and what good agent behavior looks like
+   - `shared/routing-rules.md` — detailed routing layer rules (broad → area → project)
+   - `shared/model-routing.md` — when to use local vs cloud models
+   - `shared/memory-model.md` — how memory is structured and where session notes live
+   - `shared/external-knowledge.md` — when and how to use external knowledge sources (only when declared in DEPENDENCIES.md)
+
+   ### Refer to when a task matches
+   - `skills/CONTEXT.md` — index of available skills and when to invoke them. Check this whenever a user request might match a reusable procedure before improvising.
+   - `skills/<name>/SKILL.md` — full instructions for a specific skill
+
+   ### Refer to when setting up a new project
+   - `templates/project/` — canonical CONTEXT.md, MEMORY.md, and DEPENDENCIES.md templates
+
+   ### Do not read speculatively
+   - `agents/` — per-agent bootstrap configs (CLAUDE.md, GEMINI.md). These are loaded by the agent harness, not by you.
 
 Do NOT:
 - load the entire filesystem
