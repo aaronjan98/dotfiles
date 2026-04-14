@@ -22,10 +22,6 @@ QtObject {
   property int kbdMax: 2
   property int kbdPercent: 0
 
-  // Optional “restore on resume” behavior
-  property int desiredKbdStep: -1
-  property bool _restoreArmed: false
-
   // Debug
   property string lastScreenLine: ""
   property string lastKbdLine: ""
@@ -57,9 +53,6 @@ QtObject {
     var step = Math.round((p / 100.0) * kbdMax)
     step = clamp(step, 0, kbdMax)
 
-    desiredKbdStep = step
-    _restoreArmed = true
-
     cmdProc.command = [sh, "-c",
       brightnessctl + " -d " + kbdDev + " set " + step + " >/dev/null 2>&1 || true"
     ]
@@ -67,26 +60,12 @@ QtObject {
     kbdInfoProc.running = true
   }
 
-  function maybeRestoreKbd() {
-    if (!hasKbd || !_restoreArmed || desiredKbdStep < 0) return
-    if (kbdCur === 0 && desiredKbdStep > 0) {
-      cmdProc.command = [sh, "-c",
-        brightnessctl + " -d " + kbdDev + " set " + desiredKbdStep + " >/dev/null 2>&1 || true"
-      ]
-      cmdProc.running = true
-      kbdInfoProc.running = true
-    }
-  }
-
-  // Lightweight poll to pick up hardware key changes + restore after resume
+  // Lightweight poll to pick up hardware key changes
   property var pollTimer: Timer {
     interval: 800
     running: true
     repeat: true
-    onTriggered: {
-      refresh()
-      maybeRestoreKbd()
-    }
+    onTriggered: refresh()
   }
 
   Component.onCompleted: refresh()
@@ -145,11 +124,6 @@ QtObject {
         root.kbdCur = v.cur
         root.kbdMax = v.max
         root.kbdPercent = Math.round(100 * (root.kbdCur / (root.kbdMax > 0 ? root.kbdMax : 1)))
-
-        if (root.desiredKbdStep < 0) {
-          root.desiredKbdStep = root.kbdCur
-          root._restoreArmed = true
-        }
       }
     }
     stderr: SplitParser { onRead: _ => {} }
