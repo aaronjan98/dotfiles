@@ -101,27 +101,35 @@ g pushall
 `~/.config/ai/` and other home directory config files are tracked via a bare repo at `~/.dotfiles`.
 Use the `dot` command (never plain `git`, never `g`).
 
-**Commit only** (when user says "commit"):
+**Standard workflow — commit only** (when user says "commit"):
 ```
+cd /path/to/directory/with/majority/of/changes
 dot add .
-dot ci -m "imperative present-tense summary of changes"
+dot ci -am "imperative present-tense summary of changes"
 ```
+
+- `cd` into the directory where most of the new or changed files live.
+- `dot add .` stages new/untracked files under the current directory.
+- `-a` on `dot ci` auto-stages ALL tracked modified files across the entire work tree
+  (e.g. `~/.bashrc`, `~/.config/ghostty/config`), so you never need to manually add them.
+- Together, `dot add .` + `dot ci -am` captures everything in one commit.
 
 **Commit and push** (only when user explicitly says "commit and push"):
 ```
+cd /path/to/directory/with/majority/of/changes
 dot add .
-dot ci -m "imperative present-tense summary of changes"
+dot ci -am "imperative present-tense summary of changes"
 dot pushall
 ```
 
-**Path gotcha — staging files from inside `~/.config/`:**
-The dotfiles work tree is `$HOME`, so tracked paths are like `.config/ghostty/config`.
-When the CWD is `~/.config/`, git interprets relative paths against the CWD and
-double-nests them (e.g. `.config/README.md` → looks for `.config/.config/README.md`).
-Always use absolute paths with `dot add` to avoid this:
+**Path gotcha — named relative paths inside `~/.config/`:**
+The dotfiles work tree is `$HOME`. If you pass a *named* relative path like
+`dot add .config/foo` from inside `~/.config/`, git double-nests it
+(e.g. looks for `.config/.config/foo`).
+`dot add .` (the literal dot) is always safe — it resolves to the real CWD.
+If you must stage a specific file by path rather than using `dot add .`, use its absolute path:
 ```
 dot add /home/aj/.config/some/file
-dot ci -m "imperative present-tense summary of changes"
 ```
 Never expand `dot` to the full `git --git-dir=` form — use `dot` for every step.
 
