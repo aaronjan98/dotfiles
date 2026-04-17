@@ -1,0 +1,19 @@
+{
+  "effortLevel": "medium",
+  "allowedPaths": [
+    "~/.config/ai"
+  ],
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "hyprctl activewindow 2>/dev/null | grep -qi 'class: ghostty' && [ \"$(tmux display-message -p '#{pane_active}#{window_active}' 2>/dev/null)\" = '11' ] || notify-send --app-name='claude-code' 'Claude Code' 'Task complete'"
+          }
+        ]
+      }
+    ]
+  }
+}
