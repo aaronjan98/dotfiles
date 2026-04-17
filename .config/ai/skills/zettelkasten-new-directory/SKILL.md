@@ -60,7 +60,43 @@ not just its format.
 AI agent files should still be linked from the directory's Index under an **AI Agent Files**
 heading so they are discoverable from Obsidian.
 
-### 5. Directional link semantics
+### 5. Reference formatting
+
+The `# References` section at the bottom of every note uses footnote-style citations.
+
+**Inline usage:** place `[^key]` at the point in the text where the source is cited.
+
+**Entry format — local file (preferred):**
+```
+[^key]: [Display Title — Author (Year)](file:///home/aj/Documents/School/books/Encoded%20Filename.pdf)
+```
+
+**Entry format — external link (fallback when no local file):**
+```
+[^key]: [Display Title — Author (Year)](https://doi.org/...)
+```
+
+**Prefer local file links** over external URLs whenever the resource exists locally.
+Local resources live in `~/Documents/School/books/`.
+
+**All local `file:///` paths must be URL-encoded** — Obsidian requires this to open PDFs:
+- Space → `%20`
+- Em dash (—) → `%E2%80%94`
+- Any non-ASCII character → UTF-8 percent-encoded bytes (e.g. ó → `%C3%B3`)
+
+**Filename convention** for files in `~/Documents/School/books/`:
+```
+Title — Author(s) (Year) — Journal or Publisher.pdf
+```
+
+**For projects with many resources**, create a `paper-acquisition.md` in `project-memory/`
+as the single authoritative list of all resources with acquisition status and local links.
+Individual note footnotes reference the same files, but `paper-acquisition.md` is the
+canonical source of truth. Use checkboxes (`- [ ]` / `- [x]`) to track acquisition status.
+
+---
+
+### 6. Directional link semantics
 
 | Property | Meaning |
 |----------|---------|
@@ -71,7 +107,7 @@ heading so they are discoverable from Obsidian.
 
 ---
 
-## Example structure
+### 7. Example structure
 
 ```
 My Project/
