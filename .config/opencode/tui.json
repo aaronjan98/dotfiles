@@ -1,0 +1,6 @@
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "theme": "raspberry",
+  "cursor_style": "line",
+  "cursor_blink": false
+}

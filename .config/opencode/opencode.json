@@ -1,0 +1,8 @@
+{
+  "$schema": "https://opencode.ai/opencode.json",
+  "tui": {
+    "cursor_color": "#FF2800",
+    "cursor_style": "line",
+    "cursor_blink": false
+  }
+}
