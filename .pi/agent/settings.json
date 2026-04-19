@@ -2,5 +2,14 @@
   "lastChangelogVersion": "0.67.68",
   "defaultProvider": "opencode-zen-gpt",
   "defaultModel": "gpt-5.4",
-  "defaultThinkingLevel": "medium"
+  "defaultThinkingLevel": "medium",
+  "npmCommand": [
+    "/run/current-system/sw/bin/env",
+    "NPM_CONFIG_PREFIX=/home/aj/.pi/agent/npm",
+    "/run/current-system/sw/bin/npm"
+  ],
+  "packages": [
+    "npm:pi-web-access@0.10.6",
+    "npm:pi-mcp-adapter@2.4.0"
+  ]
 }

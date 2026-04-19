@@ -28,6 +28,8 @@ This directory is intended to be tracked in dotfiles, so secrets must not be wri
 - `README.md` — human-facing overview of this config directory
 - `agent/settings.json` — default provider/model/thinking level
 - `agent/models.json` — custom provider definitions, especially OpenCode Zen
+- `agent/mcp.json` — MCP servers exposed through `pi-mcp-adapter`
+- `agent/extensions/default-tools.ts` — enables the richer built-in tool set on startup
 - `MEMORY.md` — loading manifest and durable Pi config notes
 
 ## Working rules

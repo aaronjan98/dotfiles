@@ -1,7 +1,8 @@
-# OpenCode Theme Configuration
+# OpenCode Configuration
 
 ## Overview
-This directory contains custom opencode theme configurations for the raspberry theme with Ferrari Red accents.
+This directory contains the local OpenCode configuration for this machine.
+It currently includes theme customization plus MCP server configuration for external tools like Context7 and Playwright.
 
 ## Directory Layout
 ```
@@ -9,7 +10,7 @@ This directory contains custom opencode theme configurations for the raspberry t
 ├── CONTEXT.md          # This file - overview of OpenCode config
 ├── MEMORY.md           # Detailed learnings about theme configuration
 ├── tui.json           # TUI settings (theme, cursor style/blink)
-├── opencode.json      # Runtime config (cursor options)
+├── opencode.json      # Runtime config (cursor options, MCP servers)
 ├── .gitignore        # Git ignore for node_modules
 ├── package.json      # NPM dependencies
 ├── themes/           # Custom theme files
@@ -28,7 +29,7 @@ This directory contains custom opencode theme configurations for the raspberry t
 
 ## Files
 - `tui.json` - TUI configuration (theme selection, cursor settings)
-- `opencode.json` - Runtime configuration (cursor color, style)
+- `opencode.json` - Runtime configuration (cursor settings, MCP servers)
 - `themes/raspberry.json` - Custom theme
 
 ## Current Configuration
@@ -64,5 +65,10 @@ The raspberry theme uses:
 - **borders**: `"none"` (transparent)
 - **orange replaced with**: Ferrari Red `#FF2800`
 
+## MCP Notes
+- `context7` is configured as a remote MCP and reads its API key from `CONTEXT7_API_KEY`
+- `playwright` is configured as a local MCP started with `npx @playwright/mcp@latest --headless`
+- secrets should not be stored in this directory; they should come from NixOS-managed runtime env vars
+
 ## Key Learnings
-See MEMORY.md for detailed learnings about opencode theme configuration.
+See MEMORY.md for detailed learnings about theme and MCP configuration.

@@ -1,4 +1,4 @@
-# OpenCode Theme Knowledge
+# OpenCode Configuration Knowledge
 
 ## Quick Reference
 
@@ -15,15 +15,22 @@
 - **Transparency**: Use `system` theme only - custom themes don't support it well
 - **Alpha colors**: 8-digit hex NOT supported
 
+### Current MCPs
+- `context7` — remote docs lookup, authenticated via `CONTEXT7_API_KEY`
+- `playwright` — local browser automation via `npx @playwright/mcp@latest --headless`
+
 ## Detailed Learnings
 See `memory/` directory for full session notes:
 - `memory/2026-04-18 raspberry-theme.md` - Theme customization session
+- `memory/2026-04-19 mcp-setup.md` - Context7 and Playwright MCP setup
 
 ## Configuration Locations
 - `tui.json` - Theme selection, cursor style/blink
-- `opencode.json` - Runtime options (cursor_color not working yet)
+- `opencode.json` - Runtime options plus MCP server configuration
 - `themes/raspberry.json` - Custom theme file
 
 ## Useful Commands
 - `/themes` - Switch theme
 - `opencode debug config` - Debug configuration
+- `opencode mcp list` - List MCP servers and auth status
+- `opencode mcp auth <server>` - Authenticate an OAuth-capable remote MCP when needed

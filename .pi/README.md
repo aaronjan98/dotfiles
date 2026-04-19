@@ -5,6 +5,7 @@ This directory contains the local Pi coding agent configuration for this machine
 ## Main files
 - `agent/settings.json` — default provider, model, and thinking level
 - `agent/models.json` — custom provider/model definitions
+- `agent/mcp.json` — Pi MCP adapter server configuration
 - `CONTEXT.md` — agent-facing overview for working in this directory
 - `MEMORY.md` — agent loading manifest and durable notes for this config
 - `memory/` — date-stamped session logs for Pi-related changes
@@ -17,11 +18,16 @@ Track the human-authored config and agent notes:
 - `memory/`
 - `agent/settings.json`
 - `agent/models.json`
+- `agent/mcp.json`
+- `agent/extensions/`
 
 Ignore runtime/generated state:
 - `agent/auth.json`
 - `agent/bin/`
+- `agent/mcp-cache.json`
+- `agent/npm/`
 - `agent/sessions/`
+- `web-search.json`
 
 ## Secret handling
 This config does **not** store API keys directly.
@@ -48,3 +54,7 @@ That means:
 - do **not** update Pi here with `npm install -g`
 - update the package through `~/nixos-config/scripts/update-pi.sh`
 - then rebuild NixOS
+
+Pi packages and extensions are configured declaratively here in `agent/settings.json` and auto-installed by Pi if missing.
+
+On NixOS, Pi package installs must use a writable npm prefix rather than the read-only Nix store. This config therefore pins `npmCommand` to Nix's npm binary while overriding `NPM_CONFIG_PREFIX` to `~/.pi/agent/npm`.

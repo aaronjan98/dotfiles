@@ -35,4 +35,7 @@ Videos/
 # Pi runtime / generated state
 .pi/agent/auth.json
 .pi/agent/bin/
+.pi/agent/mcp-cache.json
+.pi/agent/npm/
 .pi/agent/sessions/
+.pi/web-search.json
