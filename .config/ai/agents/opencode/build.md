@@ -1,6 +1,15 @@
 ---
 description: Primary build agent with full tool access for development work
 mode: primary
+permission:
+  edit: allow
+  bash: allow
+  read: [
+    "~/.config/ai/**",
+    "~/.config/opencode/**",
+    "~/nixos-config/**",
+    "~/Repositories/**"
+  ]
 ---
 
 # OpenCode Bootstrap
@@ -15,15 +24,16 @@ Full rules are at: ~/.config/ai/shared/agent-orientation.md
 
 1. Read: ~/.config/ai/shared/agent-orientation.md
 2. Read: ~/.config/ai/shared/tool-commands.md
+3. Read: ~/.config/ai/skills/CONTEXT.md - Check for relevant skills before starting work
 
-3. Check the current working directory for these files and read any that exist:
+4. Check the current working directory for these files and read any that exist:
    - CONTEXT.md
    - MEMORY.md
    - DEPENDENCIES.md
 
-4. If no CONTEXT.md exists here, check ~/Repositories/ROUTER.md to orient.
+5. If no CONTEXT.md exists here, check ~/Repositories/ROUTER.md to orient.
 
-5. Do not load unrelated repositories or search broadly without routing.
+6. Do not load unrelated repositories or search broadly without routing.
 
 ---
 

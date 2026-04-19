@@ -34,3 +34,31 @@ Customizing the OpenCode theme to match Ghostty terminal colors (Ferrari Red cur
 ## Next Steps
 - Check periodically if cursor_color config works in new opencode versions
 - External editor workaround (Ctrl+x e) temporarily turns cursor red but resets on Ctrl+p
+
+---
+
+## Additional Learnings - Skills & Agent Permissions (later in session)
+
+### Why Skills Weren't Checked
+- Agent should proactively read `~/.config/ai/skills/CONTEXT.md` at session start
+- Updated `~/.config/ai/agents/opencode/build.md` to include skill check step
+
+### Why OpenCode Asks Permission While Claude Doesn't
+- Opencode agents have permission settings in their YAML header
+- `build.md` now explicitly grants permissions:
+  ```yaml
+  permission:
+    edit: allow
+    bash: allow
+    read: [
+      "~/.config/ai/**",
+      "~/.config/opencode/**",
+      "~/nixos-config/**",
+      "~/Repositories/**"
+    ]
+  ```
+- `explore.md` had `bash: "ask"` - that's why permission was requested
+
+### Changes Made
+1. Added explicit permission block to `build.md`
+2. Added skill check step to session start workflow in `build.md`
