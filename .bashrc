@@ -1,4 +1,8 @@
 source $HOME/.bash_aliases
+# Source custom bash snippets for man page coloring
+if [ -f "$HOME/.config/bash/man-color.sh" ]; then
+    . "$HOME/.config/bash/man-color.sh"
+fi
 export EDITOR=nvim
 
 # create dot command to manage dotfiles

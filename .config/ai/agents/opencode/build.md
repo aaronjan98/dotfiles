@@ -4,12 +4,7 @@ mode: primary
 permission:
   edit: allow
   bash: allow
-  read: [
-    "~/.config/ai/**",
-    "~/.config/opencode/**",
-    "~/nixos-config/**",
-    "~/Repositories/**"
-  ]
+  read: allow
 ---
 
 # OpenCode Bootstrap
