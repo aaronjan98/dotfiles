@@ -3,6 +3,7 @@
   "defaultProvider": "opencode-zen-gpt",
   "defaultModel": "gpt-5.4",
   "defaultThinkingLevel": "medium",
+  "theme": "transparent-dark",
   "npmCommand": [
     "/run/current-system/sw/bin/env",
     "NPM_CONFIG_PREFIX=/home/aj/.pi/agent/npm",

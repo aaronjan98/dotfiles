@@ -30,7 +30,9 @@ This directory is intended to be tracked in dotfiles, so secrets must not be wri
 - `agent/models.json` — custom provider definitions, especially OpenCode Zen
 - `agent/mcp.json` — MCP servers exposed through `pi-mcp-adapter`
 - `agent/extensions/default-tools.ts` — enables the richer built-in tool set on startup
+- `agent/themes/transparent-dark.json` — custom theme that removes most block backgrounds
 - `MEMORY.md` — loading manifest and durable Pi config notes
+- `ROADMAP.md` — deferred issues and planned future improvements
 
 ## Working rules
 - Treat this directory as tracked dotfiles-friendly config
