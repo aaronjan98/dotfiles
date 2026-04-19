@@ -43,5 +43,7 @@ Some files at the root of `~/.config/` are tracked directly (not as part of a su
 ## Notes
 
 - Do not use `git` or `g` for dotfiles — always use `dot`.
+- Not all tracked user config lives under `~/.config/`; some dotfiles-managed config is rooted directly under `$HOME` (for example `~/.pi/` for Pi agent config).
+- `.github/README.md` is the GitHub front page for the dotfiles repo. When adding or materially changing a tracked area that affects how the repo is understood from the outside, update that README too.
 - Each actively maintained subdirectory should have its own `CONTEXT.md` for agent orientation.
 - **Staging gotcha:** the dotfiles work tree is `$HOME`, not `~/.config/`. When running `dot add` from inside `~/.config/`, use absolute paths (`/home/aj/.config/...`) or git will double-nest the path and fail. See `ai/shared/tool-commands.md` for details.

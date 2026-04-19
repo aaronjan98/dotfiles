@@ -16,6 +16,7 @@ Configuration for a Hyprland desktop on NixOS. Managed as a bare git repo (`~/.d
 | `fuzzel/` | Fuzzel app launcher config |
 | `firefox/` | Firefox `userChrome.css` — transparent toolbar/tabs via Wayland compositor blur |
 | `ai/` | Agent-first AI workspace — shared rules, skills, and model routing for Claude and Gemini |
+| `.pi/` | Pi coding agent config — tracked settings/models plus agent notes; runtime auth/session state intentionally ignored |
 | tmux | Managed in NixOS config — see [`modules/tmux.nix`](https://github.com/aaronjan98/nixos-config/blob/main/modules/tmux.nix) |
 
 ---
@@ -38,6 +39,12 @@ Custom shell scripts in `.config/hypr/scripts/` implement a slot-based workspace
 
 `.config/ai/` is a file-first framework for running AI agents (Claude, Gemini) against this config and other local projects. It defines shared principles, model routing rules, memory conventions, and reusable skills (session saving, zettelkasten search, notebook inspection, etc.). Agents read `CONTEXT.md` files to orient themselves before acting.
 
+### Pi coding agent config
+
+`~/.pi/` stores tracked Pi configuration and agent notes while leaving runtime state out of the repo. Human-authored files like `agent/settings.json`, `agent/models.json`, `CONTEXT.md`, `MEMORY.md`, and `memory/` are tracked; generated files like `agent/auth.json`, `agent/bin/`, and `agent/sessions/` are intentionally ignored.
+
+OpenCode Zen credentials are not stored in dotfiles. Pi reads the runtime secret from `/run/secrets/opencode_zen_api_key`, which is provisioned separately by the NixOS `sops-nix` setup in [`aaronjan98/nixos-config`](https://github.com/aaronjan98/nixos-config).
+
 ---
 
 ## Setup
@@ -50,7 +57,7 @@ alias dot='git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 dot checkout
 ```
 
-Package management is handled separately via NixOS — see [aaronjan98/nixos-config](https://github.com/aaronjan98/nixos-config). This repo tracks only configuration files.
+Package management is handled separately via NixOS — see [aaronjan98/nixos-config](https://github.com/aaronjan98/nixos-config). This repo tracks configuration and selected agent-facing notes, but not runtime auth/session/cache state.
 
 ### Firefox profile path
 

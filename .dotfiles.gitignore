@@ -31,3 +31,8 @@ Videos/
 .bash_history
 .nix-defexpr
 .gtkrc-2.0
+
+# Pi runtime / generated state
+.pi/agent/auth.json
+.pi/agent/bin/
+.pi/agent/sessions/

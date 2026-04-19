@@ -1,0 +1,97 @@
+{
+  "providers": {
+    "opencode-zen": {
+      "baseUrl": "https://opencode.ai/zen/v1",
+      "apiKey": "!cat /run/secrets/opencode_zen_api_key",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 200000
+        },
+        {
+          "id": "glm-5",
+          "name": "GLM-5 (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 200000
+        },
+        {
+          "id": "kimi-k2.5",
+          "name": "Kimi K2.5 (via Zen)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "maxTokens": 65536,
+          "contextWindow": 262144
+        },
+        {
+          "id": "minimax-m2.5",
+          "name": "MiniMax M2.5 (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 1048576
+        },
+        {
+          "id": "qwen3.6-plus",
+          "name": "Qwen 3.6 Plus (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 1048576
+        },
+        {
+          "id": "qwen3.5-plus",
+          "name": "Qwen 3.5 Plus (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 1048576
+        }
+      ]
+    },
+    "opencode-zen-claude": {
+      "baseUrl": "https://opencode.ai/zen/v1",
+      "apiKey": "!cat /run/secrets/opencode_zen_api_key",
+      "api": "anthropic-messages",
+      "authHeader": true,
+      "models": [
+        {
+          "id": "claude-sonnet-4-6",
+          "name": "Claude Sonnet 4.6 (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 200000
+        },
+        {
+          "id": "claude-opus-4-6",
+          "name": "Claude Opus 4.6 (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 200000
+        }
+      ]
+    },
+    "opencode-zen-gpt": {
+      "baseUrl": "https://opencode.ai/zen/v1",
+      "apiKey": "!cat /run/secrets/opencode_zen_api_key",
+      "api": "openai-responses",
+      "models": [
+        {
+          "id": "gpt-5.1-codex",
+          "name": "GPT 5.1 Codex (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 1048576
+        },
+        {
+          "id": "gpt-5.4",
+          "name": "GPT 5.4 (via Zen)",
+          "reasoning": true,
+          "maxTokens": 16384,
+          "contextWindow": 1048576
+        }
+      ]
+    }
+  }
+}

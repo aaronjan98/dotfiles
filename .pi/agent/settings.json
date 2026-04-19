@@ -1,0 +1,6 @@
+{
+  "lastChangelogVersion": "0.67.68",
+  "defaultProvider": "opencode-zen-gpt",
+  "defaultModel": "gpt-5.4",
+  "defaultThinkingLevel": "medium"
+}
