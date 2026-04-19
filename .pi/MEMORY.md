@@ -4,6 +4,7 @@
 - `CONTEXT.md` — project overview, file paths, and working rules
 - `README.md` — human-facing explanation of the Pi config structure
 - `ROADMAP.md` — deferred issues and future feature work
+- `agent/AGENTS.md` — global Pi harness bootstrap loaded automatically by Pi
 
 ## Read when relevant
 - `memory/YYYY-MM-DD.md` — prior Pi config session logs
@@ -24,6 +25,7 @@
 
 ## Durable notes
 - Pi config in this directory is intended to be tracked in dotfiles.
+- `~/.pi/agent/AGENTS.md` should remain a symlink to the canonical bootstrap file at `~/.config/ai/agents/pi/AGENTS.md`, matching the pattern used for other agent harnesses.
 - OpenCode Zen credentials should be loaded from `/run/secrets/opencode_zen_api_key`, not stored in `~/.pi`.
 - Context7 credentials should come from `CONTEXT7_API_KEY`, exported by `sops-nix` through NixOS.
 - The Pi binary itself is installed declaratively through `~/nixos-config`, not via global npm.

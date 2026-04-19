@@ -26,6 +26,7 @@ This directory is intended to be tracked in dotfiles, so secrets must not be wri
 
 ## Important files
 - `README.md` — human-facing overview of this config directory
+- `agent/AGENTS.md` — global Pi bootstrap file automatically loaded by Pi
 - `agent/settings.json` — default provider/model/thinking level
 - `agent/models.json` — custom provider definitions, especially OpenCode Zen
 - `agent/mcp.json` — MCP servers exposed through `pi-mcp-adapter`

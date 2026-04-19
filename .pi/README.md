@@ -3,6 +3,7 @@
 This directory contains the local Pi coding agent configuration for this machine.
 
 ## Main files
+- `agent/AGENTS.md` — symlinked Pi global bootstrap loaded automatically by Pi (canonical source: `~/.config/ai/agents/pi/AGENTS.md`)
 - `agent/settings.json` — default provider, model, and thinking level
 - `agent/models.json` — custom provider/model definitions
 - `agent/mcp.json` — Pi MCP adapter server configuration
@@ -17,6 +18,7 @@ Track the human-authored config and agent notes:
 - `README.md`
 - `CONTEXT.md`
 - `MEMORY.md`
+- `agent/AGENTS.md`
 - `memory/`
 - `agent/settings.json`
 - `agent/models.json`
