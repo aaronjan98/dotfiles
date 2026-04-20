@@ -19,6 +19,8 @@ Configuration for a Hyprland desktop on NixOS. Managed as a bare git repo (`~/.d
 | `.pi/` | Pi coding agent config — tracked settings/models plus agent notes; runtime auth/session state intentionally ignored |
 | tmux | Managed in NixOS config — see [`modules/tmux.nix`](https://github.com/aaronjan98/nixos-config/blob/main/modules/tmux.nix) |
 
+High-level deferred work is tracked in [`.config/ROADMAP.md`](.config/ROADMAP.md), which links out to more specific roadmap files like `~/.pi/ROADMAP.md` and adjacent system-level backlog notes.
+
 ---
 
 ## Highlights

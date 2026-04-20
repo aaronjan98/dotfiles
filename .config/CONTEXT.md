@@ -35,6 +35,7 @@ Some files at the root of `~/.config/` are tracked directly (not as part of a su
 
 | File | Purpose |
 |---|---|
+| `ROADMAP.md` | High-level index of deferred issues and future work across dotfiles-managed config, with links to more specific roadmap files. |
 | `mimeapps.list` | XDG default application associations. Gwenview is set for all image types. Do not set eog — it is not installed on this system. |
 | `okularpartrc` | Okular document viewer settings. `ChangeColors=false` is intentional — the recolor mode was causing a red overlay on all images. |
 
