@@ -8,6 +8,10 @@ Keep only the most important workflow issues and cross-cutting features here. Pu
 
 ## Current top priorities
 
+### OpenCode database migration runs on every launch
+- See `~/.config/opencode/ROADMAP.md` for details and upstream issue links
+- This is an OpenCode bug, NOT related to local config changes
+
 ### Fix popup tmux terminal workflow
 - the popup tmux terminal binding is currently broken in practice
 - the desired end state is a reliable popup terminal on `Alt+p`
@@ -23,6 +27,7 @@ Keep only the most important workflow issues and cross-cutting features here. Pu
 ## Roadmap index
 
 ### Existing roadmap files
+- `~/.config/opencode/ROADMAP.md` — OpenCode configuration, deferred fixes, and known bugs
 - `~/.pi/ROADMAP.md` — Pi agent configuration, deferred fixes, and future features
 - `~/nixos-config/docs/ROADMAP.md` — NixOS system configuration and operational tooling backlog
 

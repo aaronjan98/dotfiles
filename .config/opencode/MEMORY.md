@@ -17,7 +17,10 @@
 
 ### Current MCPs
 - `context7` — remote docs lookup, authenticated via `CONTEXT7_API_KEY`
-- `playwright` — local browser automation via `npx @playwright/mcp@latest --headless`
+- `playwright` — local browser automation via `npx @playwright/mcp@latest`
+
+### Known Issues
+- **Database migration runs every launch**: Known OpenCode bug (#16885) - migration runs on every start even though it's supposed to be "one-time". This is an upstream issue, not config-related.
 
 ## Detailed Learnings
 See `memory/` directory for full session notes:

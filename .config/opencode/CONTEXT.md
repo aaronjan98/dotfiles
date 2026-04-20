@@ -67,8 +67,9 @@ The raspberry theme uses:
 
 ## MCP Notes
 - `context7` is configured as a remote MCP and reads its API key from `CONTEXT7_API_KEY`
-- `playwright` is configured as a local MCP started with `npx @playwright/mcp@latest --headless`
+- `playwright` is configured as a local MCP started with `npx @playwright/mcp@latest`
 - secrets should not be stored in this directory; they should come from NixOS-managed runtime env vars
+- Note: If database migration runs on every launch, this is a known OpenCode bug (#16885) - see `ROADMAP.md`
 
 ## Key Learnings
 See MEMORY.md for detailed learnings about theme and MCP configuration.

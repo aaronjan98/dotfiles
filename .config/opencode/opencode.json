@@ -13,8 +13,7 @@
       "command": [
         "npx",
         "-y",
-        "@playwright/mcp@latest",
-        "--headless"
+        "@playwright/mcp@latest"
       ],
       "enabled": true,
       "timeout": 15000,
