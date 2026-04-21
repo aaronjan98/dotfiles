@@ -1,8 +1,4 @@
 {
-  "effortLevel": "medium",
-  "allowedPaths": [
-    "~/.config/ai"
-  ],
   "hooks": {
     "Stop": [
       {
@@ -15,5 +11,9 @@
         ]
       }
     ]
-  }
+  },
+  "effortLevel": "medium",
+  "allowedPaths": [
+    "~/.config/ai"
+  ]
 }

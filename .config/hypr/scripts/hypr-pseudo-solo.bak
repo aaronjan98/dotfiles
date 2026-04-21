@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MATCH_REGEX='^(firefox|kitty|obsidian|vesktop)$'
+PSEUDO_W=1800
+PSEUDO_H=980
+
+sock="${XDG_RUNTIME_DIR}/hypr/${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
+
+need() { command -v "$1" >/dev/null 2>&1 || { echo "missing dependency: $1" >&2; exit 1; }; }
+need hyprctl
+need jq
+need socat
+
+log() { [[ "${DEBUG:-0}" == "1" ]] && echo "[hypr-pseudo-solo] $*" >&2 || true; }
+
+# Per-workspace mode + last time we observed MULTI (ms since epoch)
+declare -A WS_MODE
+declare -A WS_LAST_MULTI_MS
+
+now_ms() { date +%s%3N; }
+
+clients_json() { hyprctl clients -j; }
+
+# get counts + tiled addrs on ws
+snapshot_ws() {
+  local ws="$1"
+  local json="$2"
+  local total tiled
+  total="$(jq -r --arg ws "$ws" '[.[] | select(.workspace.name == $ws)] | length' <<<"$json")"
+  tiled="$(jq -r --arg ws "$ws" '[.[] | select(.workspace.name == $ws) | select(.floating == false)] | length' <<<"$json")"
+  printf '%s %s\n' "$total" "$tiled"
+}
+
+# settle sampling: take 3 samples and use the LAST one (most recent)
+settled_json() {
+  local ws="$1"
+  local j
+
+  j="$(clients_json)"
+  sleep 0.10
+  j="$(clients_json)"
+  sleep 0.15
+  j="$(clients_json)"
+
+  printf '%s\n' "$j"
+}
+
+# Force pseudo state using setprop with the WINDOW-RULE prop name: "pseudo"
+# (setprop sets "props" from window rules) :contentReference[oaicite:1]{index=1}
+pseudo_on()  { hyprctl dispatch setprop "address:$1" pseudo 1 >/dev/null; }
+pseudo_off() { hyprctl dispatch setprop "address:$1" pseudo 0 >/dev/null; }
+
+resize_addr() {
+  # resizewindowpixel syntax: `resizeparams,window` :contentReference[oaicite:2]{index=2}
+  hyprctl dispatch resizewindowpixel "exact ${PSEUDO_W} ${PSEUDO_H},address:$1" >/dev/null
+}
+
+apply_ws_mode() {
+  local ws="$1"
+  local mode="$2"
+  local json="$3"
+
+  mapfile -t tiled_addrs < <(
+    jq -r --arg ws "$ws" '
+      .[]
+      | select(.workspace.name == $ws)
+      | select(.floating == false)
+      | .address
+    ' <<<"$json"
+  )
+
+  if [[ "$mode" == "solo" ]]; then
+    # exactly one total window; only do pseudo if the solo window is tiled+eligible
+    if (( ${#tiled_addrs[@]} == 1 )); then
+      local addr="${tiled_addrs[0]}"
+      local klass
+      klass="$(jq -r --arg addr "$addr" '.[] | select(.address==$addr) | .class' <<<"$json")"
+
+      if [[ "$klass" =~ $MATCH_REGEX ]]; then
+        log "ws=$ws SOLO -> pseudo ON + resize for $klass $addr"
+        pseudo_on "$addr"
+        resize_addr "$addr"
+      else
+        log "ws=$ws SOLO (not eligible) -> pseudo OFF for $klass $addr"
+        pseudo_off "$addr"
+      fi
+    fi
+  else
+    # multi/empty -> pseudo OFF for all eligible tiled windows
+    for addr in "${tiled_addrs[@]}"; do
+      local klass
+      klass="$(jq -r --arg addr "$addr" '.[] | select(.address==$addr) | .class' <<<"$json")"
+      if [[ "$klass" =~ $MATCH_REGEX ]]; then
+        log "ws=$ws $mode -> pseudo OFF for $klass $addr"
+        pseudo_off "$addr"
+      fi
+    done
+  fi
+}
+
+decide_mode() {
+  local total="$1"
+  if [[ "$total" == "0" ]]; then
+    echo "empty"
+  elif [[ "$total" == "1" ]]; then
+    echo "solo"
+  else
+    echo "multi"
+  fi
+}
+
+# Hysteresis:
+# If we VERY recently saw MULTI, ignore brief SOLO flickers for HYST_MS unless we’re processing a close event.
+HYST_MS=500
+
+apply_workspace() {
+  local ws="$1"
+  local reason="${2:-generic}" # open/close/move/workspace/mon/generic
+  local json total tiled new_mode old_mode tnow last_multi
+
+  json="$(settled_json "$ws")"
+  read -r total tiled < <(snapshot_ws "$ws" "$json")
+
+  new_mode="$(decide_mode "$total")"
+  old_mode="${WS_MODE[$ws]:-unknown}"
+
+  tnow="$(now_ms)"
+  last_multi="${WS_LAST_MULTI_MS[$ws]:-0}"
+
+  # record last multi observation
+  if [[ "$new_mode" == "multi" ]]; then
+    WS_LAST_MULTI_MS[$ws]="$tnow"
+  fi
+
+  # ignore solo flicker shortly after multi unless this is a CLOSE event
+  if [[ "$new_mode" == "solo" && "$old_mode" == "multi" && "$reason" != "close" ]]; then
+    if (( tnow - last_multi < HYST_MS )); then
+      log "ws=$ws ignoring SOLO flicker (tnow-last_multi=$((tnow-last_multi))ms) reason=$reason"
+      return
+    fi
+  fi
+
+  log "ws=$ws total=$total tiled=$tiled mode=$old_mode->$new_mode reason=$reason"
+
+  if [[ "$new_mode" != "$old_mode" ]]; then
+    WS_MODE[$ws]="$new_mode"
+    apply_ws_mode "$ws" "$new_mode" "$json"
+  fi
+}
+
+# Extract workspace id from socket2 lines when possible.
+# Fallback to active workspace if parsing fails.
+ws_from_line() {
+  local line="$1"
+  # socket2 formats vary; workspace events often look like: "workspace>>4"
+  if [[ "$line" =~ ^workspace\>\>(.+)$ ]]; then
+    echo "${BASH_REMATCH[1]}"
+    return
+  fi
+  # openwindow/closewindow formats vary; safest fallback:
+  hyprctl activeworkspace -j | jq -r '.name'
+}
+
+# initial seed on current workspace
+curws="$(hyprctl activeworkspace -j | jq -r '.name')"
+apply_workspace "$curws" "generic"
+
+pending=0
+last_line=""
+
+schedule() { pending=1; last_line="$1"; }
+
+socat -U - UNIX-CONNECT:"$sock" | while read -r line; do
+  case "$line" in
+    openwindow*|closewindow*|movewindow*|workspace*|focusedmon*)
+      schedule "$line"
+      ;;
+  esac
+
+  if (( pending == 1 )); then
+    pending=0
+    sleep 0.08
+
+    ws="$(ws_from_line "$last_line")"
+    reason="generic"
+    [[ "$last_line" == openwindow* ]] && reason="open"
+    [[ "$last_line" == closewindow* ]] && reason="close"
+    [[ "$last_line" == movewindow* ]] && reason="move"
+    [[ "$last_line" == workspace* ]] && reason="workspace"
+    [[ "$last_line" == focusedmon* ]] && reason="mon"
+
+    apply_workspace "$ws" "$reason"
+  fi
+done
+
