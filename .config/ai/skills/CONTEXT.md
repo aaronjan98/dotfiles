@@ -14,3 +14,4 @@ When a user's request matches a skill below, read that skill's `SKILL.md` and fo
 | Zettelkasten Search | `zettelkasten-search/` | Personal knowledge | "search my notes", "find notes about X", "look in my zettelkasten" |
 | Zettelkasten New Directory | `zettelkasten-new-directory/` | Personal knowledge | creating a new folder or directory inside the zettelkasten vault |
 | Save Session | `save-session/` | Meta | "save the session", "wrap up", "end of session" |
+| NixOS Printing | `nixos-printing/` | NixOS / system | "print", "printer not showing up", "add a printer", "print job", "CUPS", "printing on NixOS" |
