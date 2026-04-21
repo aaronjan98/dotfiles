@@ -190,6 +190,28 @@ Default behavior:
 
 ---
 
+## ROADMAP Routing
+
+When a user reports a bug or requests a future feature, write it to the ROADMAP.md that owns that domain. Do not write cross-project bugs into the currently active project’s ROADMAP.
+
+### Routing map
+
+| Domain | ROADMAP location |
+|--------|-----------------|
+| NixOS system config, modules, services, packages | `~/nixos-config/docs/ROADMAP.md` |
+| Dotfiles, desktop environment, cross-cutting config | `~/.config/ROADMAP.md` (then delegate to area ROADMAP if one exists) |
+| Quickshell shell/bar/widgets | `~/.config/quickshell/ROADMAP.md` |
+| Homelab (Raymer — Jellyfin, Nextcloud, DNS, etc.) | `~/Repositories/self-hosted/homelab/Raymer/ROADMAP.md` |
+
+### Rules
+
+- Identify the owning domain before writing. A Jellyfin bug belongs in Raymer’s ROADMAP, not the active project’s ROADMAP.
+- For dotfiles/desktop issues: write to `~/.config/ROADMAP.md` first. If the item is specific to one config area that has its own ROADMAP (e.g. `~/.config/opencode/ROADMAP.md`), write there and add a cross-reference pointer in `~/.config/ROADMAP.md`.
+- Keep entries short: status, symptom, and relevant machine or file. Detailed investigation notes go in `memory/YYYY-MM-DD.md`.
+- When creating a ROADMAP for a new area, also add it to the routing map above and reference it from the area’s `CONTEXT.md`.
+
+---
+
 ## System Philosophy
 
 This system is:
