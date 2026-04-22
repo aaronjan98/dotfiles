@@ -71,20 +71,34 @@ Implementation note:
 
 Relevant file: `rices/limerence/components/frame/CornerPatch.qml`
 
-### Battery health popup: charge limit toggle
+### Battery health popup: charge limit toggle + power mode switcher
 Goal:
-- Clicking the battery icon in the top-right pill opens a popup allowing the user to cap battery charging at 80% (and restore full charging), similar to AlDente on macOS
-- Popup shows: current charge percentage, current limit setting, and a toggle to enable/disable the 80% cap
+- Clicking the battery icon in the top-right pill opens a popup combining two battery-related controls:
+  1. **Charge limit toggle**: cap charging at 80% (similar to AlDente on macOS); shows current percentage, current limit, and a toggle to enable/disable the cap
+  2. **Power mode switcher**: select between performance profiles (e.g. power-saver, balanced, performance) — similar to what GNOME Power Profiles exposes; shows current mode and lets you switch
 
 Two parts — Quickshell UI and NixOS backend (see `~/nixos-config/docs/ROADMAP.md` for the system side):
 - The popup follows the existing popup pattern (scrim + PanelWindow, Escape to close)
 - A Quickshell service reads the current threshold from sysfs and writes changes via a privileged helper (polkit action or setuid wrapper)
+- Power mode reads/writes via `power-profiles-daemon` DBus API or the sysfs `energy_performance_preference` node (ThinkPad specific: `/sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference`)
 
 Relevant files:
 - `rices/limerence/components/widgets/BatteryIcon.qml` — add `onClicked` signal
 - New: `rices/limerence/components/widgets/BatteryPopup.qml`
 - New: `rices/limerence/components/services/BatteryHealth.qml` (reads/writes charge threshold)
+- New: `rices/limerence/components/services/PowerProfile.qml` (reads/writes power mode)
 - `rices/limerence/components/frame/TopBar.qml` — wire up popup open state (same pattern as wifiPopupOpen etc.)
+
+### Volume icon: headphones not shown for Bluetooth audio devices
+Status: confirmed
+
+- Plugging in headphones via aux (3.5mm) correctly switches the volume icon to a headphones icon
+- Connecting Bluetooth headphones does not trigger the same icon change — the default speaker icon remains
+- Expected: any headphone/headset device (wired or Bluetooth) should show the headphones icon
+
+Root cause is likely in how the audio source/sink is detected — the aux path probably checks PipeWire/PulseAudio port description or device form factor, while Bluetooth sinks report a different form factor or node name that the icon logic doesn't handle
+
+Relevant file: wherever the volume icon and its device-type detection live in the Quickshell audio service (likely a service that queries PipeWire sinks)
 
 ### Escape key does not close power or notification popups
 Status: confirmed
@@ -138,6 +152,21 @@ Relevant files:
 - `rices/limerence/components/frame/ContentFrame.qml` — 4-strip geometry, inner glow radius
 - `rices/limerence/config/Appearance.qml` — `frameBg`, `frameRadius`, all palette values
 
+### Brightness sliders: out of sync when adjusted via hardware keys
+Status: confirmed
+
+- The brightness popup (screen and keyboard backlight sliders) does not reflect hardware-key changes made while the popup is closed
+- If you press the brightness keys before opening the popup, the slider handle appears at the last position the popup knew about, not the actual current brightness
+- Reproduces every time: adjust brightness via keyboard, then open the popup — slider is visually wrong until you move it
+
+Root cause is likely that the backing service (`BrightnessCtl.qml` or equivalent) only reads the current value at startup or on popup open, rather than watching for changes via inotify/DBus. Hardware keys update the actual sysfs/DBus value but don't push an update back to the QML property, so the UI drifts.
+
+Fix: watch the brightness sysfs node (or DBus signal) continuously so the service property stays in sync regardless of how the brightness was changed.
+
+Relevant files:
+- `rices/limerence/components/services/BrightnessCtl.qml` — backing service; needs live sysfs watch or DBus subscription
+- `rices/limerence/components/widgets/BrightnessPopup.qml` — slider binds to service property
+
 ### Night light slider: no live preview during drag, and flash to white on commit
 Status: confirmed
 
@@ -157,6 +186,80 @@ Relevant files:
 ---
 
 ## Future features
+
+### Layout system: `Layout.qml` singleton for multiple shell profiles
+
+Rather than scattering per-layout conditionals throughout individual components, introduce a `Layout.qml` singleton (same pattern as `Appearance.qml`) that exposes structural layout properties. Each component binds to these properties instead of hardcoded anchors or `isExternal` flags.
+
+Example shape:
+```qml
+pragma Singleton
+QtObject {
+  property string profile: "laptop"   // "laptop" | "external" | "right-bar"
+
+  property bool   showLeftBar:   profile === "laptop" || profile === "right-bar"
+  property bool   showRightBar:  profile === "right-bar"
+  property bool   showCorner:    profile === "laptop"
+  property string vertBarSide:   profile === "right-bar" ? "right" : "left"
+  property int    topBarHeight:  profile === "external" ? C.Appearance.topHExternal : C.Appearance.topH
+  property int    topBarMarginLeft:  showLeftBar && vertBarSide === "left"  ? C.Appearance.leftW : 0
+  property int    topBarMarginRight: showRightBar && vertBarSide === "right" ? C.Appearance.leftW : 0
+}
+```
+
+The active profile would be driven by `Quickshell.screens` context (laptop screen vs external) or by a runtime-writable property for manual switching.
+
+**Design constraint**: components are not expected to change orientation (e.g., a vertical domain dot column stays vertical on the right bar — it doesn't reflow to horizontal). The `Layout.qml` system controls *which* bars are shown and *where* they are anchored, not the internal layout direction of islands within them.
+
+**Planned profiles:**
+
+1. **`laptop`** (current layout) — left vertical bar, standard top bar height, CornerPatch visible
+2. **`external`** — no vertical bar, no CornerPatch, taller top bar, top bar spans full width
+3. **`right-bar`** — vertical bar moved to right side, same islands, top bar spans full width on left
+
+Profile 2 (external) is the first to implement; the `isExternal` flag in the near-term implementation is a stepping stone toward this singleton.
+
+Relevant files once implemented:
+- New: `rices/limerence/config/Layout.qml` — profile singleton
+- `rices/limerence/components/frame/FrameRoot.qml` — drive bar visibility from `Layout`
+- `rices/limerence/components/frame/TopBar.qml` — margins and height from `Layout`
+- `rices/limerence/components/frame/LeftBar.qml` — anchor side from `Layout`
+- `rices/limerence/components/frame/ContentFrame.qml` — hole margins from `Layout`
+
+### Top-right pill: calendar icon and unified event popup
+Goal:
+- Add a calendar icon immediately before the date text in the right pill (between a new divider and `W.Clock`), matching the same icon-before-text pattern used elsewhere in the pill
+- Clicking the icon opens a popup showing unified calendar events from all sources: Calendly, Obsidian daily notes/tasks, and any other calendar feeds
+
+Popup contents (planned):
+- A scrollable day/week view of upcoming events
+- Each event shows source label (Calendly / Obsidian / etc.), title, time, and optional description
+- Today's events at the top; later entries below with a subtle date separator
+
+Data sources to integrate:
+- **Calendly**: poll via Calendly API (REST, requires API token); fetch scheduled events for the authenticated user
+- **Obsidian**: parse the daily note for the current day (or a `tasks.md` / dataview query output) to extract TODO/event lines — Obsidian has no live API, so this is a file read from the vault directory
+- **Other feeds**: iCal/`.ics` files or CalDAV if additional sources are added later (e.g. a self-hosted calendar)
+
+Implementation notes:
+- A `CalendarService.qml` singleton polls each source on a configurable interval and merges events into a unified list sorted by time
+- Calendly polling should be infrequent (e.g. every 5 minutes) to avoid rate limits; Obsidian file watch can use `inotify` via a Quickshell `FileView` for near-instant updates
+- API token stored outside the QML source (e.g. read from `~/.config/quickshell/secrets.json` or a `$CALENDLY_TOKEN` env var at startup)
+- Popup follows the existing popup pattern (scrim + PanelWindow, Escape to close), same width as the wider popups (`popupWidthWide`)
+
+Placement in TopBar:
+```qml
+// Inside the right Pill Row, just before W.Clock:
+Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+W.CalendarIcon { onClicked: root.calPopupOpen = !root.calPopupOpen }
+```
+
+Relevant files:
+- `rices/limerence/components/frame/TopBar.qml` — add `calPopupOpen` state and wire up popup; insert `CalendarIcon` before `Clock` in the right pill Row
+- `rices/limerence/components/widgets/Clock.qml` — no change needed
+- New: `rices/limerence/components/widgets/CalendarIcon.qml`
+- New: `rices/limerence/components/widgets/CalendarPopup.qml`
+- New: `rices/limerence/components/services/CalendarService.qml`
 
 ### Left bar: Kanata mode indicator island
 Goal:

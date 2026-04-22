@@ -27,6 +27,21 @@ Workaround:
 - This is NOT caused by MCP configuration changes
 - The Playwright `--browser` args were removed coincidentally but did not affect this
 
+### Default model falls back to removed ollama model on launch
+Status: deferred (needs config fix)
+
+Problem:
+- On every launch, opencode defaults to `glm flash` (or similar) from ollama, which is no longer installed
+- Requires manually switching to the desired model each session
+
+Root cause:
+- opencode persists the last-used or configured model; the ollama model is likely still set in `opencode.json` or in the DB as the preferred default
+- Ollama is not running / the model no longer exists locally, but opencode tries it anyway
+
+Fix:
+- Check `~/.config/opencode/opencode.json` for a hardcoded model or provider setting
+- Either remove/update the model entry, or set an explicit default pointing to the correct provider (e.g. Anthropic claude-sonnet-4-6)
+
 ## Future Features
 
 ### Live runtime theme switching
