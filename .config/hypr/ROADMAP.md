@@ -6,6 +6,61 @@ Tracks deferred keybind work, window management features, and workspace behaviou
 
 ## Features
 
+### Floating windows: auto-center and default size on Super+V
+Goal:
+- When toggling a window to floating with `Super+V`, it should land at a sensible size (not whatever the tiled size was) and be centered on screen, without needing manual resize/drag
+- Per-app overrides for apps that have a natural preferred float size (e.g. file pickers, image viewers, terminals)
+
+Options:
+
+**Option A — windowrulev2 with `floating:1` filter** (passive, no keybind change):
+```
+windowrulev2 = center,  floating:1
+windowrulev2 = size 60% 70%, floating:1
+```
+Applies whenever any window enters float state (via `togglefloating`, drag, or spawn rule). Per-app sizes stack on top:
+```
+windowrulev2 = size 900 600, class:^(org.gnome.Nautilus)$, floating:1
+```
+Downside: also fires for windows you manually positioned — they'd re-center on every float-toggle cycle.
+
+**Option B — custom dispatch script** (active, replaces `Super+V` binding):
+```bash
+hyprctl dispatch togglefloating
+hyprctl dispatch centerwindow
+hyprctl dispatch resizeactive exact 1200 800
+```
+Bound as `bind = $mainMod, V, exec, float-toggle-center`. Gives precise control and only runs on the explicit keybind — doesn't interfere with windows that spawn floating or are dragged.
+
+Recommended: start with Option A to see if the re-centering on each toggle is annoying; if it is, switch to Option B. Per-app overrides via `windowrulev2` work with both approaches.
+
+Relevant files:
+- `~/.config/hypr/conf.d/40-windowrules.conf` — add `center` and `size` rules with `floating:1` filter
+- `~/.config/hypr/conf.d/20-binds.conf` — change `Super+V` binding if going with Option B
+
+---
+
+### Floating windows: render above Quickshell bar islands
+Status: likely a Wayland layer-shell limitation — needs investigation
+
+Symptom:
+- Floating windows that you want to overlap the top bar or left bar render underneath them instead
+- `TopBar` and `LeftBar` use `PanelWindow` with no explicit `WlrLayershell.layer`, so they default to `WlrLayer.Top`
+- `WlrLayer.Top` surfaces always render above all normal Hyprland windows (tiled and floating) — this is the Wayland protocol's defined stacking order
+
+Why it can't be fixed trivially:
+- The layer ordering is: Background → Bottom → Normal windows → **Top** → Overlay
+- There is no standard Wayland mechanism to promote a normal window above a `Top`-layer surface
+- Lowering the bars to `WlrLayer.Bottom` would put them behind all windows all the time (unacceptable)
+- Lowering to `WlrLayer.Normal` puts them at the same level as windows; z-ordering at that level is compositor-controlled and unpredictable
+
+Possible paths to investigate:
+1. **Hyprland `layerrule`**: check if newer Hyprland versions support a `layerrule` that adjusts per-surface stacking (e.g. `layerrule = belowwindows, quickshell:topbar`) — not confirmed to exist
+2. **Per-popup `WlrLayer.Bottom`**: bars stay at `Top`, but specific popups (brightness, wifi, etc.) are moved to `Bottom` so they appear below floating windows — wrong direction, this makes popups worse
+3. **Accept and design around it**: treat the bars as always-on-top chrome (like macOS menu bar) and ensure floating windows are sized/positioned to avoid the bar areas; the auto-center rule above would naturally account for bar height if `margins` are set correctly in `windowrulev2`
+
+Cross-reference: `~/.config/quickshell/ROADMAP.md` for the `WlrLayershell.layer` values in use
+
 ### Sticky tiled window (follows workspace switches)
 
 Goal:

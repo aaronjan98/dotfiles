@@ -11,6 +11,26 @@ nix shell nixpkgs#poppler-utils --command pdftotext <path> -
 
 Do NOT use the Read tool for PDFs.
 
+## Running Python scripts
+
+This system is NixOS — Python is not in global PATH. Always use `nix shell`
+(not the legacy `nix-shell`) since this system uses flakes syntax.
+
+**Run a script with dependencies:**
+```
+nix shell nixpkgs#python3 nixpkgs#python3Packages.pikepdf --command python3 script.py
+```
+
+**One-liner:**
+```
+nix shell nixpkgs#python3 --command python3 -c "print('hello')"
+```
+
+**Common packages:** `python3Packages.pikepdf`, `python3Packages.reportlab`,
+`python3Packages.pillow`, `python3Packages.requests`, `python3Packages.numpy`
+
+---
+
 ## Converting DOCX to PDF
 
 ```
