@@ -6,6 +6,22 @@ Tracks deferred keybind work, window management features, and workspace behaviou
 
 ## Features
 
+### Super+Z: stateful float-zoom toggle
+Goal:
+- First press: save the window's current size, position, and floating/tiled state → set floating → resize to 1800×980 → center
+- Second press: restore exactly — size, position, and whether the window was tiled or floating
+
+Previous attempt (reverted):
+- A bash script stored state per window address in `/tmp/hypr-float-zoom/<addr>` using `hyprctl activewindow -j`
+- On restore: `settiled` for previously tiled windows; `resizeactive exact` + `movewindowpixel exact X Y,address:ADDR` for previously floating ones
+- Did not work reliably — unclear whether the issue was `movewindowpixel exact` syntax, timing between dispatches, or something else
+- Reverted to simple `fullscreen, 1` on `Super+Z` (maximizes to work area, tmux-style, no state)
+
+Next investigation:
+- Verify `movewindowpixel exact X Y,address:ADDR` dispatch works correctly for restoring float position (test in isolation with `hyprctl dispatch`)
+- Consider using `hyprctl dispatch focuswindow address:ADDR` before position/size dispatches to ensure the right window is targeted
+- Alternative: store state in a Quickshell service instead of a bash temp file, which could also expose zoom state visually in the bar
+
 ### Floating windows: auto-center and default size on Super+V
 Goal:
 - When toggling a window to floating with `Super+V`, it should land at a sensible size (not whatever the tiled size was) and be centered on screen, without needing manual resize/drag
