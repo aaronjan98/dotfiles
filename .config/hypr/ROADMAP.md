@@ -6,6 +6,55 @@ Tracks deferred keybind work, window management features, and workspace behaviou
 
 ## Features
 
+### Domain-aware xdg-open / link handler
+
+Goal:
+- When any app opens a URL (via `xdg-open`), the link should open in a browser window that is already on the current workspace domain
+- If no browser window exists in the current domain, open a new browser window and place it in the current domain's first slot
+- Never hijack a browser window that is on a different domain
+
+Why this matters:
+- The 2D workspace layout groups work by domain (vertical axis); having a link open in a browser on domain 3 while you're working in domain 1 breaks the spatial model
+- Current behavior: xdg-open picks the last-focused browser regardless of which domain it's on
+
+Implementation approach — custom wrapper script set as `$BROWSER` / xdg default:
+```bash
+#!/usr/bin/env bash
+URL="$1"
+BROWSER_BIN="brave"  # or firefox, chromium, etc.
+
+# Get current workspace from active monitor
+current_ws=$(hyprctl monitors -j | jq '.[] | select(.focused) | .activeWorkspace.id')
+domain=$(( current_ws / 10 ))
+
+# Find a browser client in this domain (workspaces domN*10+1 through domN*10+9)
+target=$(hyprctl clients -j | jq -r --argjson d "$domain" '
+  .[] | select(
+    .class == "brave-browser" and
+    (.workspace.id / 10 | floor) == $d
+  ) | .address' | head -1)
+
+if [ -n "$target" ]; then
+  hyprctl dispatch focuswindow "address:$target"
+  "$BROWSER_BIN" "$URL"
+else
+  hyprctl dispatch exec "[workspace $((domain * 10 + 1)) silent] $BROWSER_BIN $URL"
+fi
+```
+
+Key details:
+- Script must be set as `$BROWSER` env var and registered as the xdg `x-scheme-handler/http` and `x-scheme-handler/https` handler via `xdg-settings set default-web-browser`
+- `$BROWSER_BIN "$URL"` opens in an existing instance as a new tab (works for Chromium-based browsers; Firefox needs `firefox --new-tab "$URL"`)
+- Domain calculation: `ws_id / 10` (integer division) — assumes workspace IDs follow the `domN * 10 + slot` scheme used in this config
+- The `silent` dispatch flag prevents focus-steal when spawning a new window
+
+Files to create/edit:
+- New script: `~/.config/hypr/scripts/xdg-open-domain` — the wrapper above
+- `hosts/thinkpad-t14/configuration.nix` or `modules/` — set `BROWSER` env var and register xdg handler via `xdg.mime.defaultApplications`
+- Or: manage via Home Manager `xdg.mimeApps.defaultApplications`
+
+---
+
 ### Super+Z: stateful float-zoom toggle
 Goal:
 - First press: save the window's current size, position, and floating/tiled state → set floating → resize to 1800×980 → center
@@ -21,6 +70,12 @@ Next investigation:
 - Verify `movewindowpixel exact X Y,address:ADDR` dispatch works correctly for restoring float position (test in isolation with `hyprctl dispatch`)
 - Consider using `hyprctl dispatch focuswindow address:ADDR` before position/size dispatches to ensure the right window is targeted
 - Alternative: store state in a Quickshell service instead of a bash temp file, which could also expose zoom state visually in the bar
+
+Visual indicator (Quickshell side):
+- When Super+Z is active, show a small red "Z" badge on the workspace bubble in the top bar
+- `HyprlandWorkspace.hasFullscreen` (reactive bool) is the right signal — true for both `fullscreen 0` (Super+F) and `fullscreen 1` (Super+Z), but Super+F covers the bar entirely so the badge only matters visually during Super+Z
+- Implementation: add `readonly property bool isZoomed: Hyprland.focusedWorkspace?.hasFullscreen ?? false` to `TopBar.qml`; add a small `Rectangle` with `Text { text: "Z" }` as a sibling of the workspace `BubbleItem`, anchored to its top-right corner, visibility bound to `isZoomed`, with a `Behavior on opacity { NumberAnimation { duration: 140 } }` for a smooth fade
+- Relevant files: `rices/limerence/components/frame/TopBar.qml`
 
 ### Floating windows: auto-center and default size on Super+V
 Goal:
@@ -76,6 +131,34 @@ Possible paths to investigate:
 3. **Accept and design around it**: treat the bars as always-on-top chrome (like macOS menu bar) and ensure floating windows are sized/positioned to avoid the bar areas; the auto-center rule above would naturally account for bar height if `margins` are set correctly in `windowrulev2`
 
 Cross-reference: `~/.config/quickshell/ROADMAP.md` for the `WlrLayershell.layer` values in use
+
+### Named scratchpads (multiple independent hide/show slots)
+
+Goal:
+- Multiple per-purpose scratchpad workspaces (e.g. one always running `btop`, one for a free-floating scratch terminal) that can be toggled independently
+- Currently `special` workspace is a single shared bucket used for btop; adding a second scratchpad requires naming them
+
+Implementation — fully supported by native Hyprland, no scripting needed:
+```ini
+# Rename existing btop binding to use named special workspace:
+bind = $mainMod, MINUS, togglespecialworkspace, btop
+bind = $mainMod SHIFT, MINUS, movetoworkspacesilent, special:btop
+
+# Second scratchpad (free slot for any window):
+bind = $mainMod, EQUAL, togglespecialworkspace, scratch
+bind = $mainMod SHIFT, EQUAL, movetoworkspacesilent, special:scratch
+```
+
+Auto-spawn btop into its scratchpad on login (add to Hyprland config):
+```ini
+exec-once = [workspace special:btop silent] foot -e btop
+```
+
+Files to edit:
+- `~/.config/hypr/conf.d/20-binds.conf` — update existing MINUS binding, add EQUAL binding
+- `~/.config/hypr/conf.d/10-general.conf` (or wherever `exec-once` lines live) — add btop spawn rule
+
+---
 
 ### Sticky tiled window (follows workspace switches)
 

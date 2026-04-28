@@ -57,6 +57,39 @@ The appearance/effects panel (`AppearancePopup.qml`) controls all other visual f
 
 ## Ongoing issues
 
+### Domain dot click: wrong slot restored after keyboard navigation
+Status: confirmed
+
+Symptom:
+- Clicking a domain bubble in the left bar navigates to the correct domain but lands on the wrong slot — usually slot 1 — instead of the last slot visited in that domain
+- Only reproduces after using keyboard navigation for a while; works correctly at first
+- Pure keyboard navigation is unaffected
+
+Two interacting root causes:
+
+**1. LeftBar click doesn't save the current slot before leaving**
+The `onClicked` handler in `LeftBar.qml` reads `DomainMemory.lastSlot(targetDom)` and dispatches directly, but never calls `DomainMemory.setLastSlot(currentDom, currentSlot)` for the domain being left.
+Compare: `ws-domain`, `ws-rel`, and `ws-slot` all write the current position to `last.txt` *before* navigating.
+This means clicking away mid-slot can leave the departing domain's entry stale.
+
+Fix: add `S.DomainMemory.setLastSlot(root.domain, root.slot)` at the top of the `onClicked` handler in `LeftBar.qml` before reading the target slot.
+
+**2. Atomic `mv` in bash scripts breaks `FileView`'s inotify watch**
+`ws-domain`, `ws-rel`, and `ws-slot` all write state with:
+```bash
+awk ... "$last_file" > "$tmp" && mv "$tmp" "$last_file"
+```
+`mv` replaces the file with a new inode. Quickshell's `FileView { watchChanges: true }` attaches its inotify watch to the original inode. After the first keyboard navigation the watch silently detaches; subsequent script writes go undetected by `DomainMemory`. `lastSlot()` returns whatever it last successfully read — often 1 for domains not yet visited — explaining why the bug only appears after using the keyboard for a while.
+
+Fix (two options, apply both):
+- In `DomainMemory.qml`: call `lastView.reload()` (or equivalent) inside `lastSlot()` before parsing, so each click forces a fresh read regardless of watch state
+- In the bash scripts: replace `mv "$tmp" "$last_file"` with `cat "$tmp" > "$last_file" && rm "$tmp"` to write in-place (same inode, inotify stays attached)
+
+Relevant files:
+- `rices/limerence/components/frame/LeftBar.qml` — missing `setLastSlot` before dispatch (line ~137)
+- `rices/limerence/components/state/DomainMemory.qml` — `lastSlot()` and `_lastText()` may use stale cache
+- `~/.config/hypr/scripts/ws-domain`, `ws-rel`, `ws-slot` — all use `mv` for atomic write
+
 ### Nix icon: spin on hover, freeze at current angle on unhover
 Status: fun / low priority
 

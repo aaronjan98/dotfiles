@@ -16,14 +16,38 @@ Do NOT use the Read tool for PDFs.
 This system is NixOS — Python is not in global PATH. Always use `nix shell`
 (not the legacy `nix-shell`) since this system uses flakes syntax.
 
-**Run a script with dependencies:**
+**CRITICAL — do NOT mix `nixpkgs#python3` with package derivations:**
+
+When you include both `nixpkgs#python3` and `nixpkgs#python3Packages.X` in the
+same `nix shell` call, the standalone `python3` derivation wins the PATH race and
+runs without the packages in its `sys.path`. The packages are fetched to the nix
+store but are invisible to the interpreter. This causes `ModuleNotFoundError` even
+after a successful download.
+
+**Run a script with no external packages (pure stdlib):**
 ```
-nix shell nixpkgs#python3 nixpkgs#python3Packages.pikepdf --command python3 script.py
+nix run nixpkgs#python3 -- script.py
 ```
 
-**One-liner:**
+**One-liner with no external packages:**
 ```
-nix shell nixpkgs#python3 --command python3 -c "print('hello')"
+nix run nixpkgs#python3 -- -c "print('hello')"
+```
+
+**Run a script with dependencies — specify ONLY the package derivations, NOT python3:**
+```
+nix shell nixpkgs#python3Packages.pikepdf --command python3 script.py
+```
+
+**Multiple packages:**
+```
+nix shell nixpkgs#python3Packages.numpy nixpkgs#python3Packages.pandas --command python3 script.py
+```
+
+If the above still fails (rare — happens when a package derivation does not expose
+a usable `python3` binary), fall back to the withPackages expression form:
+```
+nix shell --impure --expr 'with import <nixpkgs> {}; python3.withPackages(ps: with ps; [numpy pandas])' --command python3 script.py
 ```
 
 **Common packages:** `python3Packages.pikepdf`, `python3Packages.reportlab`,

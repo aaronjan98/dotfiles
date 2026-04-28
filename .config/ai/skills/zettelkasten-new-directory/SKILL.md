@@ -2,7 +2,34 @@
 
 ## Trigger
 Use this skill when creating a new folder/directory anywhere inside the zettelkasten vault
-(`~/Repositories/self-hosted/zettelkasten/`).
+(`~/Repositories/self-hosted/zettelkasten/`), or when placing a new note inside an existing
+directory.
+
+---
+
+## Before creating any note — find optimal placement by traversal
+
+Do not guess placement from the note's topic alone. Traverse the vault's existing structure:
+
+1. **Start at the top-level index** — read `Index (Spaces).md` (the vault root MOC) to identify
+   which top-level section fits the note (`Inside/`, `Zettels/`, `Outside/`, etc.)
+
+2. **Traverse down via CONTEXT.md and Index files** — read the CONTEXT.md or Index file of
+   each candidate subdirectory to determine which one the note belongs in. Continue until you
+   reach the most specific subdirectory that fits.
+
+3. **Place the note in that subdirectory.** The `North::` frontmatter is then:
+   - **First link:** the Index file of the directory the note was placed in
+   - **Subsequent links:** any parent or cross-domain Index files relevant to the topic,
+     found by searching the vault (`find ~/Repositories/self-hosted/zettelkasten -name "Index (X)*"`)
+
+   Example: a git gotcha placed in `Inside/Projects/` gets:
+   `North:: [[Index (Projects).md]], [[Index (Git).md]]`
+   — where `Index (Projects).md` is the directory's own index, and `Index (Git).md` was
+   found by searching the vault.
+
+4. **Never assume an Index file doesn't exist** — always search the full vault before
+   concluding one needs to be created.
 
 ---
 

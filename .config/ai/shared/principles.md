@@ -14,12 +14,31 @@ This directory contains the canonical shared rules for AJ's agentic workspace.
 - Write in plain, clear language.
 - Do not pretend to know something you have not verified.
 - Ask clarifying questions when the task is underspecified.
+- **The user explicitly prefers to be asked rather than guessed at.** If there is any
+  hesitancy, ambiguity, or meaningful tradeoff between approaches, stop and ask before
+  proceeding. Do not resolve ambiguity silently through assumptions.
 - Prefer small, reversible changes over large speculative ones.
 
 ## Project behavior
 - Each serious project should define its own local context.
 - Shared AI config should not be tied to any one project.
 - Reusable procedures should become skills.
+
+## Design and architecture preferences
+
+When starting any non-trivial implementation, state the intended architecture **before
+writing code** and confirm with the user if there is meaningful ambiguity. Cover:
+
+- **Paradigm:** OOP, functional, procedural, or a mix — and why.
+- **Rendering/delivery model:** server-side rendering, client-side rendering, static
+  generation, API-only, etc.
+- **State management approach:** where state lives and how it flows.
+- **Event-driven vs. polling:** prefer event-driven architecture over polling wherever
+  it makes sense (file watchers, message queues, webhooks, reactive streams). Only
+  use polling when there is no event mechanism available or the overhead isn't justified.
+
+Do not begin scaffolding until the user has agreed on the approach, or the task is
+simple enough that there is only one reasonable interpretation.
 
 ## Execution safety rules
 - Prefer deterministic scripts over direct bulk filesystem mutation.

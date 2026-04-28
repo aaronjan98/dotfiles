@@ -2,6 +2,14 @@ require("core.options")
 require("core.keymaps")
 require("lazy_setup")
 
+-- Enable treesitter-based highlighting (built into neovim, no plugin config needed)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "markdown", "lua" },
+  callback = function()
+    pcall(vim.treesitter.start)
+  end,
+})
+
 if vim.g.neovide then
   vim.g.neovide_cursor_vfx_mode = ""
   vim.g.neovide_cursor_animation_length = 0.13
