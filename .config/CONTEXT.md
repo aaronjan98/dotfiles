@@ -24,6 +24,7 @@ See `~/.config/ai/shared/tool-commands.md` for how to determine whether a given 
 | `quickshell/` | Quickshell widget/shell configuration | Active |
 | `btop/` | btop system monitor theme/config | Maintained |
 | `systemd/` | User systemd units | Maintained |
+| `yazi/` | Yazi file manager — keybindings (includes swww wallpaper shortcut) | Active |
 
 Directories not listed (KDE/Plasma system files, app data dirs, etc.) are system-managed and not relevant for agent work unless explicitly asked.
 
@@ -46,5 +47,6 @@ Some files at the root of `~/.config/` are tracked directly (not as part of a su
 - Do not use `git` or `g` for dotfiles — always use `dot`.
 - Not all tracked user config lives under `~/.config/`; some dotfiles-managed config is rooted directly under `$HOME` (for example `~/.pi/` for Pi agent config).
 - `.github/README.md` is the GitHub front page for the dotfiles repo. When adding or materially changing a tracked area that affects how the repo is understood from the outside, update that README too.
+- **Explicitly excluded from dotfiles** (in `~/.dotfiles.gitignore`): `~/.claude/settings.json` and `~/.claude/projects/` (Claude runtime/session state, not portable), and `~/.config/yazi/*.toml-*` (editor backup files).
 - Each actively maintained subdirectory should have its own `CONTEXT.md` for agent orientation.
 - **Staging gotcha:** the dotfiles work tree is `$HOME`, not `~/.config/`. When running `dot add` from inside `~/.config/`, use absolute paths (`/home/aj/.config/...`) or git will double-nest the path and fail. See `ai/shared/tool-commands.md` for details.

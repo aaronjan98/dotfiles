@@ -32,6 +32,13 @@ Videos/
 .nix-defexpr
 .gtkrc-2.0
 
+# Yazi editor backup files
+.config/yazi/*.toml-*
+
+# Claude / AI agent runtime state
+.claude/settings.json
+.claude/projects/
+
 # Pi runtime / generated state
 .pi/agent/auth.json
 .pi/agent/bin/

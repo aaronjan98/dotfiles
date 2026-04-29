@@ -16,6 +16,7 @@ Configuration for a Hyprland desktop on NixOS. Managed as a bare git repo (`~/.d
 | `fuzzel/` | Fuzzel app launcher config |
 | `firefox/` | Firefox `userChrome.css` — transparent toolbar/tabs via Wayland compositor blur |
 | `ai/` | Agent-first AI workspace — shared rules, skills, and model routing for Claude and Gemini |
+| `yazi/` | Yazi file manager keybindings — includes `W` shortcut to set wallpaper via `swww` |
 | `.pi/` | Pi coding agent config — tracked settings/models plus agent notes; runtime auth/session state intentionally ignored |
 | tmux | Managed in NixOS config — see [`modules/tmux.nix`](https://github.com/aaronjan98/nixos-config/blob/main/modules/tmux.nix) |
 
