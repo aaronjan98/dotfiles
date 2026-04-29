@@ -1,0 +1,5 @@
+[mgr]
+
+prepend_keymap = [
+  { on = "W", run = "shell 'swww img \"$0\" -t any'", desc = "Set as wallpaper (swww)" },
+]

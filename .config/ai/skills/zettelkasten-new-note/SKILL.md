@@ -78,6 +78,7 @@ Each problem is a top-level bullet, not a heading:
 ```
 
 **Rules:**
+- **Indentation: always use 4 spaces (one tab width) per indent level for ALL files in the zettelkasten vault.** Every sub-bullet is indented 4 spaces from its parent. Never use 2-space indentation. This applies to study plans, lecture notes, homework files, and any other vault note.
 - Problem numbers follow the textbook (e.g., `Problem 6.1`, `Problem 6.6.1`).
 - Sub-parts use `(a)`, `(b)`, `(1)`, `(2)` matching the original problem statement.
 - Every problem ends with a `**Solution.**` placeholder (or inline solution) at the deepest
