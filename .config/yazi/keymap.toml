@@ -1,8 +1,5 @@
 [mgr]
 
 prepend_keymap = [
-  { on = "W",            run = "shell 'swww img \"$0\" -t any'", desc = "Set as wallpaper (swww)" },
-  { on = ["y", "p"],     run = "copy path",                      desc = "Copy path to clipboard" },
-  { on = ["y", "n"],     run = "copy filename",                   desc = "Copy filename to clipboard" },
-  { on = ["y", "d"],     run = "copy dirname",                    desc = "Copy directory to clipboard" },
+  { on = "W", run = "shell 'swww img \"$0\" -t any'", desc = "Set as wallpaper (swww)" },
 ]
