@@ -18,6 +18,16 @@ zq() {
   zoxide query "$@"
 }
 
+## Yazi ##
+function y() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+    yazi "$@" --cwd-file="$tmp"
+    if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+        builtin cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
+}
+
 # Notify when long-running commands finish in tmux panes.
 # Direct Ghostty windows are handled natively via notify-on-command-finish in ghostty config.
 # Ghostty's shell integration (OSC 133) doesn't pass through tmux, so we use notify-send directly.
