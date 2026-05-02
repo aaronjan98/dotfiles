@@ -145,13 +145,44 @@ g pushall
 `~/.config/ai/` and other home directory config files are tracked via a bare repo at `~/.dotfiles`.
 Use the `dot` command (never plain `git`, never `g`).
 
+**Files tracked outside ~/.config**
+
+These must be added manually by path — `dot add .` from `~/.config` will not pick them up:
+
+```
+~/.bash_aliases   ~/.bash_profile   ~/.bashrc   ~/.gitconfig   ~/.dotfiles.gitignore
+~/.github/README.md
+~/.gemini/GEMINI.md
+~/.mozilla/firefox/zpqkr59d.default/chrome/userChrome.css
+~/.pi/            (safe to `dot add ~/.pi` — runtime/cache files are gitignored)
+```
+
+For `~/.pi`, `dot add ~/.pi` is the canonical way to stage the whole directory.
+The gitignore at `~/.dotfiles.gitignore` excludes runtime/cache files (auth, bin, npm,
+sessions, mcp-cache.json, mcp-npx-cache.json, web-search.json).
+
+---
+
+**Tracked directories in ~/.config**
+
+Only these directories (and loose files) are tracked — everything else in ~/.config is intentionally ignored:
+
+```
+ai  bash  fuzzel  ghostty  hypr  kitty  nvim  opencode  quickshell  yazi
+CONTEXT.md  ROADMAP.md  libinput-gestures.conf  mimeapps.list  okularpartrc
+```
+
 **Standard workflow — commit only** (when user says "commit"):
 ```
-cd /path/to/directory/with/majority/of/changes
-dot add .
+cd ~/.config
+dot add ai bash fuzzel ghostty hypr kitty nvim opencode quickshell yazi
 dot ci -am "imperative present-tense summary of changes"
 ```
 
+- `cd ~/.config` first, then `dot add <tracked-dirs>` to pick up any newly created files
+  in those directories without accidentally staging untracked noise from the rest of ~/.config.
+- When you have worked through the changes together and know exactly which files changed,
+  you can `dot add` only the relevant directory instead of all of them.
 - `cd` into the directory where most of the new or changed files live.
 - `dot add .` stages new/untracked files under the current directory.
 - `-a` on `dot ci` auto-stages ALL tracked modified files across the entire work tree

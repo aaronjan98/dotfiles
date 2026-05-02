@@ -16,3 +16,4 @@ When a user's request matches a skill below, read that skill's `SKILL.md` and fo
 | Zettelkasten New Note | `zettelkasten-new-note/` | Personal knowledge | creating a new note inside an existing zettelkasten directory, especially school homework or lecture notes |
 | Save Session | `save-session/` | Meta | "save the session", "wrap up", "end of session" |
 | NixOS Printing | `nixos-printing/` | NixOS / system | "print", "printer not showing up", "add a printer", "print job", "CUPS", "printing on NixOS" |
+| File Book | `file-book/` | School / library | "move this book to books", "file this download", "add this to the library", "rename and move", new file in ~/Downloads that is a book or paper |
