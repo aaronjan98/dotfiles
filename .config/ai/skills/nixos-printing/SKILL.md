@@ -107,7 +107,41 @@ lpstat -p
 
 ---
 
+---
+
+## Scanning (ET-2850 / sane-airscan)
+
+### NixOS configuration (already applied on thinkpad-t14)
+
+```nix
+hardware.sane.enable = true;
+hardware.sane.extraBackends = [ pkgs.sane-airscan ];
+users.users.aj.extraGroups = [ ... "scanner" "lp" ];
+```
+
+### Scanning a document to PDF
+
+The ET-2850 supports eSCL (AirScan) over WiFi — no USB needed. Initiate from the computer; ignore the printer panel's "Scan to WSD" and "Scan to PDF" options (WSD is Windows-only; PDF requires USB).
+
+1. Place document **face-down** on scanner glass, top-left corner aligned to the arrow marker on the glass
+2. Close lid
+3. Launch Simple Scan:
+   ```
+   nix shell nixpkgs#simple-scan --command simple-scan
+   ```
+4. Select the Epson ET-2850 if prompted
+5. Set mode to **Document**
+6. Click **Scan**
+7. **File → Save As** → choose PDF format → save to desired location
+
+### Command-line alternative
+
+```
+scanimage --format=pdf --output-file=output.pdf
+```
+
 ## Notes
 - CUPS web interface: `http://localhost:631/`
 - Config file location: `/etc/nixos/hosts/<hostname>/configuration.nix`
-- Confirmed working on thinkpad-t14 (aj) as of 2026-04-20
+- Printing confirmed working on thinkpad-t14 (aj) as of 2026-04-20
+- Scanning (sane-airscan) configured on thinkpad-t14 (aj) as of 2026-05-08
