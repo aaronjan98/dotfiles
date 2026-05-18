@@ -1,3 +1,4 @@
+export FORGEJO_TOKEN="$(cat /run/secrets/forgejo_token 2>/dev/null)"
 source $HOME/.bash_aliases
 # Source custom bash snippets for man page coloring
 if [ -f "$HOME/.config/bash/man-color.sh" ]; then
