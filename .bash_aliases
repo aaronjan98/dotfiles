@@ -4,9 +4,18 @@ alias g="git"
 alias sc="source ~/.bashrc"
 alias vial="nvim ~/.bash_aliases"
 
-alias vinc="nvim ~/nixos-config/hosts/thinkpad-t14/configuration.nix"
-alias nrt="sudo nixos-rebuild test --flake ~/nixos-config#thinkpad-t14"
-alias nrs="sudo nixos-rebuild switch --flake ~/nixos-config#thinkpad-t14"
+# Map system hostname → flake attribute name.
+# ThinkPad uses the NixOS default hostname "nixos"; Framework matches directly.
+_nix_host() {
+    case "$(hostname)" in
+        nixos) echo "thinkpad-t14" ;;
+        *)     echo "$(hostname)" ;;
+    esac
+}
+
+vinc() { nvim ~/nixos-config/hosts/"$(_nix_host)"/configuration.nix; }
+nrt()  { sudo nixos-rebuild test   --flake ~/nixos-config#"$(_nix_host)"; }
+nrs()  { sudo nixos-rebuild switch --flake ~/nixos-config#"$(_nix_host)"; }
 
 alias ai-router='~/nixos-config/scripts/ai-router.sh'
 alias claude-local='~/nixos-config/scripts/ai-router.sh --local'
