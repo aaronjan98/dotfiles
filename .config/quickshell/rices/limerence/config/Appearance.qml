@@ -1,11 +1,12 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 
 QtObject {
   // ---- GLOBAL SCALE ----
-  // Set this to match how you want Quickshell to look when Hyprland scale changes.
-  // Example: if you switch Hyprland to scale=1.0 and want QS to be bigger, raise uiScale.
-  property real uiScale: 1.25
+  // Driven by QS_UI_SCALE env var set per-host in NixOS (hosts/<name>/configuration.nix).
+  // ThinkPad omits the var and falls back to 1.25; Framework 13 sets 1.75.
+  property real uiScale: parseFloat(Quickshell.env("QS_UI_SCALE") || "1.25")
 
   // Helpers
   // s() = scaled integer pixels (rounded). Great for layout sizes.
