@@ -21,5 +21,10 @@ alias ai-router='~/nixos-config/scripts/ai-router.sh'
 alias claude-local='~/nixos-config/scripts/ai-router.sh --local'
 alias claude-local-qwen='CLAUDE_LOCAL_MODEL="qwen3:4b" ~/nixos-config/scripts/ai-router.sh --local'
 
-# Sync state of my documents from laptop to NAS server
-alias sync-documents='rsync -avhz --progress --delete /home/aj/Documents/ aj@qwerty:/mnt/storage/desktop-sync/Documents/'
+# Manual triggers for the hourly systemd sync timers (push only → NAS)
+alias sync-documents='systemctl --user start sync-documents.service'
+alias sync-pictures='systemctl --user start sync-pictures.service'
+
+# Multi-machine sync — run when arriving at or leaving this machine
+alias sync-arrive='bash ~/nixos-config/scripts/sync-machine.sh --arrive'
+alias sync-leave='bash ~/nixos-config/scripts/sync-machine.sh --leave'
