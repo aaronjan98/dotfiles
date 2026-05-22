@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Hyprland keybind wrapper for sync-machine.sh with toast feedback.
+#
+# Usage: sync-toast {arrive|leave}
+#
+# Why this exists: closing the lid suspends wifi mid-push, so the user needs
+# visible confirmation that sync-leave finished before walking away. A toast
+# on start (replaced on completion) gives that signal without coupling the
+# nixos-config sync script to a desktop notification daemon.
+
+set -uo pipefail
+
+mode="${1:?usage: sync-toast arrive|leave}"
+case "$mode" in
+  arrive|leave) ;;
+  *) echo "sync-toast: unknown mode '$mode' (want arrive|leave)" >&2; exit 2 ;;
+esac
+
+LOG="/tmp/sync-${mode}.log"
+SYNC="/home/aj/nixos-config/scripts/sync-machine.sh"
+
+# Stable per-mode notification id so the success/failure toast replaces the
+# "in progress" one instead of stacking. Picked from a small range that's
+# unlikely to clash with other notifiers.
+case "$mode" in
+  arrive) NID=910 ;;
+  leave)  NID=911 ;;
+esac
+
+notify-send \
+  --replace-id="$NID" \
+  --icon=emblem-synchronizing \
+  "Sync-${mode}" "Running…"
+
+if "$SYNC" "--${mode}" >"$LOG" 2>&1; then
+  if [[ "$mode" == "leave" ]]; then
+    msg="Safe to close lid"
+  else
+    msg="Workspace up to date"
+  fi
+  notify-send \
+    --replace-id="$NID" \
+    --icon=emblem-default \
+    "Sync-${mode} OK" "$msg"
+else
+  notify-send \
+    --urgency=critical \
+    --replace-id="$NID" \
+    --icon=dialog-error \
+    "Sync-${mode} FAILED" "See ${LOG} — do NOT close lid"
+  exit 1
+fi
