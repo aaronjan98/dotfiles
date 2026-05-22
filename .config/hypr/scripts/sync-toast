@@ -32,21 +32,50 @@ notify-send \
   --icon=emblem-synchronizing \
   "Sync-${mode}" "Running…"
 
-if "$SYNC" "--${mode}" >"$LOG" 2>&1; then
-  if [[ "$mode" == "leave" ]]; then
-    msg="Safe to close lid"
-  else
-    msg="Workspace up to date"
-  fi
-  notify-send \
-    --replace-id="$NID" \
-    --icon=emblem-default \
-    "Sync-${mode} OK" "$msg"
-else
-  notify-send \
-    --urgency=critical \
-    --replace-id="$NID" \
-    --icon=dialog-error \
-    "Sync-${mode} FAILED" "See ${LOG} — do NOT close lid"
-  exit 1
-fi
+# Capture exit code separately — sync-machine.sh --leave returns 2 to signal
+# "dirty repos found" (a warning, not a failure), so we can't use plain if/else.
+"$SYNC" "--${mode}" >"$LOG" 2>&1
+sync_exit=$?
+
+case "$sync_exit" in
+  0)
+    if [[ "$mode" == "leave" ]]; then
+      msg="$(cat /tmp/sync-leave.status 2>/dev/null || echo "Safe to close lid")"
+    else
+      msg="Workspace up to date"
+    fi
+    notify-send \
+      --replace-id="$NID" \
+      --icon=emblem-default \
+      "Sync-${mode} OK" "$msg"
+    ;;
+  2)
+    if [[ "$mode" == "leave" ]]; then
+      body="$(cat /tmp/sync-leave.status 2>/dev/null \
+        || echo "Some repos have uncommitted changes — see ${LOG}")"
+      # expire-time=0 makes the toast persistent so it survives suspend and
+      # is still visible after wake, when sync-leave-preflight is the caller.
+      notify-send \
+        --replace-id="$NID" \
+        --icon=dialog-warning \
+        --expire-time=0 \
+        "Sync-leave: action needed" \
+        "$body"
+    else
+      notify-send \
+        --urgency=critical \
+        --replace-id="$NID" \
+        --icon=dialog-error \
+        "Sync-arrive: unexpected exit 2" "See ${LOG}"
+      exit "$sync_exit"
+    fi
+    ;;
+  *)
+    notify-send \
+      --urgency=critical \
+      --replace-id="$NID" \
+      --icon=dialog-error \
+      "Sync-${mode} FAILED" "See ${LOG} — do NOT close lid"
+    exit "$sync_exit"
+    ;;
+esac
