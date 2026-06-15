@@ -111,15 +111,36 @@ ssh -t aj@sweetpea "sudo -u git git init --bare /srv/git/repos/<repo-name>.git"
 g remote add home ssh://git@ssh.aaronjanovitch.com:2222/srv/git/repos/<repo-name>.git
 ```
 
-**Step 5 — Push to home (sets upstream):**
+**Step 5 — Create the matching Forgejo repo and install the sync hook:**
+
+Every homelab bare repo mirrors to Forgejo (`git.aaronjanovitch.com`) through a
+`post-receive` hook symlinked to `/srv/git/hooks/forgejo-sync`. That hook is only
+installed on bare repos that have a **matching Forgejo repo of the same name**, so
+the Forgejo repo must exist first. `FORGEJO_TOKEN` is exported into login shells
+from sops, and `install-forgejo-hooks` is on PATH.
+
+```bash
+# Create the Forgejo repo (use "private":true for sensitive repos; code projects are public)
+curl -s -X POST -H "Authorization: token ${FORGEJO_TOKEN}" -H "Content-Type: application/json" \
+  "https://git.aaronjanovitch.com/api/v1/user/repos" \
+  -d '{"name":"<repo-name>","private":false,"default_branch":"main","auto_init":false}'
+
+# Symlink the forgejo-sync post-receive hook onto the matching bare repo (uses ssh -t + sudo)
+install-forgejo-hooks
+```
+
+**Step 6 — Push to home (sets upstream, triggers the first Forgejo sync):**
 ```bash
 g push -u home main
 ```
 
 After this, `g pushall` will push to all remotes.
 
-> Note: Step 4 requires the homelab (sweetpea) to be reachable. If it is not,
-> skip it and inform the user so they can run it manually when available.
+> Note: Steps 4–5 require the homelab (sweetpea) to be reachable, plus your sudo
+> password — the bare-repo creation and `install-forgejo-hooks` both run sudo over
+> ssh. If sweetpea is unreachable, skip them and tell the user to run them manually
+> when available. An agent can usually create the Forgejo repo via the API on its
+> own (the token is in the environment), but cannot complete the sudo-gated steps.
 
 ---
 
