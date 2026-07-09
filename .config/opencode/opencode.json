@@ -20,7 +20,7 @@
       "type": "local"
     }
   },
-  "model": "ollama/glm-4.7-flash",
+  "model": "opencode/big-pickle",
   "provider": {
     "ollama": {
       "models": {

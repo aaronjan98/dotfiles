@@ -129,6 +129,14 @@ curl -s -X POST -H "Authorization: token ${FORGEJO_TOKEN}" -H "Content-Type: app
 install-forgejo-hooks
 ```
 
+> **Push-to-create is enabled** (since 2026-06-16: `ENABLE_PUSH_CREATE_USER = true`
+> in Forgejo's `app.ini`). The `forgejo-sync` hook now **auto-creates** the matching
+> Forgejo repo on the first push, so the explicit `curl` create above is **optional** —
+> a bare repo with the hook symlinked will self-create its Forgejo repo on first push
+> to `home`. Keep the `curl` step only when you need a specific visibility: auto-created
+> repos default to **private** (`DEFAULT_PUSH_CREATE_PRIVATE`), so pre-create with
+> `"private":false` for public code projects.
+
 **Step 6 — Push to home (sets upstream, triggers the first Forgejo sync):**
 ```bash
 g push -u home main
