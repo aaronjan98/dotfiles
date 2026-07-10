@@ -7,6 +7,7 @@
 ;; Hook in at depth 110 so we always win, regardless of which buffer type we're in.
 (add-hook 'doom-load-theme-hook
   (lambda ()
+    (set-face-attribute 'default nil :height 130)
     (dolist (face '(default fringe
                     line-number line-number-current-line
                     mode-line mode-line-inactive mode-line-active header-line
