@@ -16,6 +16,7 @@ PanelWindow {
   property bool isExternal: false
   readonly property real contentScale: isExternal ? C.Appearance.externalFrameScale : 1
   readonly property int edgeGap: Math.round(C.Appearance.m6 * contentScale)
+  readonly property int leftIslandGap: 0
   readonly property int islandYOffset: isExternal ? -Math.max(1, Math.round(C.Appearance.s(2) * contentScale)) : 0
 
   exclusionMode: ExclusionMode.Auto
@@ -25,8 +26,10 @@ PanelWindow {
 
   // Reserve the top-left corner bubble on every screen. External screens still
   // skip the vertical LeftBar; only the top bar is offset.
-  margins.left: Math.round(C.Appearance.leftW * contentScale)
-  implicitHeight: isExternal ? C.Appearance.topHExternal : C.Appearance.topH
+  margins.left: isExternal
+    ? Math.round(C.Appearance.leftW * contentScale)
+    : C.Appearance.m6
+  implicitHeight: isExternal ? C.Appearance.topHExternal : C.Appearance.topHFramework
   color: "transparent"
 
   readonly property var wsModel: Hyprland.workspaces
@@ -190,7 +193,7 @@ PanelWindow {
       anchors.verticalCenter: parent.verticalCenter
       anchors.verticalCenterOffset: root.islandYOffset
       anchors.left: parent.left
-      anchors.leftMargin: root.edgeGap
+      anchors.leftMargin: root.leftIslandGap
       implicitWidth: leftPill.implicitWidth * root.contentScale
       implicitHeight: leftPill.implicitHeight * root.contentScale
       width: implicitWidth

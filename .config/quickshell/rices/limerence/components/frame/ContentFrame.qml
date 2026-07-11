@@ -31,7 +31,7 @@ PanelWindow {
 
     // align to the same offsets your bars reserve
     anchors.leftMargin: win.isExternal ? C.Appearance.framePadLeftExternal : C.Appearance.leftW
-    anchors.topMargin: win.isExternal ? C.Appearance.topHExternal : C.Appearance.topH
+    anchors.topMargin: win.isExternal ? C.Appearance.topHExternal : C.Appearance.topHFramework
 
     // allow extra frame visible on right/bottom
     anchors.rightMargin: C.Appearance.framePadRight

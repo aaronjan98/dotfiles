@@ -27,14 +27,19 @@ QtObject {
 
   // ---- bar thickness ----
   property int topH: s(24)
+  // Framework topbar gets a small extra vertical cushion.
+  property int topHFramework: Math.round(topH + s(6))
   // External topbar keeps 0.8x content but gets extra vertical breathing room.
   property int topHExternal: Math.round((topH + s(8)) * externalFrameScale)
   property int leftW: nixBubbleSize
 
   // ---- content frame geometry ----
+  property int framePadTopFramework: s(3)
   property int framePadLeftExternal: s(2)
   property int framePadRight: s(2)
+  property int framePadRightFramework: s(4)
   property int framePadBottom: s(2)
+  property int framePadBottomFramework: s(4)
   property int frameRadius: s(7)
 
   // Keep borders at least 1px so they don't disappear at low scales
