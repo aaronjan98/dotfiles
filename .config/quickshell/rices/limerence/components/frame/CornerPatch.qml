@@ -6,8 +6,7 @@ import "../../config" as C
 
 PanelWindow {
   id: win
-  required property ShellScreen screen
-  screen: screen
+  // screen set by caller — not re-declared here to avoid shadowing PanelWindow.screen
 
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.exclusionMode: ExclusionMode.Ignore

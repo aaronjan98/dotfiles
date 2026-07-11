@@ -8,15 +8,22 @@ QtObject {
   // ThinkPad omits the var and falls back to 1.25; Framework 13 sets 1.75.
   property real uiScale: parseFloat(Quickshell.env("QS_UI_SCALE") || "1.25")
 
+  // External monitor scale: Hyprland already scales DP-1 at 1.6×, so QML should use
+  // uiScale / 1.6 to avoid double-scaling (otherwise bars appear ~2.8× base size).
+  property real externalUiScale: uiScale / 1.6
+
   // Helpers
-  // s() = scaled integer pixels (rounded). Great for layout sizes.
-  // sr() = scaled real pixels. Great for subtle things (e.g. non-integer spacing if you ever want it).
+  // s()  = scaled integer pixels for the laptop screen
+  // se() = scaled integer pixels for the external screen (compensates for Hyprland's 1.6× scale)
+  // sr() = scaled real pixels (laptop). For subtle non-integer spacing.
   function s(px)  { return Math.round(px * uiScale) }
+  function se(px) { return Math.round(px * externalUiScale) }
   function sr(px) { return px * uiScale }
 
   // ---- bar thickness ----
   property int topH: s(24)
-  property int leftW: s(26)
+  property int topHExternal: se(24)
+  property int leftW: nixBubbleSize
 
   // ---- content frame geometry ----
   property int framePadRight: s(2)

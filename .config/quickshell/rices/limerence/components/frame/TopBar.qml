@@ -10,22 +10,37 @@ import "../state" as S
 
 PanelWindow {
   id: root
-  required property ShellScreen screen
-  screen: screen
+  // screen is set by the caller (PanelWindow's own Quickshell property — not re-declared here,
+  // since `required property ShellScreen screen` would shadow it and break multi-monitor routing)
+
+  property bool isExternal: false
 
   exclusionMode: ExclusionMode.Auto
   anchors.top: true
   anchors.left: true
   anchors.right: true
 
-  margins.left: C.Appearance.leftW
+  // External: no LeftBar so no left margin. Height uses the same token as laptop so
+  // content widgets (which still render at laptop uiScale) don't overflow the bar.
+  // Per-screen content scaling is deferred to Phase 4.
+  margins.left: isExternal ? 0 : C.Appearance.leftW
   implicitHeight: C.Appearance.topH
   color: "transparent"
 
   readonly property var wsModel: Hyprland.workspaces
   readonly property var wsList: wsModel ? wsModel.values : []
 
-  readonly property int wsId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
+  readonly property var hyprMonitor: {
+    for (var m of Hyprland.monitors.values) {
+      if (m.name === root.screen.name) return m
+    }
+    return null
+  }
+  readonly property var activeWs: hyprMonitor
+    ? Hyprland.workspaceForId(hyprMonitor.activeWorkspace.id)
+    : Hyprland.focusedWorkspace
+
+  readonly property int wsId: activeWs ? activeWs.id : 1
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
   readonly property int slot: (wsId <= 9) ? wsId : (wsId % 10)
 
@@ -230,4 +245,3 @@ PanelWindow {
     }
   }
 }
-

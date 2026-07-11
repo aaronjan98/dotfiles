@@ -28,21 +28,26 @@ Item {
     visible: Sv.Notifs.popups.count > 0
     color: "transparent"
 
-    implicitWidth: 360
-    implicitHeight: Math.min(screen.height, 420)
+    // Click-through: toasts are informational; interaction is via the notification
+    // center (Super+\). Without this mask the window blocks cursor movement to
+    // adjacent monitors and intercepts all input in the top-right corner.
+    mask: Region { }
+
+    implicitWidth: C.Appearance.popupWidthWide
+    implicitHeight: Math.min(screen.height, C.Appearance.popupMaxHeight)
 
     Column {
       anchors.top: parent.top
       anchors.right: parent.right
-      anchors.topMargin: C.Appearance.topH + 10
-      anchors.rightMargin: 10
-      spacing: 8
+      anchors.topMargin: C.Appearance.topH + C.Appearance.m10
+      anchors.rightMargin: C.Appearance.m10
+      spacing: C.Appearance.m8
 
       Repeater {
         model: Sv.Notifs.popups
 
         delegate: Item {
-          width: toastWin.implicitWidth - 20
+          width: toastWin.implicitWidth - C.Appearance.m20
           height: toast.implicitHeight
 
           // animate only on creation

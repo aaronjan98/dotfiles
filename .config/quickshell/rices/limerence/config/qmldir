@@ -1,1 +1,2 @@
 singleton Appearance 1.0 Appearance.qml
+singleton Layout 1.0 Layout.qml

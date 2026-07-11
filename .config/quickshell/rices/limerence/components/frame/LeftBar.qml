@@ -9,8 +9,7 @@ import "../state" as S
 
 PanelWindow {
   id: root
-  required property ShellScreen screen
-  screen: screen
+  // screen set by caller — not re-declared here to avoid shadowing PanelWindow.screen
 
   exclusionMode: ExclusionMode.Auto
   anchors.left: true
@@ -24,7 +23,17 @@ PanelWindow {
   readonly property var wsModel: Hyprland.workspaces
   readonly property var wsList: wsModel ? wsModel.values : []
 
-  readonly property int wsId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
+  readonly property var hyprMonitor: {
+    for (var m of Hyprland.monitors.values) {
+      if (m.name === root.screen.name) return m
+    }
+    return null
+  }
+  readonly property var activeWs: hyprMonitor
+    ? Hyprland.workspaceForId(hyprMonitor.activeWorkspace.id)
+    : Hyprland.focusedWorkspace
+
+  readonly property int wsId: activeWs ? activeWs.id : 1
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
 
   // --- UI count latch (expand immediately, shrink later) ---
@@ -158,4 +167,3 @@ PanelWindow {
     onDismissed: root.powerOpen = false
   }
 }
-

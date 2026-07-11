@@ -1,22 +1,44 @@
 import Quickshell
 import QtQuick
 import "./" as Frame
+import "../../config" as C
 
 Item {
   id: root
   required property ShellScreen screen
 
-  // Visual-only frame should be behind everything interactive.
-  Frame.ContentFrame { screen: root.screen }
+  readonly property bool isLaptop: C.Layout.isLaptop(screen)
 
-  // Bars above the frame (so frameBg never tints them)
-  Frame.TopBar { screen: root.screen }
-  Frame.LeftBar { screen: root.screen }
+  // ---- Laptop-only components ----
+  // Using Loader so the Wayland surfaces are never created on external screens.
 
-  // Notification toast & center window
+  Loader {
+    active: root.isLaptop
+    sourceComponent: Component {
+      Frame.ContentFrame { screen: root.screen }
+    }
+  }
+
+  Loader {
+    active: root.isLaptop
+    sourceComponent: Component {
+      Frame.LeftBar { screen: root.screen }
+    }
+  }
+
+  Loader {
+    active: root.isLaptop
+    sourceComponent: Component {
+      Frame.CornerPatch { screen: root.screen }
+    }
+  }
+
+  // ---- All screens ----
+
+  Frame.TopBar {
+    screen: root.screen
+    isExternal: !root.isLaptop
+  }
+
   Frame.NotifLayer { screen: root.screen }
-
-  // Overlay always top
-  Frame.CornerPatch { screen: root.screen }
 }
-
