@@ -23,18 +23,9 @@ PanelWindow {
   readonly property var wsModel: Hyprland.workspaces
   readonly property var wsList: wsModel ? wsModel.values : []
 
-  readonly property var hyprMonitor: {
-    for (var m of Hyprland.monitors.values) {
-      if (m.name === root.screen.name) return m
-    }
-    return null
-  }
-  readonly property var activeWs: hyprMonitor
-    ? Hyprland.workspaceForId(hyprMonitor.activeWorkspace.id)
-    : Hyprland.focusedWorkspace
-
-  readonly property int wsId: activeWs ? activeWs.id : 1
-  readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
+  property int wsId: 1
+  readonly property bool onExternalRow: wsId >= 101 && wsId <= 109
+  readonly property int domain: onExternalRow ? 1 : ((wsId <= 9) ? 1 : Math.floor(wsId / 10))
 
   // --- UI count latch (expand immediately, shrink later) ---
   property int displayDomains: 3
@@ -42,6 +33,60 @@ PanelWindow {
 
   // Power popup state
   property bool powerOpen: false
+  readonly property string externalOutput: "DP-1"
+
+  function workspaceBelongsToScreen(actualId) {
+    return actualId > 0 && actualId < 100
+  }
+
+  function logicalWorkspaceId(actualId) {
+    return actualId
+  }
+
+  function actualWorkspaceId(logicalId) {
+    return logicalId
+  }
+
+  function externalMonitor() {
+    if (Hyprland.monitors && Hyprland.monitors.values) {
+      for (var m of Hyprland.monitors.values) {
+        if (m && m.name === root.externalOutput) return m
+      }
+    }
+    return null
+  }
+
+  function externalActiveWorkspaceId() {
+    var m = externalMonitor()
+    if (m && m.activeWorkspace && m.activeWorkspace.id >= 101 && m.activeWorkspace.id <= 109) {
+      return m.activeWorkspace.id
+    }
+    return 101
+  }
+
+  function externalFocused() {
+    var m = externalMonitor()
+    return !!(m && m.focused) || root.onExternalRow
+  }
+
+  function showExternalMarker() {
+    return !!externalMonitor() || externalOccupied() || root.onExternalRow
+  }
+
+  function externalOccupied() {
+    for (var i = 0; i < wsList.length; i++) {
+      var w = wsList[i]
+      if (!w) continue
+      if (w.id >= 101 && w.id <= 109 && workspaceHasWindows(w)) return true
+    }
+    return false
+  }
+
+  function focusExternalRow() {
+    var target = externalActiveWorkspaceId()
+    if (externalMonitor()) Hyprland.dispatch("focusmonitor " + root.externalOutput)
+    Hyprland.dispatch("workspace " + target)
+  }
 
   Timer {
     id: shrinkDomainsTimer
@@ -52,10 +97,28 @@ PanelWindow {
 
   Timer {
     id: domainsPollTimer
-    interval: 500
+    interval: 250
     repeat: true
     running: true
-    onTriggered: root.updateDomainsUI()
+    onTriggered: {
+      root.updateScreenWorkspace()
+      root.updateDomainsUI()
+    }
+  }
+
+  function updateScreenWorkspace() {
+    var nextId = 1
+    if (Hyprland.monitors && Hyprland.monitors.values) {
+      for (var m of Hyprland.monitors.values) {
+        if (m && root.screen && m.name === root.screen.name && m.activeWorkspace) {
+          nextId = root.logicalWorkspaceId(m.activeWorkspace.id)
+          break
+        }
+      }
+    } else if (Hyprland.focusedWorkspace) {
+      nextId = root.logicalWorkspaceId(Hyprland.focusedWorkspace.id)
+    }
+    if (root.wsId !== nextId) root.wsId = nextId
   }
 
   function updateDomainsUI() {
@@ -78,12 +141,18 @@ PanelWindow {
   }
 
   Component.onCompleted: {
+    updateScreenWorkspace()
     displayDomains = domainCountToShow()
     targetDomains = displayDomains
   }
 
   function domainOfWorkspaceId(id) {
     return (id <= 9) ? 1 : Math.floor(id / 10)
+  }
+
+  function dispatchWorkspaceOnScreen(targetWs) {
+    if (root.screen && root.screen.name) Hyprland.dispatch("focusmonitor " + root.screen.name)
+    Hyprland.dispatch("workspace " + targetWs)
   }
 
   function workspaceHasWindows(w) {
@@ -97,7 +166,10 @@ PanelWindow {
     var m = 0
     for (var i = 0; i < wsList.length; i++) {
       var w = wsList[i]
-      if (workspaceHasWindows(w)) m = Math.max(m, domainOfWorkspaceId(w.id))
+      if (!w) continue
+      if (!root.workspaceBelongsToScreen(w.id)) continue
+      var id = root.logicalWorkspaceId(w.id)
+      if (workspaceHasWindows(w)) m = Math.max(m, domainOfWorkspaceId(id))
     }
     return m
   }
@@ -112,7 +184,10 @@ PanelWindow {
   function domainOccupied(dom) {
     for (var i = 0; i < wsList.length; i++) {
       var w = wsList[i]
-      if (workspaceHasWindows(w) && domainOfWorkspaceId(w.id) === dom) return true
+      if (!w) continue
+      if (!root.workspaceBelongsToScreen(w.id)) continue
+      var id = root.logicalWorkspaceId(w.id)
+      if (workspaceHasWindows(w) && domainOfWorkspaceId(id) === dom) return true
     }
     return false
   }
@@ -125,25 +200,64 @@ PanelWindow {
       anchors.verticalCenter: parent.verticalCenter
       anchors.horizontalCenter: parent.horizontalCenter
 
-      W.DotTrack {
-        axis: "v"
-        count: root.displayDomains
-        activeIndex: root.domain - 1
+      Column {
+        spacing: C.Appearance.dotGapV
 
-        // Use DotTrack defaults (scaled): dotSize/gap/pillFactor/animMs
+        W.DotTrack {
+          axis: "v"
+          count: root.displayDomains
+          activeIndex: root.domain - 1
 
-        occupiedFn: function(i) {
-          var domN = i + 1
-          return root.domainOccupied(domN)
+          // Use DotTrack defaults (scaled): dotSize/gap/pillFactor/animMs
+
+          occupiedFn: function(i) {
+            var domN = i + 1
+            return root.domainOccupied(domN)
+          }
+
+          onClicked: function(i) {
+            var domN = i + 1
+            S.DomainMemory.ensureVisited(domN)
+
+            var s = S.DomainMemory.lastSlot(domN)
+            var logicalTarget = (domN === 1) ? s : (domN * 10 + s)
+            var target = root.actualWorkspaceId(logicalTarget)
+            root.dispatchWorkspaceOnScreen(target)
+          }
         }
 
-        onClicked: function(i) {
-          var domN = i + 1
-          S.DomainMemory.ensureVisited(domN)
+        Rectangle {
+          visible: root.showExternalMarker()
+          width: C.Appearance.dotSize
+          height: Math.max(1, C.Appearance.dividerW)
+          radius: height / 2
+          color: "white"
+          opacity: 0.28
+        }
 
-          var s = S.DomainMemory.lastSlot(domN)
-          var target = (domN === 1) ? s : (domN * 10 + s)
-          Hyprland.dispatch("workspace " + target)
+        Item {
+          visible: root.showExternalMarker()
+          width: C.Appearance.dotSize
+          height: root.externalFocused() ? Math.round(C.Appearance.dotSize * C.Appearance.pillFactor) : C.Appearance.dotSize
+
+          Behavior on height {
+            NumberAnimation { duration: C.Appearance.animMsFast; easing.type: Easing.OutCubic }
+          }
+
+          Rectangle {
+            anchors.fill: parent
+            radius: C.Appearance.dotSize / 2
+            antialiasing: true
+            color: "white"
+            opacity: root.externalFocused() ? 0.95 : (root.externalOccupied() ? 0.60 : 0.35)
+          }
+
+          MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.focusExternalRow()
+          }
         }
       }
     }

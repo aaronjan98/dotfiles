@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+monitor="${1:?monitor required}"
+mode="${2:?use slot|domain-slot}"
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/ws-current-monitor.sh"
+
+workspace_id_for() {
+  local domain="$1"
+  local slot="$2"
+
+  if (( domain == 1 )); then
+    printf '%s\n' "$slot"
+  else
+    printf '%s\n' "$(( domain * 10 + slot ))"
+  fi
+}
+
+case "$mode" in
+  slot)
+    slot="${3:?slot required}"
+    if ! [[ "$slot" =~ ^[1-9]$ ]]; then
+      printf 'slot must be 1-9\n' >&2
+      exit 2
+    fi
+
+    if [[ "$monitor" == "eDP-1" ]]; then
+      workspace_id_for 1 "$slot"
+    else
+      workspace_id_for 10 "$slot"
+    fi
+    ;;
+  domain-slot)
+    domain="${3:?domain required}"
+    slot="${4:?slot required}"
+    if ! [[ "$domain" =~ ^[0-9]+$ ]] || ! [[ "$slot" =~ ^[1-9]$ ]]; then
+      printf 'domain must be numeric and slot must be 1-9\n' >&2
+      exit 2
+    fi
+    workspace_id_for "$domain" "$slot"
+    ;;
+  *)
+    printf 'usage: %s MONITOR slot SLOT\n' "$0" >&2
+    printf '       %s MONITOR domain-slot DOMAIN SLOT\n' "$0" >&2
+    exit 2
+    ;;
+esac

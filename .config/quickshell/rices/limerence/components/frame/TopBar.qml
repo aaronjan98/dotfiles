@@ -30,17 +30,7 @@ PanelWindow {
   readonly property var wsModel: Hyprland.workspaces
   readonly property var wsList: wsModel ? wsModel.values : []
 
-  readonly property var hyprMonitor: {
-    for (var m of Hyprland.monitors.values) {
-      if (m.name === root.screen.name) return m
-    }
-    return null
-  }
-  readonly property var activeWs: hyprMonitor
-    ? Hyprland.workspaceForId(hyprMonitor.activeWorkspace.id)
-    : Hyprland.focusedWorkspace
-
-  readonly property int wsId: activeWs ? activeWs.id : 1
+  property int wsId: 1
   readonly property int domain: (wsId <= 9) ? 1 : Math.floor(wsId / 10)
   readonly property int slot: (wsId <= 9) ? wsId : (wsId % 10)
 
@@ -52,12 +42,44 @@ PanelWindow {
   property bool btPopupOpen: false
   property bool brightPopupOpen: false
 
+  function workspaceBelongsToScreen(actualId) {
+    return C.Layout.isExternal(root.screen)
+      ? actualId >= 101 && actualId <= 109
+      : actualId > 0 && actualId < 100
+  }
+
+  function logicalWorkspaceId(actualId) {
+    return actualId
+  }
+
+  function actualWorkspaceId(logicalId) {
+    return logicalId
+  }
+
   Timer {
     id: slotsPollTimer
-    interval: 500
+    interval: 250
     repeat: true
     running: true
-    onTriggered: root.updateSlotsUI()
+    onTriggered: {
+      root.updateScreenWorkspace()
+      root.updateSlotsUI()
+    }
+  }
+
+  function updateScreenWorkspace() {
+    var nextId = 1
+    if (Hyprland.monitors && Hyprland.monitors.values) {
+      for (var m of Hyprland.monitors.values) {
+        if (m && root.screen && m.name === root.screen.name && m.activeWorkspace) {
+          nextId = root.logicalWorkspaceId(m.activeWorkspace.id)
+          break
+        }
+      }
+    } else if (Hyprland.focusedWorkspace) {
+      nextId = root.logicalWorkspaceId(Hyprland.focusedWorkspace.id)
+    }
+    if (root.wsId !== nextId) root.wsId = nextId
   }
 
   function updateSlotsUI() {
@@ -74,17 +96,28 @@ PanelWindow {
   }
 
   Component.onCompleted: {
+    updateScreenWorkspace()
     displaySlots = slotCountToShow()
     targetSlots = displaySlots
   }
 
-  function workspaceIdFor(dom, slotN) { return (dom === 1) ? slotN : (dom * 10 + slotN) }
+  function workspaceIdFor(dom, slotN) {
+    if (C.Layout.isExternal(root.screen)) return 100 + slotN
+    return (dom === 1) ? slotN : (dom * 10 + slotN)
+  }
+  function actualWorkspaceIdFor(dom, slotN) { return actualWorkspaceId(workspaceIdFor(dom, slotN)) }
+
+  function dispatchWorkspaceOnScreen(targetWs) {
+    if (root.screen && root.screen.name) Hyprland.dispatch("focusmonitor " + root.screen.name)
+    Hyprland.dispatch("workspace " + targetWs)
+  }
 
   function toplevelCountForWorkspaceId(id) {
+    var actualId = root.actualWorkspaceId(id)
     for (var i = 0; i < wsList.length; i++) {
       var w = wsList[i]
       if (!w) continue
-      if (w.id === id) {
+      if (w.id === actualId) {
         if (w.toplevels && w.toplevels.count !== undefined) return w.toplevels.count
         if (w.toplevels && w.toplevels.values !== undefined) return w.toplevels.values.length
         return 0
@@ -99,7 +132,8 @@ PanelWindow {
       var w = wsList[i]
       if (!w) continue
 
-      var id = w.id
+      if (!root.workspaceBelongsToScreen(w.id)) continue
+      var id = root.logicalWorkspaceId(w.id)
       var count = 0
       if (w.toplevels && w.toplevels.count !== undefined) count = w.toplevels.count
       else if (w.toplevels && w.toplevels.values !== undefined) count = w.toplevels.values.length
@@ -197,11 +231,11 @@ PanelWindow {
 
         onClicked: function(i) {
           var slotN = i + 1
-          var targetWs = root.workspaceIdFor(root.domain, slotN)
+          var targetWs = root.actualWorkspaceIdFor(root.domain, slotN)
 
           S.DomainMemory.setLastSlot(root.domain, slotN)
           S.DomainMemory.ensureVisited(root.domain)
-          Hyprland.dispatch("workspace " + targetWs)
+          root.dispatchWorkspaceOnScreen(targetWs)
         }
       }
     }

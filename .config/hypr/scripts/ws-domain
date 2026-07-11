@@ -5,6 +5,9 @@ mode="${1:?use up|down|set}"
 arg="${2:-}"
 
 HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/ws-current-monitor.sh"
 
 # --- ensure we can talk to Hyprland even from a systemd user service ---
 if [ -z "${HYPRLAND_INSTANCE_SIGNATURE-}" ]; then
@@ -32,9 +35,14 @@ if ! jq -e . >/dev/null 2>&1 <<<"$ws_json"; then
   ws_json='[]'
 fi
 
-active_id="$("$HYPRCTL" activeworkspace -j 2>/dev/null | jq -r '.id // 1' 2>/dev/null || echo 1)"
+read -r mon active_id < <(ws_focused_monitor_and_workspace)
 # If active_id is not numeric, bail to 1
 if ! [[ "$active_id" =~ ^[0-9]+$ ]]; then active_id=1; fi
+active_id="$(ws_logical_workspace_id "$mon" "$active_id")"
+
+if [[ "$mon" != "eDP-1" ]]; then
+  exit 0
+fi
 
 if (( active_id <= 9 )); then curDom=1; else curDom=$(( active_id / 10 )); fi
 curSlot=$(( active_id % 10 )); (( curSlot == 0 )) && curSlot=1
@@ -50,8 +58,9 @@ awk -v dom="$curDom" -v slot="$curSlot" '
 mv "$tmp" "$last_file"
 
 # Domains with windows right now (single jq pass)
-win_domains="$(jq -r '
+win_domains="$(jq -r --arg monitor "$mon" "$ws_workspace_jq_filter"'
   .[]
+  | select(in_namespace($monitor))
   | select(.windows > 0)
   | .id
   | if . <= 9 then 1 else (./10|floor) end
@@ -62,13 +71,12 @@ vis_domains="$(sort -n "$visited_file" | uniq || true)"
 domain_has_windows() {
   local dom="$1"
   if (( dom == 1 )); then
-    jq -e '[.[] | select(.id>=1 and .id<=9 and .windows>0)] | length>0' \
+    jq -e --arg monitor "$mon" "$ws_workspace_jq_filter"'[.[] | select(in_namespace($monitor)) | select(.id>=1 and .id<=9 and .windows>0)] | length>0' \
       <<<"$ws_json" >/dev/null
   else
     local lo=$(( dom*10 + 1 ))
     local hi=$(( dom*10 + 9 ))
-    jq -e --argjson lo "$lo" --argjson hi "$hi" \
-      '[.[] | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' \
+    jq -e --arg monitor "$mon" --argjson lo "$lo" --argjson hi "$hi" "$ws_workspace_jq_filter"'[.[] | select(in_namespace($monitor)) | select(.id>=$lo and .id<=$hi and .windows>0)] | length>0' \
       <<<"$ws_json" >/dev/null
   fi
 }
@@ -89,8 +97,8 @@ while read -r dom; do
 done < <(printf "%s\n" "$vis_domains")
 mv "$tmpv" "$visited_file"
 
-maxWinDom="$(jq -r '
-  [ .[] | select(.windows>0) | (.id | if .<=9 then 1 else (./10|floor) end) ] | max // 0
+maxWinDom="$(jq -r --arg monitor "$mon" "$ws_workspace_jq_filter"'
+  [ .[] | select(in_namespace($monitor)) | select(.windows>0) | (.id | if .<=9 then 1 else (./10|floor) end) ] | max // 0
 ' <<<"$ws_json" 2>/dev/null || echo 0)"
 
 maxVisDom="$(sort -n "$visited_file" 2>/dev/null | tail -n1)"
@@ -131,5 +139,5 @@ else
   targetWs=$(( targetDom*10 + targetSlot ))
 fi
 
+"$HYPRCTL" dispatch focusmonitor "$mon" >/dev/null
 "$HYPRCTL" dispatch workspace "$targetWs" >/dev/null
-

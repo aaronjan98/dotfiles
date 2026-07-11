@@ -3,6 +3,9 @@ set -euo pipefail
 
 delta="${1:?use -1 or +1}"
 HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/ws-current-monitor.sh"
 
 # --- ensure we can talk to Hyprland even from systemd user services ---
 if [ -z "${HYPRLAND_INSTANCE_SIGNATURE-}" ]; then
@@ -21,11 +24,17 @@ if ! jq -e . >/dev/null 2>&1 <<<"$ws_json"; then
   ws_json='[]'
 fi
 
-active_id="$("$HYPRCTL" activeworkspace -j 2>/dev/null | jq -r '.id // 1' 2>/dev/null || echo 1)"
+read -r mon active_id < <(ws_focused_monitor_and_workspace)
 if ! [[ "$active_id" =~ ^[0-9]+$ ]]; then active_id=1; fi
+active_id="$(ws_logical_workspace_id "$mon" "$active_id")"
 
 # current domain/slot
-if (( active_id <= 9 )); then
+if [[ "$mon" != "eDP-1" ]]; then
+  dom=10
+  curSlot=$(( active_id % 10 ))
+  (( curSlot == 0 )) && curSlot=1
+  base=100
+elif (( active_id <= 9 )); then
   dom=1
   curSlot="$active_id"
   base=0
@@ -38,8 +47,9 @@ fi
 
 # highest existing workspace id in this domain (from ws_json)
 maxExisting="$(
-  jq -r --argjson dom "$dom" '
+  jq -r --arg monitor "$mon" --argjson dom "$dom" "$ws_workspace_jq_filter"'
     [ .[]
+      | select(in_namespace($monitor))
       | .id
       | if $dom == 1 then
           select(. >= 1 and . <= 9)
@@ -87,5 +97,5 @@ else
   target=$(( base + next ))
 fi
 
+"$HYPRCTL" dispatch focusmonitor "$mon" >/dev/null
 "$HYPRCTL" dispatch workspace "$target" >/dev/null
-

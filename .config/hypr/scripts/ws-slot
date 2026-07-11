@@ -2,10 +2,20 @@
 set -euo pipefail
 
 slot="${1:?slot 1-9 required}"
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/ws-current-monitor.sh"
 
-id="$(hyprctl activeworkspace -j | jq -r '.id')"
+read -r mon id < <(ws_focused_monitor_and_workspace)
+if ! [[ "$id" =~ ^[0-9]+$ ]]; then id=1; fi
+id="$(ws_logical_workspace_id "$mon" "$id")"
 
-if (( id <= 9 )); then
+if [[ "$mon" != "eDP-1" ]]; then
+  dom=10
+  curSlot=$(( id % 10 ))
+  (( curSlot == 0 )) && curSlot=1
+elif (( id <= 9 )); then
   dom=1
   curSlot="$id"
 else
@@ -36,5 +46,5 @@ else
   target=$(( dom*10 + slot ))
 fi
 
-hyprctl dispatch workspace "$target"
-
+"$HYPRCTL" dispatch focusmonitor "$mon" >/dev/null
+"$HYPRCTL" dispatch workspace "$target"
