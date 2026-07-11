@@ -17,6 +17,13 @@ Item {
     isExternal: !root.isLaptop
   }
 
+  // ---- All screens ----
+
+  Frame.CornerPatch {
+    screen: root.screen
+    isExternal: !root.isLaptop
+  }
+
   // ---- Laptop-only components ----
   // Using Loader so the Wayland surfaces are never created on external screens.
 
@@ -26,15 +33,6 @@ Item {
       Frame.LeftBar { screen: root.screen }
     }
   }
-
-  Loader {
-    active: root.isLaptop
-    sourceComponent: Component {
-      Frame.CornerPatch { screen: root.screen }
-    }
-  }
-
-  // ---- All screens ----
 
   Frame.TopBar {
     screen: root.screen

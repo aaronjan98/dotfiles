@@ -11,6 +11,11 @@ QtObject {
   // External monitor scale: Hyprland already scales DP-1 at 1.6×, so QML should use
   // uiScale / 1.6 to avoid double-scaling (otherwise bars appear ~2.8× base size).
   property real externalUiScale: uiScale / 1.6
+  // Visual scale for external frame chrome. Full DP-1 compensation is too small,
+  // while laptop scale is too large, so keep this as a direct tuning knob.
+  property real externalFrameScale: 0.8
+  // The corner bubble reads larger than the menu islands on DP-1, so tune it separately.
+  property real externalCornerScale: 0.7
 
   // Helpers
   // s()  = scaled integer pixels for the laptop screen
@@ -22,10 +27,12 @@ QtObject {
 
   // ---- bar thickness ----
   property int topH: s(24)
-  property int topHExternal: se(24)
+  // External topbar keeps 0.8x content but gets extra vertical breathing room.
+  property int topHExternal: Math.round((topH + s(8)) * externalFrameScale)
   property int leftW: nixBubbleSize
 
   // ---- content frame geometry ----
+  property int framePadLeftExternal: s(2)
   property int framePadRight: s(2)
   property int framePadBottom: s(2)
   property int frameRadius: s(7)
@@ -121,4 +128,3 @@ QtObject {
   // Replace this glyph string with the wired glyph you prefer from your nerd font.
   property string wiredIcon: "󰈚"
 }
-

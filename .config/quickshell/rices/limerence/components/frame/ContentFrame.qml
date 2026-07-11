@@ -30,8 +30,8 @@ PanelWindow {
     anchors.fill: parent
 
     // align to the same offsets your bars reserve
-    anchors.leftMargin: win.isExternal ? 0 : C.Appearance.leftW
-    anchors.topMargin: C.Appearance.topH
+    anchors.leftMargin: win.isExternal ? C.Appearance.framePadLeftExternal : C.Appearance.leftW
+    anchors.topMargin: win.isExternal ? C.Appearance.topHExternal : C.Appearance.topH
 
     // allow extra frame visible on right/bottom
     anchors.rightMargin: C.Appearance.framePadRight

@@ -14,15 +14,19 @@ PanelWindow {
   // since `required property ShellScreen screen` would shadow it and break multi-monitor routing)
 
   property bool isExternal: false
+  readonly property real contentScale: isExternal ? C.Appearance.externalFrameScale : 1
+  readonly property int edgeGap: Math.round(C.Appearance.m6 * contentScale)
+  readonly property int islandYOffset: isExternal ? -Math.max(1, Math.round(C.Appearance.s(2) * contentScale)) : 0
 
   exclusionMode: ExclusionMode.Auto
   anchors.top: true
   anchors.left: true
   anchors.right: true
 
-  // External: no LeftBar so no left margin.
-  margins.left: isExternal ? 0 : C.Appearance.leftW
-  implicitHeight: C.Appearance.topH
+  // Reserve the top-left corner bubble on every screen. External screens still
+  // skip the vertical LeftBar; only the top bar is offset.
+  margins.left: Math.round(C.Appearance.leftW * contentScale)
+  implicitHeight: isExternal ? C.Appearance.topHExternal : C.Appearance.topH
   color: "transparent"
 
   readonly property var wsModel: Hyprland.workspaces
@@ -181,97 +185,145 @@ PanelWindow {
     }
 
     // ---- LEFT: CPU + Mem ----
-    W.Pill {
+    Item {
+      id: leftIsland
       anchors.verticalCenter: parent.verticalCenter
+      anchors.verticalCenterOffset: root.islandYOffset
       anchors.left: parent.left
-      anchors.leftMargin: C.Appearance.m6
-      useBackground: root.showSideIslands
+      anchors.leftMargin: root.edgeGap
+      implicitWidth: leftPill.implicitWidth * root.contentScale
+      implicitHeight: leftPill.implicitHeight * root.contentScale
+      width: implicitWidth
+      height: implicitHeight
 
-      Row {
-        spacing: C.Appearance.m8
-
-        W.BatteryIcon { }
-
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
-
-        Text {
-          text: "CPU " + stats.cpuUsage + "%"
-          color: "white"
-          font.pixelSize: C.Appearance.pillFont
+      W.Pill {
+        id: leftPill
+        useBackground: root.showSideIslands
+        transform: Scale {
+          origin.x: 0
+          origin.y: 0
+          xScale: root.contentScale
+          yScale: root.contentScale
         }
 
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+        Row {
+          spacing: C.Appearance.m8
 
-        Text {
-          text: "MEM " + stats.memUsage + "%"
-          color: "white"
-          font.pixelSize: C.Appearance.pillFont
+          W.BatteryIcon { }
+
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+
+          Text {
+            text: "CPU " + stats.cpuUsage + "%"
+            color: "white"
+            font.pixelSize: C.Appearance.pillFont
+          }
+
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+
+          Text {
+            text: "MEM " + stats.memUsage + "%"
+            color: "white"
+            font.pixelSize: C.Appearance.pillFont
+          }
         }
       }
     }
 
     // ---- CENTER: workspace island ----
-    W.BubbleItem {
+    Item {
+      id: centerIsland
       anchors.centerIn: parent
+      anchors.verticalCenterOffset: root.islandYOffset
+      implicitWidth: workspaceBubble.implicitWidth * root.contentScale
+      implicitHeight: workspaceBubble.implicitHeight * root.contentScale
+      width: implicitWidth
+      height: implicitHeight
 
-      W.DotTrack {
-        axis: "h"
-        count: root.displaySlots
-        activeIndex: root.slot - 1
-
-        // Use DotTrack defaults (scaled): dotSize/gap/pillFactor/animMs
-
-        occupiedFn: function(i) {
-          var slotN = i + 1
-          var ws = root.workspaceIdFor(root.domain, slotN)
-          return root.toplevelCountForWorkspaceId(ws) > 0
+      W.BubbleItem {
+        id: workspaceBubble
+        transform: Scale {
+          origin.x: 0
+          origin.y: 0
+          xScale: root.contentScale
+          yScale: root.contentScale
         }
 
-        onClicked: function(i) {
-          var slotN = i + 1
-          var targetWs = root.actualWorkspaceIdFor(root.domain, slotN)
+        W.DotTrack {
+          axis: "h"
+          count: root.displaySlots
+          activeIndex: root.slot - 1
 
-          S.DomainMemory.setLastSlot(root.domain, slotN)
-          S.DomainMemory.ensureVisited(root.domain)
-          root.dispatchWorkspaceOnScreen(targetWs)
+          // Use DotTrack defaults (scaled): dotSize/gap/pillFactor/animMs
+
+          occupiedFn: function(i) {
+            var slotN = i + 1
+            var ws = root.workspaceIdFor(root.domain, slotN)
+            return root.toplevelCountForWorkspaceId(ws) > 0
+          }
+
+          onClicked: function(i) {
+            var slotN = i + 1
+            var targetWs = root.actualWorkspaceIdFor(root.domain, slotN)
+
+            S.DomainMemory.setLastSlot(root.domain, slotN)
+            S.DomainMemory.ensureVisited(root.domain)
+            root.dispatchWorkspaceOnScreen(targetWs)
+          }
         }
       }
     }
 
     // ---- RIGHT: wifi + clock ----
-    W.Pill {
+    Item {
+      id: rightIsland
       anchors.verticalCenter: parent.verticalCenter
+      anchors.verticalCenterOffset: root.islandYOffset
       anchors.right: parent.right
-      anchors.rightMargin: C.Appearance.m6
-      useBackground: root.showSideIslands
+      anchors.rightMargin: root.edgeGap
+      implicitWidth: rightPill.implicitWidth * root.contentScale
+      implicitHeight: rightPill.implicitHeight * root.contentScale
+      width: implicitWidth
+      height: implicitHeight
 
-      Row {
-        spacing: C.Appearance.m8
+      W.Pill {
+        id: rightPill
+        useBackground: root.showSideIslands
+        transform: Scale {
+          origin.x: 0
+          origin.y: 0
+          xScale: root.contentScale
+          yScale: root.contentScale
+        }
 
-        W.WifiIcon { onClicked: root.wifiPopupOpen = !root.wifiPopupOpen }
+        Row {
+          spacing: C.Appearance.m8
 
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          W.WifiIcon { onClicked: root.wifiPopupOpen = !root.wifiPopupOpen }
 
-        W.BluetoothIcon { onClicked: root.btPopupOpen = !root.btPopupOpen }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          W.BluetoothIcon { onClicked: root.btPopupOpen = !root.btPopupOpen }
 
-        W.VolumeIcon { }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          W.VolumeIcon { }
 
-        W.BrightnessIcon { onClicked: root.brightPopupOpen = !root.brightPopupOpen }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          W.BrightnessIcon { onClicked: root.brightPopupOpen = !root.brightPopupOpen }
 
-        W.NotificationIcon { }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
 
-        Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          W.NotificationIcon { }
 
-        W.Clock {
-          color: "white"
-          font.pixelSize: C.Appearance.pillFont
-          format: "ddd, MMM dd HH:mm:ss"
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+
+          W.Clock {
+            color: "white"
+            font.pixelSize: C.Appearance.pillFont
+            format: "ddd, MMM dd HH:mm:ss"
+          }
         }
       }
     }

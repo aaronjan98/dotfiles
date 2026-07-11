@@ -7,6 +7,8 @@ import "../../config" as C
 PanelWindow {
   id: win
   // screen set by caller — not re-declared here to avoid shadowing PanelWindow.screen
+  property bool isExternal: false
+  readonly property real contentScale: isExternal ? C.Appearance.externalCornerScale : 1
 
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
@@ -16,15 +18,19 @@ PanelWindow {
   anchors.left: true
 
   // THIS is what makes nixBubbleSize matter:
-  implicitWidth: C.Appearance.nixBubbleSize
-  implicitHeight: C.Appearance.nixBubbleSize
+  implicitWidth: Math.round(C.Appearance.nixBubbleSize * contentScale)
+  implicitHeight: isExternal ? C.Appearance.topHExternal : Math.round(C.Appearance.nixBubbleSize * contentScale)
 
   color: "transparent"
 
   Rectangle {
     id: bubble
-    anchors.fill: parent
-    radius: C.Appearance.bubbleRadius
+    width: Math.round(C.Appearance.nixBubbleSize * win.contentScale)
+    height: width
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.verticalCenterOffset: isExternal ? -Math.max(1, Math.round(C.Appearance.s(2) * C.Appearance.externalFrameScale)) : 0
+    radius: Math.round(C.Appearance.bubbleRadius * win.contentScale)
     color: C.Appearance.bubbleBg
     antialiasing: true
     clip: true
@@ -37,7 +43,7 @@ PanelWindow {
     Item {
       id: iconBox
       anchors.fill: parent
-      anchors.margins: C.Appearance.nixIconPad
+      anchors.margins: Math.round(C.Appearance.nixIconPad * win.contentScale)
 
       Image {
         id: nix
@@ -64,5 +70,3 @@ PanelWindow {
     }
   }
 }
-
-
