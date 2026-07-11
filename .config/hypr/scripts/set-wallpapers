@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SWWW="${SWWW:-/run/current-system/sw/bin/swww}"
+SWWWD="${SWWWD:-/run/current-system/sw/bin/swww-daemon}"
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+JQ="${JQ:-/run/current-system/sw/bin/jq}"
+
+img="/home/aj/Pictures/Wallpapers/current.png"
+
+pgrep -x swww-daemon >/dev/null || (
+  "$SWWWD" --format xrgb >/dev/null 2>&1 &
+)
+
+for _ in $(seq 1 60); do
+  "$SWWW" query >/dev/null 2>&1 && break
+  sleep 0.1
+done
+
+"$HYPRCTL" monitors -j \
+  | "$JQ" -r '.[].name' \
+  | while read -r out; do
+      [ -n "$out" ] || continue
+      "$SWWW" img --outputs "$out" "$img" --transition-type wipe --transition-fps 60
+    done

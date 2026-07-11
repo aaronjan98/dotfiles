@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+dir="${1:?use l|r|u|d}"
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/ws-current-monitor.sh"
+
+hypr_ensure_signature
+
+focus_state() {
+  local active monitors
+
+  active="$("$HYPRCTL" activewindow -j 2>/dev/null || echo '{}')"
+  if jq -e '.address and .address != ""' >/dev/null 2>&1 <<<"$active"; then
+    jq -r '"window:\(.address)"' <<<"$active"
+    return
+  fi
+
+  monitors="$("$HYPRCTL" monitors -j 2>/dev/null || echo '[]')"
+  if jq -e . >/dev/null 2>&1 <<<"$monitors"; then
+    jq -r '[.[] | select(.focused)][0] // .[0] | "monitor:\(.name):\(.activeWorkspace.id)"' <<<"$monitors"
+    return
+  fi
+
+  printf 'unknown\n'
+}
+
+before="$(focus_state)"
+"$HYPRCTL" dispatch movefocus "$dir" >/dev/null 2>&1 || true
+after="$(focus_state)"
+
+if [[ "$after" == "$before" ]]; then
+  "$script_dir/focus-screen" "$dir"
+fi

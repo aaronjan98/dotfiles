@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+target="${1:?use l|r|u|d|+1|-1|MONITOR}"
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$script_dir/ws-current-monitor.sh"
+
+hypr_ensure_signature
+
+"$HYPRCTL" dispatch focusmonitor "$target" >/dev/null
+
+read -r mon active_id < <(ws_focused_monitor_and_workspace)
+if ! [[ "$active_id" =~ ^[0-9]+$ ]]; then active_id=1; fi
+
+if [[ "$mon" == "eDP-1" ]]; then
+  if (( active_id < 1 || active_id >= 100 )); then
+    "$HYPRCTL" dispatch workspace 1 >/dev/null
+  fi
+else
+  if (( active_id < 101 || active_id > 109 )); then
+    "$HYPRCTL" dispatch workspace 101 >/dev/null
+  fi
+fi

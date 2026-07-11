@@ -20,9 +20,7 @@ PanelWindow {
   anchors.left: true
   anchors.right: true
 
-  // External: no LeftBar so no left margin. Height uses the same token as laptop so
-  // content widgets (which still render at laptop uiScale) don't overflow the bar.
-  // Per-screen content scaling is deferred to Phase 4.
+  // External: no LeftBar so no left margin.
   margins.left: isExternal ? 0 : C.Appearance.leftW
   implicitHeight: C.Appearance.topH
   color: "transparent"

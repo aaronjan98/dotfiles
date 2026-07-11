@@ -7,6 +7,7 @@ import "../../config" as C
 PanelWindow {
   id: win
   // screen set by caller — not re-declared here to avoid shadowing PanelWindow.screen
+  property bool isExternal: false
 
   // Visual-only overlay: never reserves space
   WlrLayershell.layer: WlrLayer.Bottom
@@ -29,7 +30,7 @@ PanelWindow {
     anchors.fill: parent
 
     // align to the same offsets your bars reserve
-    anchors.leftMargin: C.Appearance.leftW
+    anchors.leftMargin: win.isExternal ? 0 : C.Appearance.leftW
     anchors.topMargin: C.Appearance.topH
 
     // allow extra frame visible on right/bottom
@@ -132,4 +133,3 @@ PanelWindow {
     }
   }
 }
-
