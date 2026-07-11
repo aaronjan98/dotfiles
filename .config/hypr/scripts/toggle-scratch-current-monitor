@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+
+mon="$(
+  "$HYPRCTL" monitors -j 2>/dev/null \
+    | jq -r '.[] | select(.focused) | .name' \
+    | head -n1
+)"
+
+"$HYPRCTL" dispatch togglespecialworkspace magic >/dev/null
+
+if [ -n "${mon:-}" ] && [ "$mon" != "null" ]; then
+  "$HYPRCTL" dispatch focusmonitor "$mon" >/dev/null || true
+fi
