@@ -26,6 +26,20 @@ Item {
     onNotification: (n) => root._onNotif(n)
   }
 
+  IpcHandler {
+    target: "notifs"
+
+    function toggleCenter(): void { root.toggleCenter() }
+    function openCenter(): void { root.openCenter() }
+    function closeCenter(): void { root.closeCenter() }
+
+    function toggleDnd(): void { root.toggleDnd() }
+    function clearAll(): void { root.clearAll() }
+
+    function dismiss(nid: int): void { root.dismiss(nid) }
+    function invoke(nid: int, key: string): void { root.invoke(nid, key) }
+  }
+
   Process {
     id: hyprctl
     stdout: SplitParser { onRead: _ => {} }
@@ -44,6 +58,19 @@ Item {
       const v = arguments[i]
       if (v !== undefined && v !== null && ("" + v).length > 0) return v
     }
+    return ""
+  }
+
+  function _imagePath(x) {
+    const s = _s(x)
+    if (s.length === 0) return ""
+
+    // Notification hints named icon-path sometimes contain an icon name or
+    // desktop id, not a file. Do not hand those to QML Image as relative URLs.
+    if (s[0] === "/" || s.indexOf("file://") === 0 || s.indexOf("qrc:/") === 0 || s.indexOf("qs:/") === 0) {
+      return s
+    }
+
     return ""
   }
 
@@ -74,16 +101,16 @@ Item {
 
   function _entry(n) {
     const desktopEntry = _s(_hint(n, "desktop-entry"))
-    const senderPid = _hint(n, "sender-pid")
+    const senderPid = _s(_hint(n, "sender-pid"))
     const iconName = _s(n.appIcon)
 
-    const imagePath = _firstNonEmpty(
+    const imagePath = _imagePath(_firstNonEmpty(
       _hint(n, "image-path"),
       _hint(n, "image_path"),
       _hint(n, "imagePath"),
       _hint(n, "icon-path"),
       _hint(n, "icon_path")
-    )
+    ))
 
     const actionsNorm = _normalizeActions(n)
     const defaultKey = actionsNorm.some(x => x.key === "default") ? "default" : ""
@@ -229,4 +256,3 @@ Item {
     }
   }
 }
-

@@ -21,6 +21,11 @@ Item {
   property var actionsNorm_: []        // [{key,label}]
   property var actions_: []            // raw fallback
   property string defaultKey_: ""      // usually "default" if provided
+  property real scale_: 1.0
+
+  function px(n) {
+    return Math.round(n * root.scale_)
+  }
 
   function headerText() {
     if (summary_ && summary_.length > 0) return summary_
@@ -47,7 +52,7 @@ Item {
     border.width: 1
     border.color: Qt.rgba(1, 1, 1, 0.12)
 
-    implicitHeight: content.implicitHeight + 20
+    implicitHeight: content.implicitHeight + root.px(20)
 
     // Click anywhere -> activate (default action or focus pid)
     TapHandler {
@@ -56,19 +61,19 @@ Item {
 
     Row {
       id: content
-      x: 10
-      y: 10
-      width: parent.width - 20
-      spacing: 10
+      x: root.px(10)
+      y: root.px(10)
+      width: parent.width - root.px(20)
+      spacing: root.px(10)
 
       // ---- image/icon slot ----
       Item {
-        width: 34
-        height: 34
+        width: root.px(34)
+        height: root.px(34)
 
         Rectangle {
           anchors.fill: parent
-          radius: 10
+          radius: root.px(10)
           color: Qt.rgba(1,1,1,0.06)
           border.width: 1
           border.color: Qt.rgba(1,1,1,0.08)
@@ -91,40 +96,40 @@ Item {
           // If we at least know the app, show something different than bell
           text: (root.iconName_.length > 0 || root.desktopEntry_.length > 0) ? "󰍩" : "󰂚"
           color: Qt.rgba(1,1,1,0.85)
-          font.pixelSize: 16
+          font.pixelSize: root.px(16)
         }
       }
 
       Column {
-        width: parent.width - 34 - 10
-        spacing: 8
+        width: parent.width - root.px(34) - root.px(10)
+        spacing: root.px(8)
 
         // Header row + close button
         Row {
           width: parent.width
-          spacing: 8
+          spacing: root.px(8)
 
           Text {
-            width: parent.width - closeBtn.width - 8
+            width: parent.width - closeBtn.width - root.px(8)
             text: root.headerText()
             visible: text.length > 0
             color: "white"
             elide: Text.ElideRight
-            font.pixelSize: 12
+            font.pixelSize: root.px(12)
           }
 
           Rectangle {
             id: closeBtn
-            width: 22
-            height: 22
-            radius: 11
+            width: root.px(22)
+            height: root.px(22)
+            radius: root.px(11)
             color: Qt.rgba(1, 1, 1, 0.10)
 
             Text {
               anchors.centerIn: parent
               text: "×"
               color: "white"
-              font.pixelSize: 16
+              font.pixelSize: root.px(16)
             }
 
             TapHandler {
@@ -141,7 +146,7 @@ Item {
           maximumLineCount: 7
           elide: Text.ElideRight
           color: Qt.rgba(1, 1, 1, 0.92)
-          font.pixelSize: 12
+          font.pixelSize: root.px(12)
           visible: text.length > 0
         }
 
@@ -150,26 +155,26 @@ Item {
           width: parent.width
           text: "—"
           color: Qt.rgba(1, 1, 1, 0.50)
-          font.pixelSize: 12
+          font.pixelSize: root.px(12)
           visible: (root.headerText().length === 0 && root.messageText().length === 0)
         }
 
         // Actions row (buttons)
         Flow {
           width: parent.width
-          spacing: 6
+          spacing: root.px(6)
           visible: root.actionsNorm_ && root.actionsNorm_.length > 0
 
           Repeater {
             model: root.actionsNorm_ || []
 
             delegate: Rectangle {
-              radius: 10
-              height: 24
+              radius: root.px(10)
+              height: root.px(24)
               readonly property string lbl: (modelData && modelData.label) ? ("" + modelData.label) : "Action"
               readonly property string key: (modelData && modelData.key) ? ("" + modelData.key) : ""
 
-              width: Math.max(56, Math.min(220, label.implicitWidth + 18))
+              width: Math.max(root.px(56), Math.min(root.px(220), label.implicitWidth + root.px(18)))
               color: Qt.rgba(1, 1, 1, 0.10)
               border.width: 1
               border.color: Qt.rgba(1, 1, 1, 0.10)
@@ -179,7 +184,7 @@ Item {
                 anchors.centerIn: parent
                 text: parent.lbl
                 color: "white"
-                font.pixelSize: 11
+                font.pixelSize: root.px(11)
                 elide: Text.ElideRight
               }
 
@@ -193,4 +198,3 @@ Item {
     }
   }
 }
-

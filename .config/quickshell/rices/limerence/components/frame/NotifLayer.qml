@@ -28,15 +28,14 @@ Item {
     visible: Sv.Notifs.popups.count > 0
     color: "transparent"
 
-    // Click-through: toasts are informational; interaction is via the notification
-    // center (Super+\). Without this mask the window blocks cursor movement to
-    // adjacent monitors and intercepts all input in the top-right corner.
-    mask: Region { }
+    // Keep the transparent overlay click-through except for visible toasts.
+    mask: Region { item: toastColumn }
 
     implicitWidth: C.Appearance.popupWidthWide
     implicitHeight: Math.min(screen.height, C.Appearance.popupMaxHeight)
 
     Column {
+      id: toastColumn
       anchors.top: parent.top
       anchors.right: parent.right
       anchors.topMargin: C.Appearance.topH + C.Appearance.m10
@@ -119,7 +118,12 @@ Item {
     anchors.top: true
     anchors.bottom: true
 
-    margins.top: C.Appearance.topH + 6
+    readonly property bool isLaptop: C.Layout.isLaptop(api.screen)
+    readonly property real panelScale: isLaptop ? 1.15 : 1.0
+
+    margins.top: isLaptop
+      ? C.Appearance.topHFramework + 6
+      : C.Appearance.topH + 10
     margins.bottom: C.Appearance.framePadBottom + 6
 
     property int baseRight: C.Appearance.framePadRight + 6
@@ -128,7 +132,7 @@ Item {
     margins.right: closedRight
 
     color: "transparent"
-    implicitWidth: 380
+    implicitWidth: isLaptop ? 460 : 380
 
     property bool shown: false
     visible: shown
@@ -150,6 +154,7 @@ Item {
 
     W.NotificationCenter {
       anchors.fill: parent
+      scale_: centerWin.panelScale
     }
 
     function animateOpen() {
@@ -189,4 +194,3 @@ Item {
     }
   }
 }
-
