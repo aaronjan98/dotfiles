@@ -30,6 +30,6 @@ list=$(printf '%s\n' $variants)
 lines=$(printf '%s\n' $variants | wc -l)
 
 choice=$(printf '%s\n' "$list" \
-  | fuzzel --dmenu --lines "$lines" --width 4 --prompt "${1} → " 2>/dev/null) || exit 0
+  | "$HOME/.config/hypr/scripts/fz" --dmenu --lines "$lines" --width 4 --prompt "${1} → " 2>/dev/null) || exit 0
 
 [ -n "$choice" ] && wtype "$choice"

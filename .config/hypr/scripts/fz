@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Host-scaled fuzzel launcher.
+#
+# fuzzel's config (~/.config/fuzzel/fuzzel.ini) is shared across machines via the
+# dotfiles repo, but the two laptops need different sizes — both run Hyprland at
+# 1.0× scale, and the Framework 13's HiDPI panel wants a much larger font than the
+# ThinkPad's 1080p panel. Pick size flags per host here so every fuzzel caller
+# (the $menu launcher, the bemoji emoji picker via BEMOJI_PICKER_CMD, and the
+# accent-pick popup) gets the right size. Callers may still override by passing
+# their own --width/--lines after the wrapper args (fuzzel honours the last flag).
+case "$(hostname)" in
+  framework-13) font=20; width=30; lines=10 ;;   # HiDPI panel (QS_UI_SCALE=1.75)
+  *)            font=11; width=40; lines=12 ;;    # thinkpad-t14 (1080p) + default
+esac
+
+exec fuzzel \
+  --font="JetBrainsMono Nerd Font:size=${font}" \
+  --width="${width}" \
+  --lines="${lines}" \
+  "$@"
