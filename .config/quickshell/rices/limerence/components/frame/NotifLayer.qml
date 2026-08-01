@@ -119,7 +119,9 @@ Item {
     anchors.bottom: true
 
     readonly property bool isLaptop: C.Layout.isLaptop(api.screen)
-    readonly property real panelScale: isLaptop ? 1.15 : 1.0
+    // Framework (uiScale 1.75) keeps 1.15; the ThinkPad (uiScale 1.25) scales the
+    // center content down slightly so its text isn't oversized. External = 1.0.
+    readonly property real panelScale: isLaptop ? (C.Appearance.uiScale >= 1.5 ? 1.15 : 1.05) : 1.0
 
     margins.top: isLaptop
       ? C.Appearance.topHFramework + 6
@@ -132,7 +134,9 @@ Item {
     margins.right: closedRight
 
     color: "transparent"
-    implicitWidth: isLaptop ? 460 : 380
+    // Framework (uiScale 1.75) keeps the wider 460; the ThinkPad (uiScale 1.25)
+    // uses a slightly narrower center panel. External monitors stay at 380.
+    implicitWidth: isLaptop ? (C.Appearance.uiScale >= 1.5 ? 460 : 400) : 380
 
     property bool shown: false
     visible: shown
