@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# accent-pick <base-letter>
+#
+# Show a small fuzzel popup listing the accented variants of <base-letter>,
+# then type the chosen one via wtype. Because wtype inserts the real Unicode
+# codepoint, this works in EVERY app (ghostty, kitty, neovide, GTK, …) with no
+# dead keys and no libxkbcommon/GTK compose support required.
+#
+# Bound in conf.d/20-binds.conf to the keysyms that AltGr+vowel produces
+# (aacute, eacute, …), so pressing AltGr+a opens the "a" popup, etc.
+set -euo pipefail
+
+# Variant sets, ordered most-useful-first for Portuguese, then other languages.
+case "${1:-}" in
+  a) variants="á ã â à ä" ;;
+  e) variants="é ê è ë" ;;
+  i) variants="í î ì ï" ;;
+  o) variants="ó õ ô ò ö" ;;
+  u) variants="ú û ù ü" ;;
+  A) variants="Á Ã Â À Ä" ;;
+  E) variants="É Ê È Ë" ;;
+  I) variants="Í Î Ì Ï" ;;
+  O) variants="Ó Õ Ô Ò Ö" ;;
+  U) variants="Ú Û Ù Ü" ;;
+  *) exit 0 ;;
+esac
+
+# One variant per line for the dmenu; size the popup to the list.
+list=$(printf '%s\n' $variants)
+lines=$(printf '%s\n' $variants | wc -l)
+
+choice=$(printf '%s\n' "$list" \
+  | fuzzel --dmenu --lines "$lines" --width 4 --prompt "${1} → " 2>/dev/null) || exit 0
+
+[ -n "$choice" ] && wtype "$choice"
