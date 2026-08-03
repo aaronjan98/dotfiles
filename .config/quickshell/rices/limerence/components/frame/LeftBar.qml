@@ -129,7 +129,12 @@ PanelWindow {
       displayDomains = t
       shrinkDomainsTimer.stop()
     } else if (t < displayDomains) {
-      shrinkDomainsTimer.restart()
+      // Debounce the shrink, but do NOT restart an already-running countdown:
+      // the 250ms poll would otherwise keep resetting the 350ms timer before
+      // it can ever elapse, so extra dots would never collapse.
+      if (!shrinkDomainsTimer.running) shrinkDomainsTimer.start()
+    } else {
+      shrinkDomainsTimer.stop()
     }
   }
 
