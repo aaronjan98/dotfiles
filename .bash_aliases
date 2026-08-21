@@ -24,6 +24,9 @@ alias claude-local-qwen='CLAUDE_LOCAL_MODEL="qwen3:4b" ~/nixos-config/scripts/ai
 # Receiver / desk speakers — controlled via HA Matter (see scripts/speakers.sh)
 alias speakers='~/nixos-config/scripts/speakers.sh'
 
+# Desk LED strip — standalone ESP32 at desk-leds.home (see scripts/leds.sh)
+alias leds='~/nixos-config/scripts/leds.sh'
+
 # Manual triggers for the hourly systemd sync timers (push only → NAS)
 alias sync-documents='systemctl --user start sync-documents.service'
 alias sync-pictures='systemctl --user start sync-pictures.service'
