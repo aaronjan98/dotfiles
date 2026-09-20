@@ -1,4 +1,18 @@
 #!/usr/bin/env bash
+# Apply the current wallpaper to every connected output, and (optionally) make a
+# new image the current wallpaper.
+#
+#   set-wallpapers                 reapply the current wallpaper to all outputs.
+#                                  This is what hypr-monitor-watch runs on a
+#                                  monitor hotplug, since swww loses an output's
+#                                  image when the output goes away and comes back.
+#   set-wallpapers IMAGE [TRANS]   make IMAGE the current wallpaper and apply it.
+#
+# The "current wallpaper" is whatever ~/Pictures/Wallpapers/current.png points
+# at. Recording the choice there is what makes it survive: anything that calls
+# `swww img` directly sets the pixels but leaves the symlink stale, so the next
+# hotplug reapply silently reverts to the previously recorded image. Route
+# wallpaper changes through this script and that can't happen.
 set -euo pipefail
 
 SWWW="${SWWW:-/run/current-system/sw/bin/swww}"
@@ -6,7 +20,36 @@ SWWWD="${SWWWD:-/run/current-system/sw/bin/swww-daemon}"
 HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
 JQ="${JQ:-/run/current-system/sw/bin/jq}"
 
-img="/home/aj/Pictures/Wallpapers/current.png"
+wall_dir="$HOME/Pictures/Wallpapers"
+link="$wall_dir/current.png"
+
+case "${1-}" in
+  -h|--help)
+    sed -n '2,14p' "$0" | sed 's/^# \?//'
+    exit 0
+    ;;
+esac
+
+img_arg="${1-}"
+transition="${2:-wipe}"
+
+if [ -n "$img_arg" ]; then
+  if [ ! -f "$img_arg" ]; then
+    echo "set-wallpapers: no such image: $img_arg" >&2
+    exit 1
+  fi
+  target="$(realpath "$img_arg")"
+  case "$target" in
+    # Keep it relative inside the wallpaper dir, matching the existing convention.
+    "$wall_dir"/*) ln -sfn "${target#"$wall_dir"/}" "$link" ;;
+    *)             ln -sfn "$target" "$link" ;;
+  esac
+fi
+
+if [ ! -e "$link" ]; then
+  echo "set-wallpapers: $link is missing or dangling" >&2
+  exit 1
+fi
 
 pgrep -x swww-daemon >/dev/null || (
   "$SWWWD" --format xrgb >/dev/null 2>&1 &
@@ -21,5 +64,6 @@ done
   | "$JQ" -r '.[].name' \
   | while read -r out; do
       [ -n "$out" ] || continue
-      "$SWWW" img --outputs "$out" "$img" --transition-type wipe --transition-fps 60
+      "$SWWW" img --outputs "$out" "$link" \
+        --transition-type "$transition" --transition-fps 60
     done

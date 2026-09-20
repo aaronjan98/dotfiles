@@ -1,25 +1,75 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Reapply the desktop state that Hyprland does not restore by itself when a
+# monitor is connected or disconnected:
+#
+#   1. wallpapers — swww loses the image for an output across a hotplug, and
+#      set-wallpapers is wired as exec-once so nothing else re-runs it
+#   2. floating window geometry — Hyprland re-lays-out tiled windows from the
+#      dwindle tree on monitor re-add, but floating windows keep coordinates
+#      translated into the surviving monitor's space and never get the origin
+#      offset added back, leaving them stranded off their own monitor
+#
+# Runs as a supervised systemd user service (hypr-monitor-watch.service), NOT as
+# an exec-once. The previous exec-once version had two silent failure modes:
+# it exited immediately when it started before Hyprland had created its event
+# socket, and it died for good the first time socat ended — either way hotplug
+# handling was quietly dead for the rest of the session with no way to notice.
+# Now it waits for the socket, logs to the journal, and systemd restarts it.
 
-if [ -z "${HYPRLAND_INSTANCE_SIGNATURE-}" ]; then
-  sig_dir="/run/user/$(id -u)/hypr"
-  if [ -d "$sig_dir" ]; then
-    sig="$(ls -1 "$sig_dir" 2>/dev/null | head -n1 || true)"
-    if [ -n "$sig" ]; then
-      export HYPRLAND_INSTANCE_SIGNATURE="$sig"
-    fi
+set -uo pipefail
+
+log() { printf 'watch-monitors: %s\n' "$*"; }  # stdout -> journal
+
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+# Wait for the compositor's event socket instead of giving up when it is absent.
+sock=""
+for _ in $(seq 1 120); do  # up to ~60s
+  sig="${HYPRLAND_INSTANCE_SIGNATURE:-}"
+  if [ -z "$sig" ] && [ -d "$runtime_dir/hypr" ]; then
+    sig="$(ls -1t "$runtime_dir/hypr" 2>/dev/null | head -n1 || true)"
   fi
+  if [ -n "$sig" ] && [ -S "$runtime_dir/hypr/$sig/.socket2.sock" ]; then
+    sock="$runtime_dir/hypr/$sig/.socket2.sock"
+    export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+    break
+  fi
+  sleep 0.5
+done
+
+if [ -z "$sock" ]; then
+  log "no Hyprland event socket after 60s; exiting for systemd to retry"
+  exit 1
 fi
 
-sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
-[ -S "$sock" ] || exit 0
+set_wallpapers="$HOME/.config/hypr/scripts/set-wallpapers"
 
-set_wallpapers="/home/aj/.config/hypr/scripts/set-wallpapers"
+log "listening on $sock"
 
 socat -U - "UNIX-CONNECT:$sock" | while read -r line; do
   case "$line" in
-    monitoradded*|monitorremoved*)
-      "$set_wallpapers" >/dev/null 2>&1 || true
+    'monitoradded>>'*|'monitorremoved>>'*)
+      log "$line -> reapplying wallpapers"
+      "$set_wallpapers" >/dev/null 2>&1 || log "set-wallpapers failed"
+      ;;
+  esac
+
+  case "$line" in
+    'monitoradded>>'*)
+      # Settle first: the float pass resolves each saved position against the
+      # monitor that currently holds the workspace, so it must not run until
+      # Hyprland has finished moving workspaces back onto the returning monitor.
+      sleep 2
+      # --floats-only reapplies saved geometry and nothing else: no spawning, no
+      # tab matching. Idempotent, and it skips windows already in place.
+      if out=$(hypr-session restore --all --floats-only 2>&1); then
+        log "$line -> $out"
+      else
+        log "$line -> float repair failed: $out"
+      fi
       ;;
   esac
 done
+
+log "event stream ended; exiting for systemd to restart"
+exit 1

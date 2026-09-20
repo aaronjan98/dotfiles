@@ -1,5 +1,10 @@
 [mgr]
 
 prepend_keymap = [
-  { on = "W", run = "shell 'swww img \"$0\" -t any'", desc = "Set as wallpaper (swww)" },
+  # Route through set-wallpapers rather than calling `swww img` directly: the
+  # script also records the choice in ~/Pictures/Wallpapers/current.png, which
+  # is what hypr-monitor-watch reapplies on a monitor hotplug. Calling swww
+  # straight would set the pixels but leave that stale, so replugging a monitor
+  # would silently revert to the previously recorded wallpaper.
+  { on = "W", run = "shell '$HOME/.config/hypr/scripts/set-wallpapers \"$0\" any'", desc = "Set as wallpaper (persists across hotplug)" },
 ]

@@ -57,6 +57,24 @@ The appearance/effects panel (`AppearancePopup.qml`) controls all other visual f
 
 ## Ongoing issues
 
+### Workspace dot island shows a nonexistent workspace while a monitor is unplugged
+Status: reported 2026-09-20, not yet diagnosed
+
+Symptom: with DP-1 unplugged, all of domain 10's workspaces (101–104) migrate onto eDP-1 alongside domain 1's (ws 1–2). The dot island was then observed reporting the floating windows as living on "workspace 11".
+
+Evidence that workspace 11 never existed: the compositor was instrumented across the whole unplug/replug cycle (94 state snapshots plus the full `.socket2.sock` event stream). The only workspaces that ever existed were 1, 2 and 101–104, and no `createworkspace>>11` event was emitted. So this is a shell-layer labelling problem, not a Hyprland one.
+
+Likely area: whatever maps a workspace id to a dot/slot label when two domains are crowded onto a single monitor. This is the same class of failure already noted in `~/.config/hypr/conf.d/30-look.conf`, whose comment warns that an off-scheme workspace id "can't be addressed or displayed" by the dot island and "silently strands whatever window opens there first".
+
+To reproduce: unplug the external monitor, look at the island while domains 1 and 10 share eDP-1, then replug.
+
+Relevant files:
+- `TopBar.qml` — dot island rendering
+- `~/.config/hypr/scripts/ws-current-monitor.sh` — cursor→monitor/workspace resolution the bar relies on
+- `~/.config/hypr/conf.d/30-look.conf` — the `workspace = 101, monitor:DP-1` pin and its warning comment
+
+---
+
 ### Domain dot click: wrong slot restored after keyboard navigation
 Status: confirmed
 

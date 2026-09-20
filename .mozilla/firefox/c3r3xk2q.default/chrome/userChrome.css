@@ -1,0 +1,112 @@
+/* ============================================================
+   userChrome.css — minimal chrome for Hyprland
+   Profile: c3r3xk2q.default (the active profile per profiles.ini)
+
+   Requires: toolkit.legacyUserProfileCustomizations.stylesheets = true
+   That pref is set declaratively by programs.firefox.autoConfig in
+   ~/nixos-config/hosts/common/default.nix — do not set it by hand.
+
+   Layout: nav bar hides off the top edge, sidebar (launcher rail +
+   vertical tabs) hides off the left edge. Each leaves an invisible
+   few-pixel strip you can hover to slide it back in. Ctrl+L still
+   reveals the URL bar via :focus-within.
+
+   Alt+F pins everything open again. The key handler lives in
+   ~/nixos-config/hosts/common/firefox-autoconfig.js and toggles a
+   `chromeshown` attribute on the root element; when it is present the
+   auto-hide rules below drop out and the chrome reverts to stock.
+   ============================================================ */
+
+:root {
+  --glass-bg: rgba(20, 10, 16, 0.30);
+  --glass-bg-hover: rgba(20, 10, 16, 0.45);
+
+  /* Invisible hover targets at the window edges. */
+  --chrome-peek: 3px;
+  --sidebar-peek: 6px;
+  --chrome-anim: 140ms ease;
+}
+
+/* ============================================================
+   1. Auto-hiding nav bar (top edge)
+   ============================================================ */
+
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #navigator-toolbox {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 10;
+
+  opacity: 0;
+  transform: translateY(calc(-100% + var(--chrome-peek)));
+  transition: transform var(--chrome-anim), opacity var(--chrome-anim);
+}
+
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #navigator-toolbox:hover,
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #navigator-toolbox:focus-within {
+  opacity: 1;
+  transform: none;
+}
+
+/* ============================================================
+   2. Auto-hiding sidebar (left edge)
+
+   #sidebar-main holds the launcher rail and the vertical tab strip.
+   Width is left to shrink-wrap so it keeps whatever size Firefox
+   gives it (collapsed rail vs. expanded tab list).
+   ============================================================ */
+
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #sidebar-main {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 9;
+
+  opacity: 0;
+  transform: translateX(calc(-100% + var(--sidebar-peek)));
+  transition: transform var(--chrome-anim), opacity var(--chrome-anim);
+}
+
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #sidebar-main:hover,
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #sidebar-main:focus-within {
+  opacity: 1;
+  transform: none;
+}
+
+/* The launcher splitter would otherwise leave a stray gap where the
+   sidebar used to sit in the flex row. */
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #sidebar-launcher-splitter {
+  display: none !important;
+}
+
+/* ============================================================
+   3. Transparency — blur comes from the Hyprland compositor
+   ============================================================ */
+
+#navigator-toolbox {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(0px) !important;
+}
+
+#TabsToolbar,
+#nav-bar {
+  background: transparent !important;
+}
+
+.tab-background {
+  background: var(--glass-bg) !important;
+}
+
+.tab-background[selected] {
+  background: var(--glass-bg-hover) !important;
+}
+
+#urlbar,
+#urlbar-background {
+  background: var(--glass-bg) !important;
+}
+
+#sidebar-main,
+#sidebar-box {
+  background: var(--glass-bg) !important;
+}

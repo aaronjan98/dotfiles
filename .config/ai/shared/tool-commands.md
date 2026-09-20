@@ -182,7 +182,7 @@ These must be added manually by path — `dot add .` from `~/.config` will not p
 ~/.bash_aliases   ~/.bash_profile   ~/.bashrc   ~/.gitconfig   ~/.dotfiles.gitignore
 ~/.github/README.md
 ~/.gemini/GEMINI.md
-~/.mozilla/firefox/zpqkr59d.default/chrome/userChrome.css
+~/.mozilla/firefox/c3r3xk2q.default/chrome/userChrome.css
 ~/.pi/            (safe to `dot add ~/.pi` — runtime/cache files are gitignored)
 ```
 

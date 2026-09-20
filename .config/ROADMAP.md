@@ -66,6 +66,19 @@ This feature is independent of the Kanata island. It can be implemented and used
 
 ---
 
+### Monitor hotplug leaves several parts of the desktop stale
+One deliberate unplug/replug of the external monitor on framework-13 (2026-09-20) surfaced five issues, each filed in its owning area:
+
+- wallpaper hotplug handler (`watch-monitors`) was silently dead — **fixed**, now a supervised systemd user service; per-monitor wallpapers still not expressible (the bare laptop panel is the preferred look) → `~/.config/hypr/ROADMAP.md`
+- fuzzel sized from `hostname` rather than from the monitor it opens on → `~/.config/hypr/ROADMAP.md`
+- floating windows lose their monitor origin offset on re-add, Hyprland 0.52.2 — worked around **automatically** on `monitoradded`; still an upstream bug → `~/.config/hypr/ROADMAP.md`
+- the workspace dot island reported a nonexistent workspace while two domains shared one monitor → `~/.config/quickshell/ROADMAP.md`
+- `hypr-session` autosave can capture displaced float geometry during the stale window → `~/nixos-config/docs/ROADMAP.md`
+
+Workspace migration itself is *not* at fault — Hyprland moves workspaces off the removed monitor and back onto it correctly, and tiled windows recover byte-identically. Everything above is downstream of config that keys off compositor startup or hostname instead of the current monitor set.
+
+---
+
 ## Roadmap index
 
 ### Existing roadmap files

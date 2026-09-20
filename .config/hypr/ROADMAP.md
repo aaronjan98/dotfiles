@@ -183,6 +183,25 @@ Open questions:
 - Whether `hyprctl dispatch movetoworkspacesilent` produces a visible flash or layout jump that needs to be hidden
 - Should the sticky window follow domain switches (vertical) as well, or only horizontal slot switches?
 
+### Per-monitor wallpapers (laptop panel intentionally bare)
+
+Goal:
+- Set a different wallpaper per output, and treat "no wallpaper" as a valid choice for an output
+- Desired end state: the external monitor (DP-1) gets the wallpaper, the Framework's internal panel (eDP-1) gets none
+
+Why this matters:
+- Found by accident on 2026-09-20 while testing a DP-1 unplug/replug: swww reapplied the wallpaper to DP-1 but not to eDP-1, and the bare laptop panel turned out to be the preferred look
+- Not currently expressible — `~/.config/hypr/scripts/set-wallpapers` loops over every output from `hyprctl monitors -j` and applies the *same* `current.png` to each
+
+Implementation approach:
+- `swww img` already accepts `-o/--outputs <comma-separated>`, and the script already calls it once per output, so only the single `img` variable needs to become an output→image map
+- Represent "none" explicitly (skip the `swww img` call for that output) rather than by omission, so the choice survives a re-run
+- Keep it data-driven — an output→image table at the top of the script, or a small config file — so adding a monitor doesn't mean editing logic
+
+Relevant file: `~/.config/hypr/scripts/set-wallpapers`
+
+Status note (2026-09-20): the hotplug side is **done** — `watch-monitors` is now a supervised systemd user service (`nixos-config modules/hypr-monitor-watch.nix`) that reliably re-runs `set-wallpapers` on `monitoradded`/`monitorremoved`. The only work left here is the per-output image map, so that reapplying no longer means "the same image everywhere" and a deliberate "none on eDP-1" survives.
+
 Relevant scripts location: `~/.config/hypr/scripts/`
 
 ---
@@ -203,6 +222,44 @@ Relevant files to check when diagnosing:
 - nvim smart-splits or navigator plugin config (wherever `hyprctl` is called from nvim)
 - `~/.config/hypr/conf.d/20-binds.conf` — check if the same key combo is bound at both layers
 - `modules/xremap.nix` — check if xremap is involved in the navigation binding
+
+---
+
+### Fuzzel size is keyed off hostname instead of the monitor it opens on
+Status: diagnosed, not fixed
+
+Symptom: the launcher changes apparent size depending on which monitor it opens on — visibly larger on the Framework's internal panel, smaller on the external monitor. Unplugging DP-1 makes it jump in size.
+
+Root cause: `~/.config/hypr/scripts/fz` selects font size and width from `hostname`:
+
+```
+framework-13) font=20; width=30; lines=10 ;;   # HiDPI panel
+*)            font=11; width=40; lines=12 ;;
+```
+
+That is a per-machine constant, but the thing that actually varies is per-monitor: eDP-1 is 2256x1504 at scale 1, DP-1 is 3440x1440 at scale 1.6, and fuzzel opens on whichever monitor has focus. One constant cannot be correct for both.
+
+Fix approach: pick the size from the monitor fuzzel is about to open on rather than the hostname. `~/.config/hypr/scripts/ws-current-monitor.sh` already resolves the monitor under the cursor — reuse it and derive `font`/`width` from that monitor's `scale` and logical resolution.
+
+Relevant files:
+- `~/.config/hypr/scripts/fz`
+- `~/.config/hypr/scripts/ws-current-monitor.sh` — existing cursor→monitor helper
+
+---
+
+### Floating windows lose their monitor origin offset when a monitor is re-added
+Status: confirmed and measured 2026-09-20; worked around, not fixed upstream
+
+Symptom: unplug an external monitor and plug it back in, and floating windows end up stranded — they still belong to the right workspace, but they render off the edge of (or outside) the monitor that workspace is on.
+
+Measured behaviour, DP-1 (origin 2256,0) unplug → replug:
+- Workspace migration is correct in both directions (`moveworkspace>>101..104,eDP-1` on removal, `moveworkspace>>101..104,DP-1` on add)
+- Tiled windows recover byte-identically — they are recomputed from the dwindle tree
+- Floating windows keep their **size** but lose their **position**: all four test windows came back exactly 2257px left and 1px up, i.e. DP-1's origin offset. Hyprland translates floats into the surviving monitor's coordinate space on removal and never re-adds the offset on re-add.
+
+Workaround in place, now automatic: `hypr-monitor-watch.service` runs `hypr-session restore --all --floats-only` on `monitoradded`, which reapplies saved monitor-relative float geometry to already-open windows. No manual step. See `~/nixos-config/docs/SCRIPTS.md`.
+
+If revisited: worth checking against a newer Hyprland than 0.52.2 and reporting upstream if still present.
 
 ---
 
