@@ -48,6 +48,28 @@
   transform: none;
 }
 
+/* The URL bar is <html:moz-urlbar id="urlbar" popover="manual">, so it renders
+   in the top layer. Top-layer boxes are painted from the viewport, not through
+   the ancestor chain, which means the toolbox's transform and opacity above do
+   not reach it — it stays on screen after the rest of the bar has slid away.
+   It has to be faded on its own, keyed to the same states.
+
+   Its position is unaffected either way, so it still lines up with the toolbar
+   when both are shown. */
+
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #urlbar {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--chrome-anim);
+}
+
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #navigator-toolbox:hover #urlbar,
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #navigator-toolbox:focus-within #urlbar,
+:root:not([customizing]):not([inFullscreen]):not([chromeshown]) #urlbar[focused] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ============================================================
    2. Auto-hiding sidebar (left edge)
 
