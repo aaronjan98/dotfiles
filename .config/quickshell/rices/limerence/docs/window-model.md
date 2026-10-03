@@ -66,6 +66,20 @@ A top bar must reserve space and host input. Those are not the same concerns as 
 - draw glow and inner border effects inside the content hole
 - visually unify top and left reserved regions with the content region
 
+### How the ring is drawn
+
+The ring is a single `Shape` (`QtQuick.Shapes`): one `ShapePath` with
+`ShapePath.OddEvenFill` whose outer subpath is the full window rectangle and whose
+inner subpath is a rounded-rect hole (radius `Appearance.frameRadius`, clamped to half
+the hole via `win._r`). Odd-even cancels their overlap, leaving a tinted ring with a
+genuinely rounded inner corner.
+
+This replaced an earlier 4-rectangle approach that butted square strips around a square
+hole and only *faked* the rounded corner with the glow border rings — which left an
+untinted triangular wedge at each corner (wallpaper bled through on light colours). The
+`Shape` fills right up to the rounded hole, so there is no wedge at any `frameBg` colour.
+The glow / inner-border rings below the `Shape` are unchanged; they sit on the hole edge.
+
 ### Critical design detail
 
 This window is **visual only**.

@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import QtQuick.Shapes
 
 import "../../config" as C
 
@@ -8,6 +9,13 @@ PanelWindow {
   id: win
   // screen set by caller — not re-declared here to avoid shadowing PanelWindow.screen
   property bool isExternal: false
+
+  // Inner-corner radius for the frame hole, clamped so a large frameRadius (or a
+  // very small hole mid-layout) can never produce an arc bigger than the hole.
+  readonly property real _r: Math.max(0, Math.min(
+    C.Appearance.frameRadius,
+    hole.width  / 2,
+    hole.height / 2))
 
   // Visual-only overlay: never reserves space
   WlrLayershell.layer: WlrLayer.Bottom
@@ -39,43 +47,46 @@ PanelWindow {
   }
 
   //
-  // RING: 4 strips around the hole (outside only)
+  // RING: a single filled Shape = full window MINUS a rounded-rect hole.
   //
+  // Previously this was 4 rectangular strips butted around a SQUARE hole, with
+  // the rounded inner corner only *faked* by the glow border rings below. That
+  // left an untinted triangular wedge in each corner (between the square strip
+  // edge and the faked arc) where the wallpaper bled through — invisible on dark
+  // wallpapers, obvious on light ones. See quickshell ROADMAP "frame corner
+  // gaps". Caelestia/soramane solve the same thing with geometry (ClippingRect),
+  // not a shader; here one ShapePath with the odd-even fill rule fills the ring
+  // right up to a genuinely rounded hole, so there is no wedge at any frameBg
+  // colour. The outer subpath is the whole window; the inner subpath is a
+  // rounded rect matching the hole + frameRadius; odd-even cancels their overlap.
+  Shape {
+    anchors.fill: parent
+    preferredRendererType: Shape.CurveRenderer   // smooth AA corners (Qt 6.6+)
 
-  // Top strip: above the hole
-  Rectangle {
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: hole.top
-    color: C.Appearance.frameBg
-  }
+    ShapePath {
+      fillColor: C.Appearance.frameBg
+      strokeWidth: 0
+      fillRule: ShapePath.OddEvenFill
 
-  // Left strip: left of the hole
-  Rectangle {
-    anchors.top: hole.top
-    anchors.bottom: hole.bottom
-    anchors.left: parent.left
-    anchors.right: hole.left
-    color: C.Appearance.frameBg
-  }
+      // Outer subpath: the full window rectangle.
+      PathMove { x: 0;         y: 0 }
+      PathLine { x: win.width; y: 0 }
+      PathLine { x: win.width; y: win.height }
+      PathLine { x: 0;         y: win.height }
+      PathLine { x: 0;         y: 0 }
 
-  // Right strip: right of the hole
-  Rectangle {
-    anchors.top: hole.top
-    anchors.bottom: hole.bottom
-    anchors.left: hole.right
-    anchors.right: parent.right
-    color: C.Appearance.frameBg
-  }
-
-  // Bottom strip: below the hole
-  Rectangle {
-    anchors.top: hole.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    color: C.Appearance.frameBg
+      // Inner subpath: the rounded content hole. Odd-even subtracts it.
+      // r is clamped so it can never exceed half the hole's smaller side.
+      PathMove { x: hole.x + win._r;                 y: hole.y }
+      PathLine { x: hole.x + hole.width - win._r;    y: hole.y }
+      PathArc  { x: hole.x + hole.width; y: hole.y + win._r;               radiusX: win._r; radiusY: win._r }
+      PathLine { x: hole.x + hole.width; y: hole.y + hole.height - win._r }
+      PathArc  { x: hole.x + hole.width - win._r; y: hole.y + hole.height; radiusX: win._r; radiusY: win._r }
+      PathLine { x: hole.x + win._r;     y: hole.y + hole.height }
+      PathArc  { x: hole.x;              y: hole.y + hole.height - win._r;  radiusX: win._r; radiusY: win._r }
+      PathLine { x: hole.x;              y: hole.y + win._r }
+      PathArc  { x: hole.x + win._r;     y: hole.y;                        radiusX: win._r; radiusY: win._r }
+    }
   }
 
   //

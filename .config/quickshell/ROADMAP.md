@@ -23,8 +23,13 @@ The `smoothstep` edge-fade curve is needed by both the music visualizer and the 
 ### 5. Wrap bar content in `layer.enabled` once, not per-feature
 The music visualizer ripple and potentially the chaser effects both need the top bar rendered to an offscreen texture (`layer.enabled: true` + `layer.effect: ShaderEffect`). This can only be set once per Item. Decide upfront which Item gets `layer.enabled` and what the `layer.effect` composition order is — doing this per-feature leads to conflicting layer wrappers that can't be stacked without restructuring.
 
-### 6. Fix the frame corner gap before implementing the theme switcher
-A light-coloured `frameBg` makes the triangular corner gaps visible. The theme switcher is useless for light wallpapers until this is resolved. Fix the geometry first (`QML Shape` or `OpacityMask` approach), then wire matugen palette output to `Appearance.qml`.
+### 6. ~~Fix the frame corner gap before implementing the theme switcher~~ ✅ done 2026-10-03
+A light-coloured `frameBg` used to expose triangular corner gaps, which blocked the
+theme switcher for light wallpapers. Fixed by redrawing the ring in `ContentFrame.qml`
+as a single `Shape` (outer window rect minus a rounded-rect hole, odd-even fill) so the
+`frameBg` itself has a true rounded inner corner — no wedge at any colour. The theme
+switcher is now unblocked for light wallpapers; wire matugen palette output to
+`Appearance.qml` next.
 
 ### 7. Pause cava when silent — implement from the start
 The cava process costs ~1–2% CPU when processing audio. Build the pause/resume logic (silence detection → stop process, audio activity → restart) into `AudioVisualizer.qml` from the beginning rather than adding it as a power-saving fix later.
@@ -180,9 +185,14 @@ Relevant files:
 - `rices/limerence/components/widgets/NotificationIcon.qml` — missing cursorShape
 
 ### Theme switcher: frame corner gaps visible on light wallpapers
-Status: confirmed (dark wallpapers only work today)
+Status: ✅ RESOLVED 2026-10-03 — `ContentFrame.qml` ring is now a single `Shape`
+(full window rect minus a rounded-rect hole, `ShapePath.OddEvenFill`), so `frameBg`
+has a genuine rounded inner corner and there is no wedge at any colour. Confirmed live
+on a light wallpaper. The "better paths" and soramane notes below are kept for history;
+the `Shape` path was the one taken. (Caelestia/soramane itself uses `ClippingRectangle`
+geometry, not a shader, for the same effect.)
 
-Problem:
+Problem (historical):
 - The ContentFrame draws its background as 4 rectangular strips around the content hole. The inner edge of the hole uses `frameRadius` rounded corners (via the inner glow Rectangles), creating a visual rounded join between frame and content area.
 - At each inner corner the rectangular strip geometry and the visual rounded corner leave a small triangular/wedge region that isn't covered by the frame background color. On dark wallpapers this is invisible. On light wallpapers (or any wallpaper-derived color that contrasts with the wallpaper itself) the gap is obvious — the wallpaper bleeds through.
 - This is the reason only dark wallpapers work with the current setup: a light `frameBg` derived from a light wallpaper would expose the corner gaps.
