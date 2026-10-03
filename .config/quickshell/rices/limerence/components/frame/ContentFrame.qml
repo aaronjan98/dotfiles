@@ -12,10 +12,16 @@ PanelWindow {
 
   // Inner-corner radius for the frame hole, clamped so a large frameRadius (or a
   // very small hole mid-layout) can never produce an arc bigger than the hole.
-  readonly property real _r: Math.max(0, Math.min(
-    C.Appearance.frameRadius,
-    hole.width  / 2,
-    hole.height / 2))
+  readonly property real _r: {
+    // Coerce explicitly: before the hole's anchors resolve, hole.width/height can
+    // be 0/undefined, which would make Math.min yield NaN and spray "undefined to
+    // double" warnings from the path below. Clamp only against positive dims.
+    var r = C.Appearance.frameRadius;
+    var hw = hole.width, hh = hole.height;
+    if (hw > 0) r = Math.min(r, hw / 2);
+    if (hh > 0) r = Math.min(r, hh / 2);
+    return Math.max(0, r);
+  }
 
   // Visual-only overlay: never reserves space
   WlrLayershell.layer: WlrLayer.Bottom
