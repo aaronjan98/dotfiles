@@ -4,6 +4,31 @@
 
 It is the closest thing this setup has to a design system.
 
+## Wallpaper-driven palette (matugen, Phase 1)
+
+The colour tokens are **not static** anymore — their hues track the wallpaper.
+
+- On every wallpaper change, `~/.config/hypr/scripts/set-wallpapers` runs
+  `matugen image <current> --mode dark`, which renders a Material You palette to
+  `~/.cache/quickshell/colors.json` (template + config in `~/.config/matugen/`).
+- `Appearance.qml` holds a `FileView` (`Quickshell.Io`) on that JSON with
+  `watchChanges: true`. On load it parses the file into the `palette` property;
+  the colour tokens are bindings through the `_rgba(role, fallbackHex, alpha)`
+  helper, so reassigning `palette` **recolours the shell live** — no reload.
+- Only the **hue** comes from matugen (roles: `surface`, `primary`, `secondary`,
+  `tertiary`, `surface_container`, `surface_container_high`). Each token keeps its
+  **original alpha** (`frameBg` 0.55, glow 0.27/0.12/0.08, …), so the look is
+  unchanged and only the colours move.
+- Every role has a **fallback** (the original hand-picked purple, as a hex literal)
+  used when the JSON is missing (first run before matugen) or caught mid-write, so
+  the shell always has valid colours.
+
+This is **Phase 1: dark scheme only.** True auto light/dark is Phase 2 and is
+blocked on routing the ~145 hardcoded white foregrounds through central `fg`/`bg`
+tokens (see `docs/ROADMAP.md` in nixos-config → "Live runtime theme switcher").
+To add more apps (kitty/GTK), add `[templates.*]` blocks to the matugen config;
+nothing in the shell changes.
+
 ## What belongs in `Appearance.qml`
 
 Broadly, this file should own:

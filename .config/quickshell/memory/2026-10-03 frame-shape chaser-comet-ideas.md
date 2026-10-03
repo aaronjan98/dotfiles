@@ -42,5 +42,25 @@ layer avoids the ROADMAP "big decision #1" offscreen-`layer.enabled` texture
 constraint (that only bites if the chaser must compose with the music-visualizer
 ripple).
 
+## Wallpaper-driven theme — Phase 1 SHIPPED (2026-10-03)
+Pipeline: `set-wallpapers` → `matugen image <current> --mode dark` →
+`~/.cache/quickshell/colors.json` → `Appearance.qml` `FileView` (watchChanges) →
+`_rgba(role, fallbackHex, alpha)` bindings → live recolour (no reload/rebuild).
+- matugen config/template: `~/.config/matugen/{config.toml,templates/quickshell-colors.json}`.
+- 8 tokens take HUE from matugen roles (surface/primary/secondary/tertiary/
+  surface_container[_high]), keep original ALPHAS → identical look, wallpaper hues.
+  Fallbacks = old purple literals (used if JSON missing/mid-write).
+- **Decisions (user):** auto light/dark (eventually) + quickshell-only scope; but
+  Phase 1 ships **dark-only** because light mode needs the ~145 hardcoded white
+  foregrounds routed through central fg/bg tokens first (= Phase 2).
+- matugen (3.0.0) added to nixos-config `hosts/common/default.nix` on branch
+  `wallpaper-theme-matugen` (eval-verified). Dotfiles on `quickshell-frame-shape`.
+- Verified live: FileView loaded colors.json (surface #282828, primary #fabd2f),
+  pill borders/glow went gruvbox gold; clean reload logs (no warnings) after an
+  `_r` NaN fix in ContentFrame (commit bff8ed9).
+- **Deploy:** user runs `nrs` on BOTH laptops from branch `wallpaper-theme-matugen`
+  (gets matugen), then `set-wallpapers` once to generate the real palette (the
+  current `colors.json` is a hand-made gruvbox test file).
+
 Related: [[2026-04-17 terminal-notifications]] · ROADMAP chaser + theme-switcher
 sections (the frame fix unblocked the light-wallpaper theme switcher).
