@@ -1,8 +1,11 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 QtObject {
+  id: appearance
+
   // ---- GLOBAL SCALE ----
   // Driven by QS_UI_SCALE env var set per-host in NixOS (hosts/<name>/configuration.nix).
   // ThinkPad omits the var and falls back to 1.25; Framework 13 sets 1.75.
@@ -47,15 +50,45 @@ QtObject {
   // Negative inset is fine; keep it scaled
   property int borderInset: -s(1)
 
-  // ---- palette ----
-  property color frameBg: Qt.rgba(20/255, 16/255, 35/255, 0.55)
-  property color borderCol: Qt.rgba(210/255, 190/255, 255/255, 0.35)
-  property color glow1: Qt.rgba(160/255, 120/255, 255/255, 0.27)
-  property color glow2: Qt.rgba(120/255, 190/255, 255/255, 0.12)
-  property color glow3: Qt.rgba(255/255, 140/255, 220/255, 0.08)
+  // ---- wallpaper-derived palette ----
+  // matugen writes ~/.cache/quickshell/colors.json on every wallpaper change (see
+  // ~/.config/matugen/config.toml and the set-wallpapers hook). FileView watches
+  // it and reparses live, so a new wallpaper recolors the shell with no reload.
+  // Phase 1 drives HUES only, on a dark scheme — the alphas and glow layering
+  // below are unchanged, so the look is identical and only the colours track the
+  // wallpaper. If the file is missing or caught mid-write, every role falls back
+  // to the original hand-picked purple palette, so the shell always has valid
+  // colours. (Phase 2, per ROADMAP: central fg/bg tokens + light-mode flip.)
+  property var palette: ({})
+  property FileView _paletteFile: FileView {
+    path: Quickshell.env("HOME") + "/.cache/quickshell/colors.json"
+    watchChanges: true
+    onLoaded:     appearance.palette = _parse(text())
+    onLoadFailed: appearance.palette = ({})
+    function _parse(t) {
+      try { return JSON.parse(t) || ({}) }
+      catch (e) { return appearance.palette }   // keep last good on a partial write
+    }
+  }
+
+  // Validated hex for a matugen role, else the fallback; `a` layers the token's
+  // existing alpha on top of the opaque matugen hue.
+  function _rgba(role, fallbackHex, a) {
+    var v = palette[role]
+    var hex = (typeof v === "string" && /^#?[0-9A-Fa-f]{6}$/.test(v)) ? v : fallbackHex
+    var c = Qt.color(hex)
+    return Qt.rgba(c.r, c.g, c.b, a)
+  }
+
+  // ---- palette (wallpaper-driven hues; fallbacks == the original purple theme) ----
+  property color frameBg:   _rgba("surface",   "#141023", 0.55)
+  property color borderCol: _rgba("primary",   "#d2beff", 0.35)
+  property color glow1:     _rgba("primary",   "#a078ff", 0.27)
+  property color glow2:     _rgba("tertiary",  "#78beff", 0.12)
+  property color glow3:     _rgba("secondary", "#ff8cdc", 0.08)
 
   // ---- bubbles ----
-  property color bubbleBg: Qt.rgba(35/255, 26/255, 60/255, 0.45)
+  property color bubbleBg: _rgba("surface_container", "#231a3c", 0.45)
   property int bubbleBorderW: Math.max(1, s(1))
   property int bubblePad: s(6)
   property int bubbleRadius: s(17)
@@ -64,7 +97,7 @@ QtObject {
 
   // ---- popups ----
   // More opaque than bubbleBg for readability
-  property color popupBg: Qt.rgba(35/255, 26/255, 60/255, 0.95)
+  property color popupBg: _rgba("surface_container_high", "#231a3c", 0.95)
   property real popupOverlayA: 0.28
 
   // Popup geometry tokens used all over Wifi/Bluetooth/Brightness/Power popups
@@ -87,7 +120,7 @@ QtObject {
   property int pillFont: s(10)
 
   property int pillBorderW: Math.max(1, s(1))
-  property color pillBorderCol: Qt.rgba(210/255, 190/255, 255/255, 0.35)
+  property color pillBorderCol: _rgba("primary", "#d2beff", 0.35)
 
   // ---- workspace island defaults ----
   property int dotSize: s(7)

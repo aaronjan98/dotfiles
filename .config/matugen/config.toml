@@ -1,0 +1,14 @@
+# matugen: derive a Material You palette from the current wallpaper and render it
+# for Quickshell.
+#
+# Invoked by ~/.config/hypr/scripts/set-wallpapers on every wallpaper change
+# (Phase 1: always `--mode dark`). matugen writes ~/.cache/quickshell/colors.json;
+# Quickshell's config/Appearance.qml watches that file and recolors the shell live
+# with no reload. To extend the recolor beyond the shell later (kitty, GTK, …),
+# add more [templates.*] blocks here — nothing else in the pipeline changes.
+
+[config]
+
+[templates.quickshell]
+input_path = "/home/aj/.config/matugen/templates/quickshell-colors.json"
+output_path = "/home/aj/.cache/quickshell/colors.json"

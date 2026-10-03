@@ -67,3 +67,15 @@ done
       "$SWWW" img --outputs "$out" "$link" \
         --transition-type "$transition" --transition-fps 60
     done
+
+# Derive a Material You palette from the new wallpaper and hand it to Quickshell.
+# matugen (config: ~/.config/matugen/config.toml) writes
+# ~/.cache/quickshell/colors.json; Quickshell's Appearance.qml watches that file
+# and recolors the shell live — no reload, no rebuild. Phase 1 is dark-scheme
+# only (hues track the wallpaper, surfaces stay dark). Best-effort: a missing or
+# failing matugen must never stop the wallpaper from being set.
+if command -v matugen >/dev/null 2>&1; then
+  mkdir -p "$HOME/.cache/quickshell"
+  matugen image "$(realpath "$link")" --mode dark >/dev/null 2>&1 \
+    || echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
+fi
