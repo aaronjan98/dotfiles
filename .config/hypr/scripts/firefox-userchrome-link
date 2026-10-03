@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Symlink the dotfiles-tracked userChrome.css into whichever Firefox profile
+# profiles.ini currently marks Default.
+#
+# Profile folder names carry a random per-install salt, so a dotfiles path
+# that hardcodes one machine's salt (.mozilla/firefox/<that machine's
+# salt>/chrome/userChrome.css, as a previous commit did) is invisible to
+# Firefox on every other install -- it just creates an orphan directory when
+# checked out there. Confirmed broken this way on the ThinkPad: Alt+F's key
+# handler (bound in hosts/common/firefox-autoconfig.js) still ran, but with
+# no stylesheet loaded for the real profile, toggling the chromeshown
+# attribute had nothing to react to, so the auto-hide chrome appeared to
+# just not work.
+#
+# Keeping one canonical copy at ~/.config/firefox/userChrome.css and
+# relinking it here at Hyprland startup means it finds whatever profile is
+# actually live, on any host, even after a profile reset.
+
+FF_DIR="$HOME/.mozilla/firefox"
+INI="$FF_DIR/profiles.ini"
+SRC="$HOME/.config/firefox/userChrome.css"
+
+[[ -f "$INI" && -f "$SRC" ]] || exit 0
+
+default_path="$(awk '
+  /^\[Profile/ { sect=1; path=""; isdef=0; next }
+  /^\[/        { sect=0 }
+  sect && /^Path=/    { path=substr($0, index($0,"=")+1) }
+  sect && /^Default=1/ { isdef=1 }
+  sect && isdef && path!="" { print path }
+' "$INI" | tail -n1)"
+
+first_path="$(awk '
+  /^\[Profile/ { sect=1; path=""; next }
+  /^\[/        { sect=0 }
+  sect && /^Path=/ && path=="" { print substr($0, index($0,"=")+1); exit }
+' "$INI")"
+
+path="${default_path:-$first_path}"
+[[ -n "$path" ]] || exit 0
+
+profile_dir="$FF_DIR/$path"
+mkdir -p "$profile_dir/chrome"
+link="$profile_dir/chrome/userChrome.css"
+
+if [[ "$(readlink -f "$link" 2>/dev/null || true)" == "$(readlink -f "$SRC")" ]]; then
+  exit 0
+fi
+ln -sf "$SRC" "$link"
