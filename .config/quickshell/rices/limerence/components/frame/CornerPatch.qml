@@ -63,7 +63,8 @@ PanelWindow {
 
         source: "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
 
-      width: Math.min(parent.width, parent.height) * 1.1
+      // Larger glyph on the external bar only; the laptop corner keeps its original 0.92.
+      width: Math.min(parent.width, parent.height) * (win.isExternal ? 1.1 : 0.92)
         height: width
 
         fillMode: Image.PreserveAspectFit
