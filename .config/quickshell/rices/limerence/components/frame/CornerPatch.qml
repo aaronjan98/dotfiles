@@ -63,7 +63,7 @@ PanelWindow {
 
         source: "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
 
-      width: Math.min(parent.width, parent.height) * 0.92
+      width: Math.min(parent.width, parent.height) * 1.1
         height: width
 
         fillMode: Image.PreserveAspectFit
