@@ -17,7 +17,10 @@ PanelWindow {
   readonly property real contentScale: isExternal ? C.Appearance.externalFrameScale : 1
   readonly property int edgeGap: Math.round(C.Appearance.m6 * contentScale)
   readonly property int leftIslandGap: 0
-  readonly property int islandYOffset: isExternal ? -Math.max(1, Math.round(C.Appearance.s(2) * contentScale)) : 0
+  // Islands sit on the bar's vertical centre. Measured on DP-1: the old negative
+  // external offset pushed them ~5px high, leaving more space below than above, so
+  // keep them dead-centred on both screens.
+  readonly property int islandYOffset: 0
 
   exclusionMode: ExclusionMode.Auto
   anchors.top: true
