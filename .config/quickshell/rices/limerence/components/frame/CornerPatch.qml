@@ -30,8 +30,10 @@ PanelWindow {
     height: width
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.verticalCenter: parent.verticalCenter
+    // External: sit on the true vertical centre, matching the top-bar islands (their
+    // old negative offset read ~6px high). Laptop keeps its small downward nudge.
     anchors.verticalCenterOffset: isExternal
-      ? -Math.max(1, Math.round(C.Appearance.s(2) * C.Appearance.externalFrameScale))
+      ? 0
       : Math.max(1, C.Appearance.s(1))
     radius: Math.round(C.Appearance.bubbleRadius * win.contentScale)
     // No chip behind the Nix snowflake: the logo is already colourful, so a bubble
