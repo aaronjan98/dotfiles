@@ -29,6 +29,10 @@ PanelWindow {
     width: Math.round(C.Appearance.nixBubbleSize * win.contentScale)
     height: width
     anchors.horizontalCenter: parent.horizontalCenter
+    // Nudge right on external so the left gap matches the top/right padding.
+    anchors.horizontalCenterOffset: isExternal
+      ? Math.round(C.Appearance.s(2) * C.Appearance.externalFrameScale)
+      : 0
     anchors.verticalCenter: parent.verticalCenter
     // External: sit on the true vertical centre, matching the top-bar islands (their
     // old negative offset read ~6px high). Laptop keeps its small downward nudge.
