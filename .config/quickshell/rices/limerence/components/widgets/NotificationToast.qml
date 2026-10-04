@@ -50,7 +50,7 @@ Item {
     clip: true
 
     border.width: 1
-    border.color: Qt.rgba(1, 1, 1, 0.12)
+    border.color: C.Appearance.fgA(0.12)
 
     implicitHeight: content.implicitHeight + root.px(20)
 
@@ -74,9 +74,9 @@ Item {
         Rectangle {
           anchors.fill: parent
           radius: root.px(10)
-          color: Qt.rgba(1,1,1,0.06)
+          color: C.Appearance.fgA(0.06)
           border.width: 1
-          border.color: Qt.rgba(1,1,1,0.08)
+          border.color: C.Appearance.fgA(0.08)
         }
 
         // Prefer imagePath if provided (some apps provide an image-path hint)
@@ -95,7 +95,7 @@ Item {
           visible: root.imagePath_.length === 0
           // If we at least know the app, show something different than bell
           text: (root.iconName_.length > 0 || root.desktopEntry_.length > 0) ? "󰍩" : "󰂚"
-          color: Qt.rgba(1,1,1,0.85)
+          color: C.Appearance.fgA(0.85)
           font.pixelSize: root.px(16)
         }
       }
@@ -113,7 +113,7 @@ Item {
             width: parent.width - closeBtn.width - root.px(8)
             text: root.headerText()
             visible: text.length > 0
-            color: "white"
+            color: C.Appearance.fg
             elide: Text.ElideRight
             font.pixelSize: root.px(12)
           }
@@ -123,12 +123,12 @@ Item {
             width: root.px(22)
             height: root.px(22)
             radius: root.px(11)
-            color: Qt.rgba(1, 1, 1, 0.10)
+            color: C.Appearance.fgA(0.10)
 
             Text {
               anchors.centerIn: parent
               text: "×"
-              color: "white"
+              color: C.Appearance.fg
               font.pixelSize: root.px(16)
             }
 
@@ -145,7 +145,7 @@ Item {
           wrapMode: Text.Wrap
           maximumLineCount: 7
           elide: Text.ElideRight
-          color: Qt.rgba(1, 1, 1, 0.92)
+          color: C.Appearance.fgA(0.92)
           font.pixelSize: root.px(12)
           visible: text.length > 0
         }
@@ -154,7 +154,7 @@ Item {
         Text {
           width: parent.width
           text: "—"
-          color: Qt.rgba(1, 1, 1, 0.50)
+          color: C.Appearance.fgA(0.50)
           font.pixelSize: root.px(12)
           visible: (root.headerText().length === 0 && root.messageText().length === 0)
         }
@@ -175,15 +175,15 @@ Item {
               readonly property string key: (modelData && modelData.key) ? ("" + modelData.key) : ""
 
               width: Math.max(root.px(56), Math.min(root.px(220), label.implicitWidth + root.px(18)))
-              color: Qt.rgba(1, 1, 1, 0.10)
+              color: C.Appearance.fgA(0.10)
               border.width: 1
-              border.color: Qt.rgba(1, 1, 1, 0.10)
+              border.color: C.Appearance.fgA(0.10)
 
               Text {
                 id: label
                 anchors.centerIn: parent
                 text: parent.lbl
-                color: "white"
+                color: C.Appearance.fg
                 font.pixelSize: root.px(11)
                 elide: Text.ElideRight
               }

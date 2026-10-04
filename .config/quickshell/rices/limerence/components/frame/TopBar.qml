@@ -214,19 +214,19 @@ PanelWindow {
 
           W.BatteryIcon { }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           Text {
             text: "CPU " + stats.cpuUsage + "%"
-            color: "white"
+            color: C.Appearance.fg
             font.pixelSize: C.Appearance.pillFont
           }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           Text {
             text: "MEM " + stats.memUsage + "%"
-            color: "white"
+            color: C.Appearance.fg
             font.pixelSize: C.Appearance.pillFont
           }
         }
@@ -304,26 +304,26 @@ PanelWindow {
 
           W.WifiIcon { onClicked: root.wifiPopupOpen = !root.wifiPopupOpen }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           W.BluetoothIcon { onClicked: root.btPopupOpen = !root.btPopupOpen }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           W.VolumeIcon { }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           W.BrightnessIcon { onClicked: root.brightPopupOpen = !root.brightPopupOpen }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           W.NotificationIcon { }
 
-          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: Qt.rgba(1,1,1,0.18) }
+          Rectangle { width: C.Appearance.dividerW; height: C.Appearance.dividerH; color: C.Appearance.fgA(0.18) }
 
           W.Clock {
-            color: "white"
+            color: C.Appearance.fg
             font.pixelSize: C.Appearance.pillFont
             format: "ddd, MMM dd HH:mm:ss"
           }

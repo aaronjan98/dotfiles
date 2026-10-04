@@ -37,7 +37,7 @@ Item {
 
       Text {
         text: root.glyph()
-        color: "white"
+        color: C.Appearance.fg
         font.family: C.Appearance.iconFont
         font.pixelSize: C.Appearance.pillIconPx   // scaled icon size
       }
@@ -45,7 +45,7 @@ Item {
       Text {
         visible: Sv.VolumeCtl && Sv.VolumeCtl.ok
         text: Sv.VolumeCtl ? (Sv.VolumeCtl.percent + "%") : ""
-        color: "white"
+        color: C.Appearance.fg
         font.pixelSize: C.Appearance.pillFont
       }
     }

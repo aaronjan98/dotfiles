@@ -236,7 +236,7 @@ PanelWindow {
           width: C.Appearance.dotSize
           height: Math.max(1, C.Appearance.dividerW)
           radius: height / 2
-          color: "white"
+          color: C.Appearance.fg
           opacity: 0.28
         }
 
@@ -253,7 +253,7 @@ PanelWindow {
             anchors.fill: parent
             radius: C.Appearance.dotSize / 2
             antialiasing: true
-            color: "white"
+            color: C.Appearance.fg
             opacity: root.externalFocused() ? 0.95 : (root.externalOccupied() ? 0.60 : 0.35)
           }
 

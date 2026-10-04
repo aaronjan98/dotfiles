@@ -225,26 +225,26 @@ Item {
             Layout.fillWidth: true
             spacing: 8
 
-            Text { text: "Bluetooth"; color: "white"; font.pixelSize: 14; font.weight: 600 }
+            Text { text: "Bluetooth"; color: C.Appearance.fg; font.pixelSize: 14; font.weight: 600 }
             Item { Layout.fillWidth: true }
 
             Text {
               text: (api.adapter() && api.adapter().enabled) ? "On" : "Off"
-              color: Qt.rgba(1,1,1,0.85)
+              color: C.Appearance.fgA(0.85)
               font.pixelSize: 12
             }
 
             // Toggle enabled
             Rectangle {
               width: 44; height: 22; radius: 999
-              color: (api.adapter() && api.adapter().enabled) ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.08)
-              border.width: 1; border.color: Qt.rgba(1,1,1,0.18)
+              color: (api.adapter() && api.adapter().enabled) ? C.Appearance.fgA(0.18) : C.Appearance.fgA(0.08)
+              border.width: 1; border.color: C.Appearance.fgA(0.18)
 
               Rectangle {
                 width: 18; height: 18; radius: 999
                 y: 2
                 x: (api.adapter() && api.adapter().enabled) ? (parent.width - width - 2) : 2
-                color: "white"
+                color: C.Appearance.fg
                 Behavior on x { NumberAnimation { duration: 120 } }
               }
 
@@ -264,25 +264,25 @@ Item {
             Layout.fillWidth: true
             spacing: 8
 
-            Text { text: "Discovering"; color: Qt.rgba(1,1,1,0.9); font.pixelSize: 12 }
+            Text { text: "Discovering"; color: C.Appearance.fgA(0.9); font.pixelSize: 12 }
             Item { Layout.fillWidth: true }
 
             Text {
               text: (api.adapter() && api.adapter().discovering) ? "On" : "Off"
-              color: Qt.rgba(1,1,1,0.75)
+              color: C.Appearance.fgA(0.75)
               font.pixelSize: 12
             }
 
             Rectangle {
               width: 44; height: 22; radius: 999
-              color: (api.adapter() && api.adapter().discovering) ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.08)
-              border.width: 1; border.color: Qt.rgba(1,1,1,0.18)
+              color: (api.adapter() && api.adapter().discovering) ? C.Appearance.fgA(0.18) : C.Appearance.fgA(0.08)
+              border.width: 1; border.color: C.Appearance.fgA(0.18)
 
               Rectangle {
                 width: 18; height: 18; radius: 999
                 y: 2
                 x: (api.adapter() && api.adapter().discovering) ? (parent.width - width - 2) : 2
-                color: "white"
+                color: C.Appearance.fg
                 Behavior on x { NumberAnimation { duration: 120 } }
               }
 
@@ -307,14 +307,14 @@ Item {
               Layout.fillWidth: true
               Layout.preferredHeight: 28
               radius: 10
-              color: Qt.rgba(1,1,1,0.12)
+              color: C.Appearance.fgA(0.12)
               border.width: 1
-              border.color: Qt.rgba(1,1,1,0.15)
+              border.color: C.Appearance.fgA(0.15)
 
               Text {
                 anchors.centerIn: parent
                 text: (api.adapter() && api.adapter().discovering) ? "Stop scan" : "Scan"
-                color: "white"
+                color: C.Appearance.fg
                 font.pixelSize: 12
               }
 
@@ -333,11 +333,11 @@ Item {
               Layout.preferredWidth: 110
               Layout.preferredHeight: 28
               radius: 10
-              color: Qt.rgba(1,1,1,0.12)
+              color: C.Appearance.fgA(0.12)
               border.width: 1
-              border.color: Qt.rgba(1,1,1,0.15)
+              border.color: C.Appearance.fgA(0.15)
 
-              Text { anchors.centerIn: parent; text: "Close"; color: "white"; font.pixelSize: 12 }
+              Text { anchors.centerIn: parent; text: "Close"; color: C.Appearance.fg; font.pixelSize: 12 }
 
               MouseArea {
                 anchors.fill: parent
@@ -351,7 +351,7 @@ Item {
           Text {
             Layout.fillWidth: true
             font.pixelSize: 12
-            color: Qt.rgba(1,1,1,0.85)
+            color: C.Appearance.fgA(0.85)
             text: {
               const ds = Bluetooth.devices ? Bluetooth.devices.values : []
               const n = ds.length
@@ -378,7 +378,7 @@ Item {
               Text {
                 Layout.fillWidth: true
                 text: "Paired devices"
-                color: Qt.rgba(1,1,1,0.9)
+                color: C.Appearance.fgA(0.9)
                 font.pixelSize: 12
                 font.weight: 600
               }
@@ -391,9 +391,9 @@ Item {
                   Layout.fillWidth: true
                   Layout.preferredHeight: 34
                   radius: 10
-                  color: modelData && modelData.connected ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.10)
+                  color: modelData && modelData.connected ? C.Appearance.fgA(0.18) : C.Appearance.fgA(0.10)
                   border.width: 1
-                  border.color: Qt.rgba(1,1,1,0.15)
+                  border.color: C.Appearance.fgA(0.15)
 
                   RowLayout {
                     anchors.fill: parent
@@ -402,7 +402,7 @@ Item {
 
                     Text {
                       text: "󰂯"
-                      color: "white"
+                      color: C.Appearance.fg
                       font.pixelSize: 14
                       font.family: C.Appearance.iconFont
                     }
@@ -410,7 +410,7 @@ Item {
                     Text {
                       Layout.fillWidth: true
                       text: (modelData && modelData.name) ? modelData.name : "Unknown"
-                      color: "white"
+                      color: C.Appearance.fg
                       font.pixelSize: 12
                       elide: Text.ElideRight
                       font.weight: (modelData && modelData.connected) ? 600 : 400
@@ -418,7 +418,7 @@ Item {
 
                     Text {
                       text: (modelData && (modelData.paired || modelData.bonded)) ? "󰌾" : ""
-                      color: Qt.rgba(1,1,1,0.75)
+                      color: C.Appearance.fgA(0.75)
                       font.pixelSize: 13
                       font.family: C.Appearance.iconFont
                     }
@@ -427,14 +427,14 @@ Item {
                       implicitWidth: 74
                       implicitHeight: 24
                       radius: 8
-                      color: Qt.rgba(1,1,1,0.10)
+                      color: C.Appearance.fgA(0.10)
                       border.width: 1
-                      border.color: Qt.rgba(1,1,1,0.14)
+                      border.color: C.Appearance.fgA(0.14)
 
                       Text {
                         anchors.centerIn: parent
                         text: (modelData && modelData.connected) ? "Disconnect" : "Connect"
-                        color: "white"
+                        color: C.Appearance.fg
                         font.pixelSize: 11
                       }
 
@@ -451,11 +451,11 @@ Item {
                       implicitWidth: 56
                       implicitHeight: 24
                       radius: 8
-                      color: Qt.rgba(1,1,1,0.08)
+                      color: C.Appearance.fgA(0.08)
                       border.width: 1
-                      border.color: Qt.rgba(1,1,1,0.12)
+                      border.color: C.Appearance.fgA(0.12)
 
-                      Text { anchors.centerIn: parent; text: "Forget"; color: "white"; font.pixelSize: 11 }
+                      Text { anchors.centerIn: parent; text: "Forget"; color: C.Appearance.fg; font.pixelSize: 11 }
 
                       MouseArea {
                         anchors.fill: parent
@@ -472,7 +472,7 @@ Item {
                 Layout.fillWidth: true
                 visible: api.adapter() && api.adapter().discovering
                 text: "Recently seen (last " + Math.round(api.recentWindowMs / 60000) + " min)"
-                color: Qt.rgba(1,1,1,0.9)
+                color: C.Appearance.fgA(0.9)
                 font.pixelSize: 12
                 font.weight: 600
               }
@@ -481,7 +481,7 @@ Item {
                 Layout.fillWidth: true
                 visible: api.adapter() && api.adapter().enabled && !api.adapter().discovering
                 text: "Turn on Discovering to find nearby devices."
-                color: Qt.rgba(1,1,1,0.7)
+                color: C.Appearance.fgA(0.7)
                 font.pixelSize: 11
                 wrapMode: Text.Wrap
               }
@@ -495,9 +495,9 @@ Item {
                   Layout.fillWidth: true
                   Layout.preferredHeight: 34
                   radius: 10
-                  color: Qt.rgba(1,1,1,0.10)
+                  color: C.Appearance.fgA(0.10)
                   border.width: 1
-                  border.color: Qt.rgba(1,1,1,0.15)
+                  border.color: C.Appearance.fgA(0.15)
 
                   RowLayout {
                     anchors.fill: parent
@@ -506,7 +506,7 @@ Item {
 
                     Text {
                       text: "󰂯"
-                      color: "white"
+                      color: C.Appearance.fg
                       font.pixelSize: 14
                       font.family: C.Appearance.iconFont
                     }
@@ -514,14 +514,14 @@ Item {
                     Text {
                       Layout.fillWidth: true
                       text: (modelData && modelData.name) ? modelData.name : "Unknown"
-                      color: "white"
+                      color: C.Appearance.fg
                       font.pixelSize: 12
                       elide: Text.ElideRight
                     }
 
                     Text {
                       text: api.ageLabelFor(modelData)
-                      color: Qt.rgba(1,1,1,0.65)
+                      color: C.Appearance.fgA(0.65)
                       font.pixelSize: 11
                     }
 
@@ -529,11 +529,11 @@ Item {
                       implicitWidth: 70
                       implicitHeight: 24
                       radius: 8
-                      color: Qt.rgba(1,1,1,0.10)
+                      color: C.Appearance.fgA(0.10)
                       border.width: 1
-                      border.color: Qt.rgba(1,1,1,0.14)
+                      border.color: C.Appearance.fgA(0.14)
 
-                      Text { anchors.centerIn: parent; text: "Pair…"; color: "white"; font.pixelSize: 11 }
+                      Text { anchors.centerIn: parent; text: "Pair…"; color: C.Appearance.fg; font.pixelSize: 11 }
 
                       MouseArea {
                         anchors.fill: parent
@@ -553,11 +553,11 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 28
             radius: 10
-            color: Qt.rgba(1,1,1,0.12)
+            color: C.Appearance.fgA(0.12)
             border.width: 1
-            border.color: Qt.rgba(1,1,1,0.15)
+            border.color: C.Appearance.fgA(0.15)
 
-            Text { anchors.centerIn: parent; text: "Open Blueman Manager"; color: "white"; font.pixelSize: 12 }
+            Text { anchors.centerIn: parent; text: "Open Blueman Manager"; color: C.Appearance.fg; font.pixelSize: 12 }
 
             MouseArea {
               anchors.fill: parent

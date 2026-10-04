@@ -71,11 +71,29 @@ done
 # Derive a Material You palette from the new wallpaper and hand it to Quickshell.
 # matugen (config: ~/.config/matugen/config.toml) writes
 # ~/.cache/quickshell/colors.json; Quickshell's Appearance.qml watches that file
-# and recolors the shell live — no reload, no rebuild. Phase 1 is dark-scheme
-# only (hues track the wallpaper, surfaces stay dark). Best-effort: a missing or
-# failing matugen must never stop the wallpaper from being set.
+# and recolors the shell live — no reload, no rebuild. The scheme (light/dark) is
+# chosen from the wallpaper's mean luminance so a light wallpaper gets light panels
+# + dark text and a dark one gets the dark theme. Best-effort: a missing or failing
+# matugen (or ImageMagick) must never stop the wallpaper from being set.
 if command -v matugen >/dev/null 2>&1; then
   mkdir -p "$HOME/.cache/quickshell"
-  matugen image "$(realpath "$link")" --mode dark >/dev/null 2>&1 \
-    || echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
+  wp="$(realpath "$link")"
+  mode=dark
+  if command -v magick >/dev/null 2>&1; then
+    # Mean luminance 0..1 (downscale to 1px). >0.5 => treat the wallpaper as light.
+    # Calibrated against real wallpapers: light ~0.59, dark ~0.15-0.21.
+    lum="$(magick "$wp" -resize '1x1!' -colorspace sRGB \
+             -format '%[fx:0.299*r+0.587*g+0.114*b]' info: 2>/dev/null)"
+    [ -n "$lum" ] && mode="$(awk -v l="$lum" 'BEGIN{print (l>0.5)?"light":"dark"}')"
+  fi
+  if matugen image "$wp" --mode "$mode" >/dev/null 2>&1; then
+    # Poke Quickshell to re-read the palette. We can't rely on its file watch:
+    # matugen writes colors.json atomically (temp + rename), which replaces the
+    # inode and defeats inotify. The shell exposes an IPC target for this.
+    command -v qs >/dev/null 2>&1 && \
+      qs -p "$HOME/.config/quickshell/rices/current/shell.qml" \
+         ipc call palette reload >/dev/null 2>&1 || true
+  else
+    echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
+  fi
 fi

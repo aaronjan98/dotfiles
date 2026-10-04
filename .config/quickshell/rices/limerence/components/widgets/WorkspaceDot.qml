@@ -20,7 +20,7 @@ Item {
     anchors.fill: parent
     radius: root.dotSize / 2
     antialiasing: true
-    color: "white"
+    color: C.Appearance.fg
     opacity: root.active
       ? root.activeOpacity
       : (root.occupied ? 0.60 : 0.35)

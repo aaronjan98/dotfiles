@@ -17,7 +17,10 @@ Item {
     id: bubble
     anchors.fill: parent
     radius: Math.min(C.Appearance.bubbleRadius, width / 2)
-    color: C.Appearance.bubbleBg
+    // No chip: the power glyph sits bare on the frame so it doesn't compete with
+    // the (now higher-contrast) island pills. Only the active-state ring remains,
+    // as feedback that the power popup is open.
+    color: "transparent"
     antialiasing: true
     clip: true
 
@@ -34,7 +37,7 @@ Item {
         text: "⏻"
         font.family: C.Appearance.iconFont
         font.pixelSize: Math.round(Math.min(parent.width, parent.height) * 0.80)
-        color: "white"
+        color: C.Appearance.fg
         opacity: 0.92
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter

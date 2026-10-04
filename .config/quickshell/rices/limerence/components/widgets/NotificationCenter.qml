@@ -30,7 +30,7 @@ Rectangle {
     clip: true
 
     border.width: 1
-    border.color: Qt.rgba(1, 1, 1, 0.10)
+    border.color: C.Appearance.fgA(0.10)
 
     ColumnLayout {
       anchors.fill: parent
@@ -44,7 +44,7 @@ Rectangle {
         Text {
           Layout.fillWidth: true
           text: "Notifications"
-          color: "white"
+          color: C.Appearance.fg
           font.pixelSize: root.px(15)
         }
 
@@ -52,11 +52,11 @@ Rectangle {
           radius: root.px(10)
           height: root.px(26)
           width: root.px(76)
-          color: Sv.Notifs.dnd ? Qt.rgba(1, 0.3, 0.6, 0.30) : Qt.rgba(1, 1, 1, 0.10)
+          color: Sv.Notifs.dnd ? Qt.rgba(1, 0.3, 0.6, 0.30) : C.Appearance.fgA(0.10)
           border.width: 1
-          border.color: Qt.rgba(1, 1, 1, 0.10)
+          border.color: C.Appearance.fgA(0.10)
 
-          Text { anchors.centerIn: parent; text: Sv.Notifs.dnd ? "DND On" : "DND Off"; color: "white"; font.pixelSize: root.px(11) }
+          Text { anchors.centerIn: parent; text: Sv.Notifs.dnd ? "DND On" : "DND Off"; color: C.Appearance.fg; font.pixelSize: root.px(11) }
           TapHandler { onTapped: Sv.Notifs.toggleDnd() }
         }
 
@@ -64,19 +64,19 @@ Rectangle {
           radius: root.px(10)
           height: root.px(26)
           width: root.px(70)
-          color: Qt.rgba(1, 1, 1, 0.10)
+          color: C.Appearance.fgA(0.10)
           border.width: 1
-          border.color: Qt.rgba(1, 1, 1, 0.10)
+          border.color: C.Appearance.fgA(0.10)
 
-          Text { anchors.centerIn: parent; text: "Clear"; color: "white"; font.pixelSize: root.px(11) }
+          Text { anchors.centerIn: parent; text: "Clear"; color: C.Appearance.fg; font.pixelSize: root.px(11) }
           TapHandler { onTapped: Sv.Notifs.clearAll() }
         }
 
         Rectangle {
           width: root.px(28); height: root.px(28)
           radius: root.px(14)
-          color: Qt.rgba(1, 1, 1, 0.10)
-          Text { anchors.centerIn: parent; text: "×"; color: "white"; font.pixelSize: root.px(16) }
+          color: C.Appearance.fgA(0.10)
+          Text { anchors.centerIn: parent; text: "×"; color: C.Appearance.fg; font.pixelSize: root.px(16) }
           TapHandler { onTapped: Sv.Notifs.closeCenter() }
         }
       }
@@ -135,7 +135,7 @@ Rectangle {
               Text {
                 anchors.centerIn: parent
                 text: "No notifications"
-                color: Qt.rgba(1, 1, 1, 0.70)
+                color: C.Appearance.fgA(0.70)
                 font.pixelSize: root.px(12)
               }
             }

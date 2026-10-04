@@ -31,8 +31,8 @@ Item {
     anchors.centerIn: parent
     text: root.glyph()
     color: root.isEnabled()
-      ? (root.connectedAny() ? Qt.rgba(1,1,1,1) : Qt.rgba(1,1,1,0.85))
-      : Qt.rgba(1,1,1,0.55)
+      ? (root.connectedAny() ? C.Appearance.fgA(1) : C.Appearance.fgA(0.85))
+      : C.Appearance.fgA(0.55)
 
     font.family: C.Appearance.iconFont
     font.pixelSize: C.Appearance.topbarIconPx

@@ -13,7 +13,7 @@ Item {
   Text {
     anchors.centerIn: parent
     text: "󰂚"
-    color: "white"
+    color: C.Appearance.fg
     font.family: C.Appearance.iconFont
     font.pixelSize: C.Appearance.topbarIconPx
   }
@@ -37,7 +37,7 @@ Item {
     Text {
       anchors.centerIn: parent
       text: Sv.Notifs.unread > 9 ? "9+" : Sv.Notifs.unread.toString()
-      color: "white"
+      color: C.Appearance.fg
       font.pixelSize: Math.max(1, C.Appearance.s(8))
     }
   }

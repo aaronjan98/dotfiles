@@ -4,30 +4,39 @@
 
 It is the closest thing this setup has to a design system.
 
-## Wallpaper-driven palette (matugen, Phase 1)
+## Wallpaper-driven palette (matugen, auto light/dark)
 
-The colour tokens are **not static** anymore — their hues track the wallpaper.
+The colour tokens are **not static** — they track the wallpaper, and the whole
+shell flips between a light and dark scheme depending on the wallpaper.
 
-- On every wallpaper change, `~/.config/hypr/scripts/set-wallpapers` runs
-  `matugen image <current> --mode dark`, which renders a Material You palette to
-  `~/.cache/quickshell/colors.json` (template + config in `~/.config/matugen/`).
-- `Appearance.qml` holds a `FileView` (`Quickshell.Io`) on that JSON with
-  `watchChanges: true`. On load it parses the file into the `palette` property;
-  the colour tokens are bindings through the `_rgba(role, fallbackHex, alpha)`
-  helper, so reassigning `palette` **recolours the shell live** — no reload.
-- Only the **hue** comes from matugen (roles: `surface`, `primary`, `secondary`,
-  `tertiary`, `surface_container`, `surface_container_high`). Each token keeps its
-  **original alpha** (`frameBg` 0.55, glow 0.27/0.12/0.08, …), so the look is
-  unchanged and only the colours move.
-- Every role has a **fallback** (the original hand-picked purple, as a hex literal)
-  used when the JSON is missing (first run before matugen) or caught mid-write, so
-  the shell always has valid colours.
+**Pipeline.** On every wallpaper change, `~/.config/hypr/scripts/set-wallpapers`:
+1. measures the wallpaper's mean luminance with ImageMagick (`magick … -resize 1x1`)
+   and picks `--mode light` (luminance > 0.5) or `--mode dark`;
+2. runs `matugen image <current> --mode <mode>`, which renders a Material You
+   palette to `~/.cache/quickshell/colors.json` (template + config in
+   `~/.config/matugen/`);
+3. calls `qs … ipc call palette reload` to tell the shell to re-read it.
 
-This is **Phase 1: dark scheme only.** True auto light/dark is Phase 2 and is
-blocked on routing the ~145 hardcoded white foregrounds through central `fg`/`bg`
-tokens (see `docs/ROADMAP.md` in nixos-config → "Live runtime theme switcher").
-To add more apps (kitty/GTK), add `[templates.*]` blocks to the matugen config;
-nothing in the shell changes.
+**Why IPC, not a file watch.** `Appearance.qml` holds a `FileView` on the JSON, but
+`watchChanges` does **not** fire for matugen's writes — matugen writes atomically
+(temp file + rename), which replaces the inode and defeats inotify. So the reload
+is triggered explicitly over IPC (the `IpcHandler` with `target: "palette"` in
+`Appearance.qml`), which calls `_paletteFile.reload()`. `onLoaded` then reparses
+into the `palette` property and every colour binding recomputes — live, no reload.
+
+**Mode detection in QML.** There's no separate flag: `fg` = matugen's `on_surface`
+(light in dark mode, dark in light mode), and `isDark` is derived from `fg`'s
+luminance. Panel alphas are higher in light mode (light panels need more opacity to
+register over a light wallpaper) — see the `isDark ? … : …` ternaries.
+
+**Tokens.** Hues come from matugen roles (`surface`, `surface_container_high`,
+`surface_container_highest`, `primary`, `secondary`, `tertiary`, `on_surface`); the
+new `fg` / `fgDim` carry text/icon colour (the 53 former hardcoded whites now bind
+to `fg`). Every role has a **fallback** (the original purple dark theme) used if the
+JSON is missing or caught mid-write, so the shell always has valid colours.
+
+To extend the recolour to other apps (kitty/GTK), add `[templates.*]` blocks to the
+matugen config — nothing in the shell changes.
 
 ## What belongs in `Appearance.qml`
 

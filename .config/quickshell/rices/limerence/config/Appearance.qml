@@ -52,17 +52,21 @@ QtObject {
 
   // ---- wallpaper-derived palette ----
   // matugen writes ~/.cache/quickshell/colors.json on every wallpaper change (see
-  // ~/.config/matugen/config.toml and the set-wallpapers hook). FileView watches
-  // it and reparses live, so a new wallpaper recolors the shell with no reload.
-  // Phase 1 drives HUES only, on a dark scheme — the alphas and glow layering
-  // below are unchanged, so the look is identical and only the colours track the
-  // wallpaper. If the file is missing or caught mid-write, every role falls back
-  // to the original hand-picked purple palette, so the shell always has valid
-  // colours. (Phase 2, per ROADMAP: central fg/bg tokens + light-mode flip.)
+  // ~/.config/matugen/config.toml and the set-wallpapers hook), then pokes us over
+  // IPC (below) to re-read it — so a new wallpaper recolours the shell live, no
+  // reload. The scheme follows the wallpaper: set-wallpapers picks matugen
+  // --mode light/dark by luminance, giving a light theme (light panels + dark
+  // text, via `fg`) on light wallpapers and the dark theme on dark ones. If the
+  // file is missing or caught mid-write, every role falls back to the original
+  // hand-picked purple (dark) palette, so the shell always has valid colours.
   property var palette: ({})
   property FileView _paletteFile: FileView {
     path: Quickshell.env("HOME") + "/.cache/quickshell/colors.json"
-    watchChanges: true
+    // watchChanges is unreliable here: matugen writes the file atomically (temp +
+    // rename), which replaces the inode and defeats the file watch. Instead,
+    // set-wallpapers pokes us over IPC after it regenerates the palette (see the
+    // IpcHandler below), and we reload() explicitly. onLoaded still fires on first
+    // load and on every reload() call.
     onLoaded:     appearance.palette = _parse(text())
     onLoadFailed: appearance.palette = ({})
     function _parse(t) {
@@ -71,24 +75,58 @@ QtObject {
     }
   }
 
-  // Validated hex for a matugen role, else the fallback; `a` layers the token's
-  // existing alpha on top of the opaque matugen hue.
-  function _rgba(role, fallbackHex, a) {
+  // set-wallpapers calls `qs ipc call palette reload` after matugen rewrites
+  // colors.json, which re-reads the file and recolours the shell live.
+  property IpcHandler _paletteIpc: IpcHandler {
+    target: "palette"
+    function reload(): void { appearance._paletteFile.reload() }
+  }
+
+  // Opaque colour for a matugen role, else the fallback hex.
+  function _c(role, fallbackHex) {
     var v = palette[role]
     var hex = (typeof v === "string" && /^#?[0-9A-Fa-f]{6}$/.test(v)) ? v : fallbackHex
-    var c = Qt.color(hex)
+    return Qt.color(hex)
+  }
+  // Same role, with an explicit alpha layered on.
+  function _rgba(role, fallbackHex, a) {
+    var c = _c(role, fallbackHex)
     return Qt.rgba(c.r, c.g, c.b, a)
   }
 
+  // Which scheme matugen gave us. set-wallpapers picks --mode by wallpaper
+  // luminance, so on a light wallpaper `on_surface` comes back DARK and on a dark
+  // wallpaper it comes back LIGHT. Deriving the mode from the text colour means the
+  // shell needs no extra flag and flips with the palette file alone.
+  readonly property color fg: _c("on_surface", "#f2ecff")   // primary text/icon colour
+  // Foreground at an arbitrary alpha — for dimmed text, subtle chip fills and hairline
+  // borders that used to be hardcoded Qt.rgba(1,1,1,α). Using fg means they are light
+  // over the dark scheme (≈ the old white) and dark over the light scheme (so they
+  // actually show), instead of white-on-white.
+  function fgA(a) { return Qt.rgba(fg.r, fg.g, fg.b, a) }
+  readonly property color fgDim: fgA(0.60)
+  readonly property bool isDark: (0.299*fg.r + 0.587*fg.g + 0.114*fg.b) > 0.5
+
   // ---- palette (wallpaper-driven hues; fallbacks == the original purple theme) ----
-  property color frameBg:   _rgba("surface",   "#141023", 0.55)
-  property color borderCol: _rgba("primary",   "#d2beff", 0.35)
-  property color glow1:     _rgba("primary",   "#a078ff", 0.27)
-  property color glow2:     _rgba("tertiary",  "#78beff", 0.12)
-  property color glow3:     _rgba("secondary", "#ff8cdc", 0.08)
+  // Light panels need more opacity than dark ones to register over a light
+  // wallpaper and give the (now dark) text a stable backdrop — hence the per-mode
+  // alpha. Surfaces themselves flip automatically (matugen `surface` is dark in
+  // dark mode, light in light mode).
+  // Alphas tuned for a frosted-glass look: a Hyprland `layerrule = blur, quickshell`
+  // blurs the wallpaper behind these panels, so they can stay quite translucent and
+  // still read as solid glass rather than a flat wash. Light mode is kept a touch
+  // more transparent than before (it looked chalky-white) now that blur backs it.
+  property color frameBg:   _rgba("surface",   "#141023", isDark ? 0.45 : 0.42)
+  property color borderCol: _rgba("primary",   "#d2beff", isDark ? 0.35 : 0.50)
+  property color glow1:     _rgba("primary",   "#a078ff", isDark ? 0.27 : 0.22)
+  property color glow2:     _rgba("tertiary",  "#78beff", isDark ? 0.12 : 0.14)
+  property color glow3:     _rgba("secondary", "#ff8cdc", isDark ? 0.08 : 0.10)
 
   // ---- bubbles ----
-  property color bubbleBg: _rgba("surface_container", "#231a3c", 0.45)
+  // Islands (bar pills, bubbles, notifications) sit a clear step up the tonal
+  // ladder from the frame backdrop (surface) and are more opaque than it (0.62 >
+  // frameBg's 0.55) so they read as raised chips rather than translucent patches.
+  property color bubbleBg: _rgba("surface_container_high", "#2a2047", isDark ? 0.55 : 0.55)
   property int bubbleBorderW: Math.max(1, s(1))
   property int bubblePad: s(6)
   property int bubbleRadius: s(17)
@@ -96,8 +134,9 @@ QtObject {
   property int nixIconPad: s(3)
 
   // ---- popups ----
-  // More opaque than bubbleBg for readability
-  property color popupBg: _rgba("surface_container_high", "#231a3c", 0.95)
+  // More opaque than bubbleBg for readability, and one tone above the islands so a
+  // popup still separates from any island chips inside it.
+  property color popupBg: _rgba("surface_container_highest", "#2f2452", isDark ? 0.82 : 0.80)
   property real popupOverlayA: 0.28
 
   // Popup geometry tokens used all over Wifi/Bluetooth/Brightness/Power popups
@@ -166,3 +205,5 @@ QtObject {
   // Replace this glyph string with the wired glyph you prefer from your nerd font.
   property string wiredIcon: "󰈚"
 }
+
+

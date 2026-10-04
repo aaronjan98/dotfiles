@@ -159,20 +159,20 @@ Item {
             Layout.fillWidth: true
             spacing: 8
 
-            Text { text: "Wi-Fi"; color: "white"; font.pixelSize: 14; font.weight: 600 }
+            Text { text: "Wi-Fi"; color: C.Appearance.fg; font.pixelSize: 14; font.weight: 600 }
             Item { Layout.fillWidth: true }
-            Text { text: Sv.WifiNm.wifiEnabled ? "On" : "Off"; color: Qt.rgba(1,1,1,0.85); font.pixelSize: 12 }
+            Text { text: Sv.WifiNm.wifiEnabled ? "On" : "Off"; color: C.Appearance.fgA(0.85); font.pixelSize: 12 }
 
             Rectangle {
               width: 44; height: 22; radius: 999
-              color: Sv.WifiNm.wifiEnabled ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.08)
-              border.width: 1; border.color: Qt.rgba(1,1,1,0.18)
+              color: Sv.WifiNm.wifiEnabled ? C.Appearance.fgA(0.18) : C.Appearance.fgA(0.08)
+              border.width: 1; border.color: C.Appearance.fgA(0.18)
 
               Rectangle {
                 width: 18; height: 18; radius: 999
                 y: 2
                 x: Sv.WifiNm.wifiEnabled ? (parent.width - width - 2) : 2
-                color: "white"
+                color: C.Appearance.fg
                 Behavior on x { NumberAnimation { duration: 120 } }
               }
 
@@ -190,7 +190,7 @@ Item {
             text: (Sv.WifiNm.activeType && Sv.WifiNm.activeDevice)
               ? ("Active route: " + Sv.WifiNm.activeType + " (" + Sv.WifiNm.activeDevice + ")")
               : "Active route: (unknown)"
-            color: Qt.rgba(1,1,1,0.75)
+            color: C.Appearance.fgA(0.75)
             font.pixelSize: 11
             elide: Text.ElideRight
           }
@@ -198,7 +198,7 @@ Item {
           Text {
             Layout.fillWidth: true
             text: Sv.WifiNm.connected ? ("Connected: " + Sv.WifiNm.ssid) : "Not connected"
-            color: Qt.rgba(1,1,1,0.9)
+            color: C.Appearance.fgA(0.9)
             font.pixelSize: 12
             elide: Text.ElideRight
           }
@@ -221,11 +221,11 @@ Item {
               Layout.fillWidth: true
               Layout.preferredHeight: 28
               radius: 10
-              color: Qt.rgba(1,1,1,0.12)
+              color: C.Appearance.fgA(0.12)
               border.width: 1
-              border.color: Qt.rgba(1,1,1,0.15)
+              border.color: C.Appearance.fgA(0.15)
 
-              Text { anchors.centerIn: parent; text: Sv.WifiNm.scanning ? "Scanning…" : "Rescan"; color: "white"; font.pixelSize: 12 }
+              Text { anchors.centerIn: parent; text: Sv.WifiNm.scanning ? "Scanning…" : "Rescan"; color: C.Appearance.fg; font.pixelSize: 12 }
 
               MouseArea {
                 anchors.fill: parent
@@ -239,11 +239,11 @@ Item {
               Layout.preferredWidth: 110
               Layout.preferredHeight: 28
               radius: 10
-              color: Qt.rgba(1,1,1,0.12)
+              color: C.Appearance.fgA(0.12)
               border.width: 1
-              border.color: Qt.rgba(1,1,1,0.15)
+              border.color: C.Appearance.fgA(0.15)
 
-              Text { anchors.centerIn: parent; text: "Close"; color: "white"; font.pixelSize: 12 }
+              Text { anchors.centerIn: parent; text: "Close"; color: C.Appearance.fg; font.pixelSize: 12 }
 
               MouseArea {
                 anchors.fill: parent
@@ -278,9 +278,9 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 34
                     radius: 10
-                    color: modelData.active ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.10)
+                    color: modelData.active ? C.Appearance.fgA(0.18) : C.Appearance.fgA(0.10)
                     border.width: 1
-                    border.color: Qt.rgba(1,1,1,0.15)
+                    border.color: C.Appearance.fgA(0.15)
 
                     RowLayout {
                       anchors.fill: parent
@@ -292,14 +292,14 @@ Item {
                           (modelData.strength >= 75 ? "󰤨" :
                            modelData.strength >= 50 ? "󰤥" :
                            modelData.strength >= 25 ? "󰤢" : "󰤟")
-                        color: "white"
+                        color: C.Appearance.fg
                         font.pixelSize: 14
                         font.family: C.Appearance.iconFont
                       }
 
                       Text {
                         text: modelData.secure ? "󰌾" : ""
-                        color: Qt.rgba(1,1,1,0.75)
+                        color: C.Appearance.fgA(0.75)
                         font.pixelSize: 13
                         font.family: C.Appearance.iconFont
                       }
@@ -307,7 +307,7 @@ Item {
                       Text {
                         Layout.fillWidth: true
                         text: modelData.ssid
-                        color: "white"
+                        color: C.Appearance.fg
                         font.pixelSize: 12
                         elide: Text.ElideRight
                         font.weight: modelData.active ? 600 : 400
@@ -315,7 +315,7 @@ Item {
 
                       Text {
                         text: (api.connectingSsid === modelData.ssid) ? "…" : ""
-                        color: Qt.rgba(1,1,1,0.75)
+                        color: C.Appearance.fgA(0.75)
                         font.pixelSize: 12
                       }
                     }
@@ -353,7 +353,7 @@ Item {
                     radius: 10
                     color: Qt.rgba(0,0,0,0.30)
                     border.width: 1
-                    border.color: Qt.rgba(1,1,1,0.18)
+                    border.color: C.Appearance.fgA(0.18)
 
                     ColumnLayout {
                       id: inner
@@ -366,7 +366,7 @@ Item {
                       Text {
                         Layout.fillWidth: true
                         text: "Password for: " + modelData.ssid
-                        color: "white"
+                        color: C.Appearance.fg
                         font.pixelSize: 12
                         elide: Text.ElideRight
                       }
@@ -377,13 +377,13 @@ Item {
                         radius: 8
                         color: Qt.rgba(0,0,0,0.45)
                         border.width: 1
-                        border.color: Qt.rgba(1,1,1,0.22)
+                        border.color: C.Appearance.fgA(0.22)
 
                         TextInput {
                           id: pwLocal
                           anchors.fill: parent
                           anchors.margins: 8
-                          color: "white"
+                          color: C.Appearance.fg
                           echoMode: TextInput.Password
                           cursorVisible: true
                           font.pixelSize: 12
@@ -401,11 +401,11 @@ Item {
                           Layout.fillWidth: true
                           Layout.preferredHeight: 28
                           radius: 8
-                          color: Qt.rgba(1,1,1,0.10)
+                          color: C.Appearance.fgA(0.10)
                           border.width: 1
-                          border.color: Qt.rgba(1,1,1,0.14)
+                          border.color: C.Appearance.fgA(0.14)
 
-                          Text { anchors.centerIn: parent; text: "Cancel"; color: "white"; font.pixelSize: 12 }
+                          Text { anchors.centerIn: parent; text: "Cancel"; color: C.Appearance.fg; font.pixelSize: 12 }
                           MouseArea { anchors.fill: parent; onClicked: api.clearPassword() }
                         }
 
@@ -413,11 +413,11 @@ Item {
                           Layout.fillWidth: true
                           Layout.preferredHeight: 28
                           radius: 8
-                          color: Qt.rgba(1,1,1,0.18)
+                          color: C.Appearance.fgA(0.18)
                           border.width: 1
-                          border.color: Qt.rgba(1,1,1,0.16)
+                          border.color: C.Appearance.fgA(0.16)
 
-                          Text { anchors.centerIn: parent; text: "Connect"; color: "white"; font.pixelSize: 12 }
+                          Text { anchors.centerIn: parent; text: "Connect"; color: C.Appearance.fg; font.pixelSize: 12 }
                           MouseArea { anchors.fill: parent; onClicked: api.beginConnect(modelData.ssid, pwLocal.text) }
                         }
                       }

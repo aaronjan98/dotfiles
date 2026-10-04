@@ -77,7 +77,7 @@ Item {
         anchors.fill: parent
         radius: root.dotSize / 2
         antialiasing: true
-        color: "white"
+        color: C.Appearance.fg
         opacity: (i === root.activeIndex) ? 0.95 : (occ ? 0.60 : 0.35)
       }
 

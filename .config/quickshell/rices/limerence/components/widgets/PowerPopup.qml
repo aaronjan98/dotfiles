@@ -99,7 +99,7 @@ PanelWindow {
 
         Text {
           text: "Power"
-          color: "white"
+          color: C.Appearance.fg
           opacity: 0.92
           font.pixelSize: 13
           horizontalAlignment: Text.AlignHCenter
@@ -176,12 +176,12 @@ PanelWindow {
     Rectangle {
       anchors.fill: parent
       radius: Math.max(10, C.Appearance.bubbleRadius - 7)
-      color: Qt.rgba(1, 1, 1, 0.08)
+      color: C.Appearance.fgA(0.08)
       antialiasing: true
   
       // Optional subtle border, similar to WiFi row feel
       border.width: 1
-      border.color: Qt.rgba(1, 1, 1, 0.10)
+      border.color: C.Appearance.fgA(0.10)
   
       RowLayout {
         anchors.fill: parent
@@ -198,7 +198,7 @@ PanelWindow {
             text: row.icon
             font.family: C.Appearance.iconFont
             font.pixelSize: 15
-            color: "white"
+            color: C.Appearance.fg
             opacity: 0.95
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -213,7 +213,7 @@ PanelWindow {
           Text {
             anchors.centerIn: parent
             text: row.label
-            color: "white"
+            color: C.Appearance.fg
             opacity: 0.95
             font.pixelSize: 13
             horizontalAlignment: Text.AlignHCenter

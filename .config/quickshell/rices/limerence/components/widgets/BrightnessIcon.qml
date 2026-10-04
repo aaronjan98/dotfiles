@@ -26,7 +26,7 @@ Item {
   Text {
     anchors.centerIn: parent
     text: root.glyph()
-    color: "white"
+    color: C.Appearance.fg
     font.family: C.Appearance.iconFont
     font.pixelSize: C.Appearance.topbarIconPx
   }

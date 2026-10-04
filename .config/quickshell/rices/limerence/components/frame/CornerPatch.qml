@@ -34,12 +34,15 @@ PanelWindow {
       ? -Math.max(1, Math.round(C.Appearance.s(2) * C.Appearance.externalFrameScale))
       : Math.max(1, C.Appearance.s(1))
     radius: Math.round(C.Appearance.bubbleRadius * win.contentScale)
-    color: C.Appearance.bubbleBg
+    // No chip behind the Nix snowflake: the logo is already colourful, so a bubble
+    // just competes with it (and would now pop with the higher-contrast islands).
+    // Let the logo float in the corner.
+    color: "transparent"
     antialiasing: true
     clip: true
 
-    border.width: C.Appearance.bubbleBorderEnabled ? C.Appearance.bubbleBorderW : 0
-    border.color: C.Appearance.bubbleBorderEnabled ? C.Appearance.bubbleBorderCol : "transparent"
+    border.width: 0
+    border.color: "transparent"
 
 
     // Icon container so padding is consistent and alignment is easy

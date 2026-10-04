@@ -96,7 +96,7 @@ Item {
   }
 
   function iconColor() {
-    if (!Sv.BatterySys || !Sv.BatterySys.ok) return Qt.rgba(1, 1, 1, 0.85)
+    if (!Sv.BatterySys || !Sv.BatterySys.ok) return C.Appearance.fgA(0.85)
     const p = Sv.BatterySys.percent
     if (Sv.BatterySys.isCharging) return chargingColor(p)
     return baseColorForPercent(p)
@@ -117,7 +117,7 @@ Item {
     Text {
       visible: Sv.BatterySys && Sv.BatterySys.ok
       text: Sv.BatterySys ? (Sv.BatterySys.percent + "%") : ""
-      color: "white"
+      color: C.Appearance.fg
       font.pixelSize: C.Appearance.pillFont
     }
   }

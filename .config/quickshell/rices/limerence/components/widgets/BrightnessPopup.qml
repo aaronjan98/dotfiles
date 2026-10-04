@@ -113,7 +113,7 @@ Item {
 
             Text {
               text: "Brightness"
-              color: "white"
+              color: C.Appearance.fg
               font.pixelSize: 14
               font.weight: 600
             }
@@ -124,14 +124,14 @@ Item {
               Layout.preferredWidth: 80
               Layout.preferredHeight: 26
               radius: 10
-              color: Qt.rgba(1,1,1,0.12)
+              color: C.Appearance.fgA(0.12)
               border.width: 1
-              border.color: Qt.rgba(1,1,1,0.15)
+              border.color: C.Appearance.fgA(0.15)
 
               Text {
                 anchors.centerIn: parent
                 text: "Close"
-                color: "white"
+                color: C.Appearance.fg
                 font.pixelSize: 12
               }
 
@@ -150,9 +150,9 @@ Item {
 
             RowLayout {
               Layout.fillWidth: true
-              Text { text: "Screen"; color: Qt.rgba(1,1,1,0.9); font.pixelSize: 12 }
+              Text { text: "Screen"; color: C.Appearance.fgA(0.9); font.pixelSize: 12 }
               Item { Layout.fillWidth: true }
-              Text { text: Sv.BrightnessCtl.screenPercent + "%"; color: Qt.rgba(1,1,1,0.8); font.pixelSize: 12 }
+              Text { text: Sv.BrightnessCtl.screenPercent + "%"; color: C.Appearance.fgA(0.8); font.pixelSize: 12 }
             }
 
             SliderRow {
@@ -171,9 +171,9 @@ Item {
 
             RowLayout {
               Layout.fillWidth: true
-              Text { text: "Keyboard"; color: Qt.rgba(1,1,1,0.9); font.pixelSize: 12 }
+              Text { text: "Keyboard"; color: C.Appearance.fgA(0.9); font.pixelSize: 12 }
               Item { Layout.fillWidth: true }
-              Text { text: Sv.BrightnessCtl.kbdPercent + "%"; color: Qt.rgba(1,1,1,0.8); font.pixelSize: 12 }
+              Text { text: Sv.BrightnessCtl.kbdPercent + "%"; color: C.Appearance.fgA(0.8); font.pixelSize: 12 }
             }
 
             SliderRow {
@@ -188,7 +188,7 @@ Item {
           Text {
             Layout.fillWidth: true
             text: "Night light"
-            color: Qt.rgba(1,1,1,0.9)
+            color: C.Appearance.fgA(0.9)
             font.pixelSize: 12
             font.weight: 600
           }
@@ -199,7 +199,7 @@ Item {
 
             Text {
               text: Sv.GammaCtl.enabled ? "On" : "Off"
-              color: Qt.rgba(1,1,1,0.75)
+              color: C.Appearance.fgA(0.75)
               font.pixelSize: 12
             }
 
@@ -207,14 +207,14 @@ Item {
 
             Rectangle {
               width: 44; height: 22; radius: 999
-              color: Sv.GammaCtl.enabled ? Qt.rgba(1,1,1,0.18) : Qt.rgba(1,1,1,0.08)
-              border.width: 1; border.color: Qt.rgba(1,1,1,0.18)
+              color: Sv.GammaCtl.enabled ? C.Appearance.fgA(0.18) : C.Appearance.fgA(0.08)
+              border.width: 1; border.color: C.Appearance.fgA(0.18)
 
               Rectangle {
                 width: 18; height: 18; radius: 999
                 y: 2
                 x: Sv.GammaCtl.enabled ? (parent.width - width - 2) : 2
-                color: "white"
+                color: C.Appearance.fg
                 Behavior on x { NumberAnimation { duration: 120 } }
               }
 
@@ -242,7 +242,7 @@ Item {
             text: Sv.GammaCtl.enabled
               ? ("Temperature: " + Sv.GammaCtl.percentToKelvin(Sv.GammaCtl.tempPercent) + "K")
               : "Temperature: default"
-            color: Qt.rgba(1,1,1,0.75)
+            color: C.Appearance.fgA(0.75)
             font.pixelSize: 11
           }
         }
@@ -274,9 +274,9 @@ Item {
       anchors.verticalCenter: parent.verticalCenter
       height: 8
       radius: 999
-      color: Qt.rgba(1,1,1,0.14)
+      color: C.Appearance.fgA(0.14)
       border.width: 1
-      border.color: Qt.rgba(1,1,1,0.12)
+      border.color: C.Appearance.fgA(0.12)
       opacity: s.enabled ? 1 : 0.45
     }
 
@@ -287,7 +287,7 @@ Item {
       height: track.height
       radius: track.radius
       width: track.width * (s.value / 100.0)
-      color: Qt.rgba(1,1,1,0.28)
+      color: C.Appearance.fgA(0.28)
       opacity: s.enabled ? 1 : 0.45
     }
 
@@ -296,7 +296,7 @@ Item {
       width: 18
       height: 18
       radius: 999
-      color: "white"
+      color: C.Appearance.fg
       opacity: s.enabled ? 1 : 0.6
       y: (parent.height - height) / 2
       x: Math.max(0, Math.min(track.width - width, fill.width - width/2))
