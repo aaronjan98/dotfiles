@@ -23,9 +23,12 @@ Item {
     visible: root.useBackground
     anchors.fill: parent
     radius: C.Appearance.pillRadius
-    color: C.Appearance.bubbleBg
     antialiasing: true
     clip: true
+
+    // Flat translucent glass: the Hyprland blur layerrule frosts the wallpaper behind
+    // the low-opacity fill, so the pill reads as glass (no bevel gradient).
+    color: C.Appearance.bubbleBg
 
     // Border (matches your frame/bubble language)
     border.width: root.useBackground ? Math.max(1, C.Appearance.pillBorderW) : 0
@@ -39,4 +42,6 @@ Item {
     implicitHeight: childrenRect.height
   }
 }
+
+
 

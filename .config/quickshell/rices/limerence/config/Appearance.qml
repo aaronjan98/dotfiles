@@ -126,7 +126,16 @@ QtObject {
   // Islands (bar pills, bubbles, notifications) sit a clear step up the tonal
   // ladder from the frame backdrop (surface) and are more opaque than it (0.62 >
   // frameBg's 0.55) so they read as raised chips rather than translucent patches.
-  property color bubbleBg: _rgba("surface_container_high", "#2a2047", isDark ? 0.55 : 0.55)
+  // Islands are translucent glass: the Hyprland `layerrule = blur, quickshell` frosts
+  // the wallpaper behind this low-opacity fill, so the pills read as frosted glass
+  // rather than flat chips (no bevel gradient). Notifications override this alpha for
+  // readability, so lowering it here only affects the bar islands/bubbles.
+  property color bubbleBg: _rgba("surface_container_high", "#2a2047", isDark ? 0.40 : 0.44)
+
+  // Content-frame edge curvature: the inner lip catches light toward the content edge
+  // (brightest at the lip, fading out into the frame), so the edge reads as a soft
+  // rounded roll curving into the content. This is the peak alpha at the very lip.
+  readonly property real frameHiA: isDark ? 0.22 : 0.45
   property int bubbleBorderW: Math.max(1, s(1))
   property int bubblePad: s(6)
   property int bubbleRadius: s(17)

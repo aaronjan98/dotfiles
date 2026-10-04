@@ -106,6 +106,23 @@ PanelWindow {
     width: hole.width
     height: hole.height
 
+    // Edge curvature: the frame's inner lip catches light toward the content edge —
+    // brightest right at the lip and fading out into the frame — so the edge reads as
+    // a soft rounded roll rather than a flat cut. Drawn OUTWARD (negative margins) and
+    // FIRST, so the colored glow rings + crisp border still rim the edge on top.
+    Repeater {
+      model: 10
+      Rectangle {
+        anchors.fill: parent
+        anchors.margins: -index
+        radius: C.Appearance.frameRadius + index
+        color: "transparent"
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, C.Appearance.frameHiA * (1 - index / 10))
+        antialiasing: true
+      }
+    }
+
     // Outer-most inner glow
     Rectangle {
       anchors.fill: parent
@@ -150,3 +167,8 @@ PanelWindow {
     }
   }
 }
+
+
+
+
+

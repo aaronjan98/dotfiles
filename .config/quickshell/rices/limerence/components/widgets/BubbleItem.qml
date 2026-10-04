@@ -13,9 +13,11 @@ Rectangle {
   signal clicked()
 
   radius: C.Appearance.bubbleRadius
-  color: C.Appearance.bubbleBg
   antialiasing: true
   clip: true
+
+  // Flat translucent glass (frosted by the Hyprland blur layerrule); no bevel gradient.
+  color: C.Appearance.bubbleBg
 
   border.width: Math.max(1, C.Appearance.bubbleBorderW)
   border.color: C.Appearance.borderCol
