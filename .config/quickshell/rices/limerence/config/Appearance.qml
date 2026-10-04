@@ -135,7 +135,21 @@ QtObject {
   // Content-frame edge curvature: the inner lip catches light toward the content edge
   // (brightest at the lip, fading out into the frame), so the edge reads as a soft
   // rounded roll curving into the content. This is the peak alpha at the very lip.
-  readonly property real frameHiA: isDark ? 0.22 : 0.45
+  readonly property real frameHiA: isDark ? 0.22 : 0.40
+  // Colour of the edge roll. White reads as a lit/glossy lip; black reads as a true
+  // shadow (content recessed into a shaded well). Darks show best in light mode / on
+  // light wallpapers and can disappear against a dark frame; whites, the reverse.
+  readonly property color frameRollColor: "#000000"
+  // How far (px) the inner edge-highlight roll stretches from the content lip out into
+  // the frame. Larger = a longer, more gradual blend; smaller = a tight rim.
+  readonly property int frameRollSpan: 50
+  // Shape of the roll (blend of two terms, see ContentFrame):
+  //  - frameRollEase: steep term for the INNER-edge concentration. Higher = the shadow
+  //    spikes harder right at the content lip.
+  //  - frameRollTail: gentle term (near-linear) that carries a long, gradual faint
+  //    shadow out toward the outer edge. Lower (→1) = longer/straighter tail.
+  readonly property real frameRollEase: 6.0
+  readonly property real frameRollTail: 1.25
   property int bubbleBorderW: Math.max(1, s(1))
   property int bubblePad: s(6)
   property int bubbleRadius: s(17)

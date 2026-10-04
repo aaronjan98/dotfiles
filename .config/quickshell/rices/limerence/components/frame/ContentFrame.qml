@@ -111,14 +111,24 @@ PanelWindow {
     // a soft rounded roll rather than a flat cut. Drawn OUTWARD (negative margins) and
     // FIRST, so the colored glow rings + crisp border still rim the edge on top.
     Repeater {
-      model: 10
+      model: C.Appearance.frameRollSpan
       Rectangle {
         anchors.fill: parent
         anchors.margins: -index
         radius: C.Appearance.frameRadius + index
         color: "transparent"
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, C.Appearance.frameHiA * (1 - index / 10))
+        // Two-term ramp over the full span (0 at the outer edge → lip at index 0):
+        //  - a steep term (frameRollEase) spikes the shadow right at the inner lip,
+        //  - a gentle term (frameRollTail) carries a long, gradual faint tail outward,
+        // so the inner edge stays strongly concentrated without losing the outer blend.
+        border.color: {
+          var u = 1 - index / C.Appearance.frameRollSpan
+          var a = C.Appearance.frameHiA * (0.80 * Math.pow(u, C.Appearance.frameRollEase)
+                                         + 0.42 * Math.pow(u, C.Appearance.frameRollTail))
+          var rc = C.Appearance.frameRollColor
+          return Qt.rgba(rc.r, rc.g, rc.b, a)
+        }
         antialiasing: true
       }
     }
@@ -155,13 +165,15 @@ PanelWindow {
       antialiasing: true
     }
 
-    // Crisp inner ring
+    // Crisp inner ring — disabled for now; the shadow roll + glow rings carry the edge.
+    // Flip visible back to true (border.width 1 for a hairline) to restore the outline.
     Rectangle {
+      visible: false
       anchors.fill: parent
       anchors.margins: C.Appearance.borderInset
       radius: Math.max(0, C.Appearance.frameRadius - C.Appearance.borderInset)
       color: "transparent"
-      border.width: C.Appearance.border
+      border.width: 1
       border.color: C.Appearance.borderCol
       antialiasing: true
     }
