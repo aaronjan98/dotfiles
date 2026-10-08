@@ -61,38 +61,52 @@ PanelWindow {
       height: width
       anchors.centerIn: parent
 
-      Image {
-        id: nix
+      // Logo + its faked outline grouped together so the hover-spin rotates both.
+      Item {
+        id: nixGroup
         anchors.centerIn: parent
+        // Larger glyph on the external bar only; the laptop keeps its original 0.92.
+        width: Math.min(iconBox.width, iconBox.height) * (win.isExternal ? 1.0 : 0.92)
+        height: width
+        transformOrigin: Item.Center
 
-        anchors.horizontalCenterOffset: 0
-        anchors.verticalCenterOffset: 0
-
-        // Swap the logo with the scheme: the rainbow variant in light mode, the
-        // colours variant in dark. isDark follows the wallpaper-derived palette.
-        source: C.Appearance.isDark
+        // Swap the logo with the scheme: rainbow in light mode, colours in dark.
+        readonly property string logoSource: C.Appearance.isDark
           ? "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
           : "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-rainbow.svg"
+        // Outline thickness (px) and the 8 directions the black copies are stamped in.
+        readonly property real outlineW: 1
+        readonly property var outlineDirs: [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]
 
-        // Larger glyph on the external bar only; the laptop corner keeps its original 0.92.
-        // With clip off (above) the snowflake's arms show whole, so it reads roomier L/R.
-        width: Math.min(parent.width, parent.height) * (win.isExternal ? 1.0 : 0.92)
-        transformOrigin: Item.Center
-        height: width
+        // Light mode only: fake a thin dark outline by stamping black copies of the
+        // logo offset 1px in 8 directions behind the colour version (the same idea as
+        // Text.Outline on the battery). Crisp, so it never spreads past the corner
+        // window the way the soft shadow did.
+        Repeater {
+          model: C.Appearance.isDark ? [] : nixGroup.outlineDirs
+          Image {
+            source: nixGroup.logoSource
+            width: nixGroup.width
+            height: nixGroup.height
+            x: modelData[0] * nixGroup.outlineW
+            y: modelData[1] * nixGroup.outlineW
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            opacity: 0.85
+            layer.enabled: true
+            layer.effect: MultiEffect {
+              colorization: 1.0
+              colorizationColor: Qt.rgba(0, 0, 0, 1)
+            }
+          }
+        }
 
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-
-        // Light mode only: a soft dark halo so the logo (esp. its pale arms) reads
-        // against the light frame. Applied via layer.effect so the hover-rotation
-        // still animates; zero offset keeps the halo symmetric as it spins.
-        layer.enabled: !C.Appearance.isDark
-        layer.effect: MultiEffect {
-          shadowEnabled: true
-          shadowColor: Qt.rgba(0, 0, 0, 0.68)
-          shadowBlur: 0.55
-          shadowHorizontalOffset: 0
-          shadowVerticalOffset: 0
+        Image {
+          id: nix
+          anchors.fill: parent
+          source: nixGroup.logoSource
+          fillMode: Image.PreserveAspectFit
+          smooth: true
         }
       }
     }
@@ -103,7 +117,7 @@ PanelWindow {
     // from→to spans exactly 360°, so the infinite loop wraps seamlessly.
     NumberAnimation {
       id: nixSpin
-      target: nix
+      target: nixGroup
       property: "rotation"
       duration: 5000
       loops: Animation.Infinite
@@ -116,8 +130,8 @@ PanelWindow {
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       onEntered: {
-        nixSpin.from = nix.rotation
-        nixSpin.to = nix.rotation + 360
+        nixSpin.from = nixGroup.rotation
+        nixSpin.to = nixGroup.rotation + 360
         nixSpin.restart()
       }
       onExited: nixSpin.stop()
