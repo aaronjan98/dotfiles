@@ -67,7 +67,11 @@ PanelWindow {
         anchors.horizontalCenterOffset: 0
         anchors.verticalCenterOffset: 0
 
-        source: "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
+        // Swap the logo with the scheme: the rainbow variant in light mode, the
+        // colours variant in dark. isDark follows the wallpaper-derived palette.
+        source: C.Appearance.isDark
+          ? "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
+          : "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-rainbow.svg"
 
         // Larger glyph on the external bar only; the laptop corner keeps its original 0.92.
         // With clip off (above) the snowflake's arms show whole, so it reads roomier L/R.
