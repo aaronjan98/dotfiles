@@ -29,7 +29,7 @@ PanelWindow {
     width: Math.round(C.Appearance.nixBubbleSize * win.contentScale)
     height: width
     anchors.horizontalCenter: parent.horizontalCenter
-    // Nudge right on external so the left gap matches the top/right padding.
+    // Nudge right on external so the left gap matches the top padding.
     anchors.horizontalCenterOffset: isExternal
       ? Math.round(C.Appearance.s(2) * C.Appearance.externalFrameScale)
       : 0
@@ -45,7 +45,9 @@ PanelWindow {
     // Let the logo float in the corner.
     color: "transparent"
     antialiasing: true
-    clip: true
+    // No chip/border here, so nothing needs clipping — and clipping was cutting the
+    // snowflake's right arm against the bubble edge. Leave it off so the logo shows whole.
+    clip: false
 
     border.width: 0
     border.color: "transparent"
@@ -67,8 +69,10 @@ PanelWindow {
 
         source: "qs:@/qs/assets/icons/nix-snowflake/nix-snowflake-colours.svg"
 
-      // Larger glyph on the external bar only; the laptop corner keeps its original 0.92.
-      width: Math.min(parent.width, parent.height) * (win.isExternal ? 1.1 : 0.92)
+        // Larger glyph on the external bar only; the laptop corner keeps its original 0.92.
+        // With clip off (above) the snowflake's arms show whole, so it reads roomier L/R.
+        width: Math.min(parent.width, parent.height) * (win.isExternal ? 1.0 : 0.92)
+        transformOrigin: Item.Center
         height: width
 
         fillMode: Image.PreserveAspectFit
@@ -76,10 +80,30 @@ PanelWindow {
       }
     }
 
+    // Slow clockwise spin while hovered. Uses a NumberAnimation (updates rotation on
+    // the main thread) so stopping freezes the logo at its current angle; each hover
+    // starts from that frozen angle, so it resumes in place instead of snapping back.
+    // from→to spans exactly 360°, so the infinite loop wraps seamlessly.
+    NumberAnimation {
+      id: nixSpin
+      target: nix
+      property: "rotation"
+      duration: 5000
+      loops: Animation.Infinite
+      running: false
+    }
+
     MouseArea {
+      id: hoverArea
       anchors.fill: parent
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
+      onEntered: {
+        nixSpin.from = nix.rotation
+        nixSpin.to = nix.rotation + 360
+        nixSpin.restart()
+      }
+      onExited: nixSpin.stop()
       onClicked: console.log("Nix bubble clicked")
     }
   }
