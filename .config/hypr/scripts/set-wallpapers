@@ -68,32 +68,54 @@ done
         --transition-type "$transition" --transition-fps 60
     done
 
-# Derive a Material You palette from the new wallpaper and hand it to Quickshell.
-# matugen (config: ~/.config/matugen/config.toml) writes
-# ~/.cache/quickshell/colors.json; Quickshell's Appearance.qml watches that file
-# and recolors the shell live — no reload, no rebuild. The scheme (light/dark) is
-# chosen from the wallpaper's mean luminance so a light wallpaper gets light panels
-# + dark text and a dark one gets the dark theme. Best-effort: a missing or failing
-# matugen (or ImageMagick) must never stop the wallpaper from being set.
-if command -v matugen >/dev/null 2>&1; then
-  mkdir -p "$HOME/.cache/quickshell"
-  wp="$(realpath "$link")"
-  mode=dark
-  if command -v magick >/dev/null 2>&1; then
-    # Mean luminance 0..1 (downscale to 1px). >0.5 => treat the wallpaper as light.
-    # Calibrated against real wallpapers: light ~0.59, dark ~0.15-0.21.
-    lum="$(magick "$wp" -resize '1x1!' -colorspace sRGB \
-             -format '%[fx:0.299*r+0.587*g+0.114*b]' info: 2>/dev/null)"
-    [ -n "$lum" ] && mode="$(awk -v l="$lum" 'BEGIN{print (l>0.5)?"light":"dark"}')"
-  fi
-  if matugen image "$wp" --mode "$mode" >/dev/null 2>&1; then
-    # Poke Quickshell to re-read the palette. We can't rely on its file watch:
-    # matugen writes colors.json atomically (temp + rename), which replaces the
-    # inode and defeats inotify. The shell exposes an IPC target for this.
-    command -v qs >/dev/null 2>&1 && \
-      qs -p "$HOME/.config/quickshell/rices/current/shell.qml" \
-         ipc call palette reload >/dev/null 2>&1 || true
-  else
-    echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
-  fi
+# Derive a Material You palette AND adaptive panel opacity/blur from the wallpaper.
+# matugen (config: ~/.config/matugen/config.toml) writes ~/.cache/quickshell/colors.json
+# (hues + light/dark scheme, chosen from mean luminance). Separately we measure the
+# image's brightness and busyness and write ~/.cache/quickshell/surface.json with a
+# 0..1 "intensity": Quickshell's Appearance.qml turns it into panel opacity and this
+# script turns it into Hyprland blur strength, so brighter/busier wallpapers get more
+# solid, more frosted panels and the colourful icons/text stay legible. All best-effort:
+# a missing or failing matugen/ImageMagick must never stop the wallpaper from being set.
+mkdir -p "$HOME/.cache/quickshell"
+wp="$(realpath "$link")"
+mode=dark
+
+if command -v magick >/dev/null 2>&1; then
+  # Mean luminance 0..1 (downscale to 1px). >0.5 => treat the wallpaper as light.
+  # Calibrated against real wallpapers: light ~0.59, dark ~0.15-0.21.
+  lum="$(magick "$wp" -resize '1x1!' -colorspace sRGB \
+           -format '%[fx:0.299*r+0.587*g+0.114*b]' info: 2>/dev/null || true)"
+  # Busyness: stddev of luminance 0..1 (uniform ~0.10, busy ~0.25-0.30).
+  sdev="$(magick "$wp" -colorspace Gray -format '%[fx:standard_deviation]' info: 2>/dev/null || true)"
+  [ -n "$lum" ] && mode="$(awk -v l="$lum" 'BEGIN{print (l>0.5)?"light":"dark"}')"
+
+  # Intensity 0..1: how hard the wallpaper fights panel legibility. Weighted so the
+  # sakura wallpaper (lum ~0.53, sdev ~0.26) lands ~0.78, the "solid" end that the
+  # Appearance _solid() ceiling expects. Bump the weights to react harder.
+  intensity="$(awk -v l="${lum:-0.3}" -v s="${sdev:-0.15}" 'BEGIN{
+    v = 0.75*l + 1.5*s; if (v<0) v=0; if (v>1) v=1; printf "%.3f", v }')"
+  printf '{"intensity": %s, "luminance": %s, "stddev": %s, "mode": "%s"}\n' \
+    "$intensity" "${lum:-0}" "${sdev:-0}" "$mode" > "$HOME/.cache/quickshell/surface.json"
+
+  # Drive Hyprland's (global) blur from the same intensity so blur rises with opacity.
+  # t renormalises intensity to the 0.30..0.78 band the panels lerp over; size 4..8,
+  # +1 pass past the midpoint. hyprctl keyword is runtime-only (a full hypr reload
+  # resets it to 30-look.conf's size=4/passes=1; the next wallpaper change reapplies).
+  t="$(awk -v i="$intensity" 'BEGIN{ t=(i-0.30)/0.48; if(t<0)t=0; if(t>1)t=1; printf "%.3f", t }')"
+  bsize="$(awk -v t="$t" 'BEGIN{ printf "%d", 4 + int(t*4 + 0.5) }')"
+  bpasses="$(awk -v t="$t" 'BEGIN{ printf "%d", (t>0.55)?2:1 }')"
+  "$HYPRCTL" keyword decoration:blur:size   "$bsize"   >/dev/null 2>&1 || true
+  "$HYPRCTL" keyword decoration:blur:passes "$bpasses" >/dev/null 2>&1 || true
 fi
+
+if command -v matugen >/dev/null 2>&1; then
+  matugen image "$wp" --mode "$mode" >/dev/null 2>&1 \
+    || echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
+fi
+
+# Poke Quickshell to re-read the palette + surface (opacity) files live. We can't rely
+# on its file watch: matugen writes colors.json atomically (temp + rename), which
+# replaces the inode and defeats inotify. The shell exposes an IPC target for this.
+command -v qs >/dev/null 2>&1 && \
+  qs -p "$HOME/.config/quickshell/rices/current/shell.qml" \
+     ipc call palette reload >/dev/null 2>&1 || true

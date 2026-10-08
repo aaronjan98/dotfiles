@@ -75,11 +75,42 @@ QtObject {
     }
   }
 
+  // ---- wallpaper "intensity" (adaptive panel opacity / blur) ----
+  // set-wallpapers measures each wallpaper (mean luminance + stddev = brightness +
+  // busyness) and writes a 0..1 `intensity` here: higher for brighter and/or busier
+  // wallpapers, i.e. the ones that fight panel legibility hardest. Panels get more
+  // opaque as it rises (see _solid() below); the same script also drives Hyprland's
+  // blur strength from it, so blur and opacity move together. A missing/!parsed file
+  // leaves a neutral middle so the shell still looks right before the first set.
+  property real wallIntensity: 0.6
+  property FileView _surfaceFile: FileView {
+    path: Quickshell.env("HOME") + "/.cache/quickshell/surface.json"
+    onLoaded: {
+      try {
+        var o = JSON.parse(text())
+        if (o && typeof o.intensity === "number") appearance.wallIntensity = o.intensity
+      } catch (e) { /* keep last good on a partial write */ }
+    }
+  }
+
+  // Normalise intensity to 0..1 between a calm/glassy floor (0.30) and a busy/solid
+  // ceiling (0.78, ~where the current sakura wallpaper lands). _solid() then lerps a
+  // panel's alpha from its glassy value to its solid value as the wallpaper demands.
+  readonly property real _solidT: {
+    var t = (wallIntensity - 0.30) / (0.78 - 0.30)
+    return t < 0 ? 0 : (t > 1 ? 1 : t)
+  }
+  function _solid(glassy, solid) { return glassy + (solid - glassy) * _solidT }
+
   // set-wallpapers calls `qs ipc call palette reload` after matugen rewrites
-  // colors.json, which re-reads the file and recolours the shell live.
+  // colors.json; we re-read both the palette and the surface/intensity file so a new
+  // wallpaper recolours AND re-opacifies the shell live.
   property IpcHandler _paletteIpc: IpcHandler {
     target: "palette"
-    function reload(): void { appearance._paletteFile.reload() }
+    function reload(): void {
+      appearance._paletteFile.reload()
+      appearance._surfaceFile.reload()
+    }
   }
 
   // Opaque colour for a matugen role, else the fallback hex.
@@ -116,7 +147,7 @@ QtObject {
   // blurs the wallpaper behind these panels, so they can stay quite translucent and
   // still read as solid glass rather than a flat wash. Light mode is kept a touch
   // more transparent than before (it looked chalky-white) now that blur backs it.
-  property color frameBg:   _rgba("surface",   "#141023", isDark ? 0.45 : 0.50)
+  property color frameBg:   _rgba("surface",   "#141023", _solid(0.45, 0.50))
   property color borderCol: _rgba("primary",   "#d2beff", isDark ? 0.35 : 0.50)
   property color glow1:     _rgba("primary",   "#a078ff", isDark ? 0.27 : 0.22)
   property color glow2:     _rgba("tertiary",  "#78beff", isDark ? 0.12 : 0.14)
@@ -130,10 +161,10 @@ QtObject {
   // the wallpaper behind this low-opacity fill, so the pills read as frosted glass
   // rather than flat chips (no bevel gradient). Notifications override this alpha for
   // readability, so lowering it here only affects the bar islands/bubbles.
-  // Light mode runs the islands much more opaque than dark: matugen's light surfaces
-  // are near-white, so a solid pill gives the (dark) text and the colourful icons a
-  // steady backdrop instead of the busy wallpaper bleeding through and washing them out.
-  property color bubbleBg: _rgba("surface_container_high", "#2a2047", isDark ? 0.40 : 0.70)
+  // Islands carry the most opacity of the three (text + colourful icons sit on them),
+  // and they adapt the most: glassy (0.40) over a calm/dark wallpaper, solid (0.70)
+  // over a bright/busy one so the wallpaper stops bleeding through behind the content.
+  property color bubbleBg: _rgba("surface_container_high", "#2a2047", _solid(0.40, 0.70))
 
   // Content-frame edge curvature: the inner lip catches light toward the content edge
   // (brightest at the lip, fading out into the frame), so the edge reads as a soft
@@ -162,7 +193,7 @@ QtObject {
   // ---- popups ----
   // More opaque than bubbleBg for readability, and one tone above the islands so a
   // popup still separates from any island chips inside it.
-  property color popupBg: _rgba("surface_container_highest", "#2f2452", isDark ? 0.82 : 0.90)
+  property color popupBg: _rgba("surface_container_highest", "#2f2452", _solid(0.82, 0.90))
   property real popupOverlayA: 0.28
 
   // Popup geometry tokens used all over Wifi/Bluetooth/Brightness/Power popups
