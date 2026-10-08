@@ -112,6 +112,12 @@ Item {
       color: root.iconColor()
       font.family: C.Appearance.iconFont
       font.pixelSize: C.Appearance.pillIconPx
+
+      // Light mode only: a thin black outline (Text.Outline strokes ~1px around the
+      // glyph) so the pale battery colour stands off the light pill. Works for every
+      // battery glyph variant — no outlined icon asset needed. Keeps its percent hue.
+      style: C.Appearance.isDark ? Text.Normal : Text.Outline
+      styleColor: Qt.rgba(0, 0, 0, 0.7)
     }
 
     Text {

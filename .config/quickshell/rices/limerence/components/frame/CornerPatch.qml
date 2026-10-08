@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import QtQuick.Effects
 
 import "../../config" as C
 
@@ -81,6 +82,18 @@ PanelWindow {
 
         fillMode: Image.PreserveAspectFit
         smooth: true
+
+        // Light mode only: a soft dark halo so the logo (esp. its pale arms) reads
+        // against the light frame. Applied via layer.effect so the hover-rotation
+        // still animates; zero offset keeps the halo symmetric as it spins.
+        layer.enabled: !C.Appearance.isDark
+        layer.effect: MultiEffect {
+          shadowEnabled: true
+          shadowColor: Qt.rgba(0, 0, 0, 0.68)
+          shadowBlur: 0.55
+          shadowHorizontalOffset: 0
+          shadowVerticalOffset: 0
+        }
       }
     }
 

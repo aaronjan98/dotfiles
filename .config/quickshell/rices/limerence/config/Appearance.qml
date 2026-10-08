@@ -116,7 +116,7 @@ QtObject {
   // blurs the wallpaper behind these panels, so they can stay quite translucent and
   // still read as solid glass rather than a flat wash. Light mode is kept a touch
   // more transparent than before (it looked chalky-white) now that blur backs it.
-  property color frameBg:   _rgba("surface",   "#141023", isDark ? 0.45 : 0.42)
+  property color frameBg:   _rgba("surface",   "#141023", isDark ? 0.45 : 0.50)
   property color borderCol: _rgba("primary",   "#d2beff", isDark ? 0.35 : 0.50)
   property color glow1:     _rgba("primary",   "#a078ff", isDark ? 0.27 : 0.22)
   property color glow2:     _rgba("tertiary",  "#78beff", isDark ? 0.12 : 0.14)
@@ -130,7 +130,10 @@ QtObject {
   // the wallpaper behind this low-opacity fill, so the pills read as frosted glass
   // rather than flat chips (no bevel gradient). Notifications override this alpha for
   // readability, so lowering it here only affects the bar islands/bubbles.
-  property color bubbleBg: _rgba("surface_container_high", "#2a2047", isDark ? 0.40 : 0.44)
+  // Light mode runs the islands much more opaque than dark: matugen's light surfaces
+  // are near-white, so a solid pill gives the (dark) text and the colourful icons a
+  // steady backdrop instead of the busy wallpaper bleeding through and washing them out.
+  property color bubbleBg: _rgba("surface_container_high", "#2a2047", isDark ? 0.40 : 0.70)
 
   // Content-frame edge curvature: the inner lip catches light toward the content edge
   // (brightest at the lip, fading out into the frame), so the edge reads as a soft
@@ -159,7 +162,7 @@ QtObject {
   // ---- popups ----
   // More opaque than bubbleBg for readability, and one tone above the islands so a
   // popup still separates from any island chips inside it.
-  property color popupBg: _rgba("surface_container_highest", "#2f2452", isDark ? 0.82 : 0.80)
+  property color popupBg: _rgba("surface_container_highest", "#2f2452", isDark ? 0.82 : 0.90)
   property real popupOverlayA: 0.28
 
   // Popup geometry tokens used all over Wifi/Bluetooth/Brightness/Power popups
