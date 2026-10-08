@@ -83,12 +83,16 @@ QtObject {
   // blur strength from it, so blur and opacity move together. A missing/!parsed file
   // leaves a neutral middle so the shell still looks right before the first set.
   property real wallIntensity: 0.6
+  // Raw mean luminance of the wallpaper (0..1), used on its own to key the recess
+  // shadow (see frameHiA) — brightness, unlike intensity, isn't inflated by busyness.
+  property real wallLum: 0.5
   property FileView _surfaceFile: FileView {
     path: Quickshell.env("HOME") + "/.cache/quickshell/surface.json"
     onLoaded: {
       try {
         var o = JSON.parse(text())
         if (o && typeof o.intensity === "number") appearance.wallIntensity = o.intensity
+        if (o && typeof o.luminance === "number") appearance.wallLum = o.luminance
       } catch (e) { /* keep last good on a partial write */ }
     }
   }
@@ -173,10 +177,17 @@ QtObject {
   // Content-frame edge curvature: the inner lip catches light toward the content edge
   // (brightest at the lip, fading out into the frame), so the edge reads as a soft
   // rounded roll curving into the content. This is the peak alpha at the very lip.
-  // Dynamic with the wallpaper like the panels: the recess shadow stays subtler on
-  // bright/light wallpapers (where a dark band around the content would read heavy
-  // against the now-transparent frame) and a touch stronger on dark ones.
-  readonly property real frameHiA: _byWall(0.20, 0.18)
+  // Recess-shadow strength keyed to the wallpaper's BRIGHTNESS (wallLum), not the
+  // combined intensity: a near-white wallpaper makes the light frame so pale that even
+  // a faint black band reads as stark, so keep it subtle; a less-white / busier /
+  // darker wallpaper (lower luminance) can carry a darker shadow. Keying off luminance
+  // rather than intensity (which busyness also inflates) means a busy wallpaper gets a
+  // *stronger* shadow, not a weaker one. Linear + clamped so it never vanishes or
+  // gets heavy: ~0.10 over white, ~0.28 over dark.
+  readonly property real frameHiA: {
+    var a = 0.32 - 0.34 * wallLum
+    return a < 0.08 ? 0.08 : (a > 0.28 ? 0.28 : a)
+  }
   // Colour of the edge roll. White reads as a lit/glossy lip; black reads as a true
   // shadow (content recessed into a shaded well). Darks show best in light mode / on
   // light wallpapers and can disappear against a dark frame; whites, the reverse.
