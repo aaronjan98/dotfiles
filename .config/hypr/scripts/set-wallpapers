@@ -102,8 +102,10 @@ if command -v magick >/dev/null 2>&1; then
   # +1 pass past the midpoint. hyprctl keyword is runtime-only (a full hypr reload
   # resets it to 30-look.conf's size=4/passes=1; the next wallpaper change reapplies).
   t="$(awk -v i="$intensity" 'BEGIN{ t=(i-0.30)/0.48; if(t<0)t=0; if(t>1)t=1; printf "%.3f", t }')"
-  bsize="$(awk -v t="$t" 'BEGIN{ printf "%d", 4 + int(t*4 + 0.5) }')"
-  bpasses="$(awk -v t="$t" 'BEGIN{ printf "%d", (t>0.55)?2:1 }')"
+  bsize="$(awk -v t="$t" 'BEGIN{ printf "%d", 4 + int(t*2 + 0.5) }')"
+  # One pass keeps bright/light wallpapers crisp (two passes read too muddy there);
+  # size alone carries the light modulation. Raise for a heavier frost everywhere.
+  bpasses=1
   "$HYPRCTL" keyword decoration:blur:size   "$bsize"   >/dev/null 2>&1 || true
   "$HYPRCTL" keyword decoration:blur:passes "$bpasses" >/dev/null 2>&1 || true
 fi
