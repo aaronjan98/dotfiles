@@ -143,6 +143,23 @@ Used for:
 - clearing all notifications
 - in later versions, dismissing or invoking individual notifications
 
+### `NotetakeCtl.qml`
+
+Known role:
+
+- backend for the live note-taking recorder toggle
+- polls `~/nixos-config/scripts/notetake-record.sh status` every 2s
+- exposes `recording` (bool), `start()`, `stop()`, `toggle()`
+
+Why it's thin:
+
+- the actual recording and transcription logic lives entirely in the shell scripts in `nixos-config` (`notetake-record.sh`, `notetake-foldin.sh`), not here — this service only reflects/toggles state, matching the broad services-know-about-the-system pattern but deliberately minimal since fold-in (the transcription action) is driven by an agent conversation, not this UI
+- full workflow writeup, including why recording is segmented and where recordings live: `Inside/Projects/notetake - live note-taking recorder.md` in the zettelkasten vault
+
+Used by:
+
+- `NotetakeIcon.qml`
+
 ### `SystemStats.qml`
 
 Known role:
@@ -262,6 +279,19 @@ How it fits the system:
 - it is the notification subsystem's entry point in the top bar
 - it does not own notification state itself
 - it reflects and manipulates `Notifs.qml` state
+
+### `NotetakeIcon.qml`
+
+Known behavior:
+
+- standalone icon, deliberately **not** inside `Pill` — sits in its own `Row` outside/left of the right island in `TopBar.qml`, meant to hold future standalone application icons too (OBS Studio, a timer, etc. are planned there)
+- paperclip glyph; click toggles recording directly via `NotetakeCtl.toggle()` — **no popup**, unlike every other bar icon (Wifi/Bluetooth/Brightness/Power), since there's nothing for a popup to usefully control here — fold-in happens through agent conversation, not a GUI action
+- while recording: glyph rotates 90° counterclockwise and holds (not a continuous spin), tints amber; reverses on stop
+
+Why it fits the system:
+
+- it is the entry point for the `notetake-*` scripts in `nixos-config`, same relationship `BatteryIcon`/`WifiIcon` have to their services, just without a popup layer
+- full workflow writeup: `Inside/Projects/notetake - live note-taking recorder.md` in the zettelkasten vault; the scripts themselves are documented in `nixos-config`'s `docs/SCRIPTS.md`
 
 ### `Clock.qml`
 

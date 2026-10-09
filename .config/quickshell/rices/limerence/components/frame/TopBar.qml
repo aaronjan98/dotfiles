@@ -187,6 +187,7 @@ PanelWindow {
       onDismissed: root.brightPopupOpen = false
     }
 
+
     // ---- LEFT: CPU + Mem ----
     Item {
       id: leftIsland
@@ -329,6 +330,17 @@ PanelWindow {
           }
         }
       }
+    }
+
+    // ---- standalone application icons, outside the right island ----
+    Row {
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.verticalCenterOffset: root.islandYOffset
+      anchors.right: rightIsland.left
+      anchors.rightMargin: C.Appearance.m8
+      spacing: C.Appearance.m8
+
+      W.NotetakeIcon { }
     }
   }
 }
