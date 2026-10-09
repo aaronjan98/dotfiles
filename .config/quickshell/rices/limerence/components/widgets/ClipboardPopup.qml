@@ -194,28 +194,35 @@ Item {
                 model: Sv.ClipboardCtl.entries
 
                 Rectangle {
+                  id: row
                   required property var modelData
                   Layout.fillWidth: true
                   Layout.preferredHeight: 34
                   radius: 10
-                  color: Qt.rgba(1,1,1,0.10)
+                  color: rowArea.containsMouse ? Qt.rgba(1,1,1,0.22) : Qt.rgba(1,1,1,0.10)
                   border.width: 1
-                  border.color: Qt.rgba(1,1,1,0.15)
+                  border.color: rowArea.containsMouse ? Qt.rgba(1,1,1,0.32) : Qt.rgba(1,1,1,0.15)
+                  antialiasing: true
+
+                  Behavior on color { ColorAnimation { duration: 80 } }
+                  Behavior on border.color { ColorAnimation { duration: 80 } }
 
                   Text {
                     anchors.fill: parent
                     anchors.margins: 8
                     verticalAlignment: Text.AlignVCenter
-                    text: Sv.ClipboardCtl.entryPreview(modelData)
+                    text: Sv.ClipboardCtl.entryPreview(row.modelData)
                     color: "white"
                     font.pixelSize: 12
                     elide: Text.ElideRight
                   }
 
                   MouseArea {
+                    id: rowArea
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Sv.ClipboardCtl.selectEntry(modelData)
+                    onClicked: Sv.ClipboardCtl.selectEntry(row.modelData)
                   }
                 }
               }
