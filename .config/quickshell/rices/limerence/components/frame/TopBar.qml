@@ -46,6 +46,7 @@ PanelWindow {
   property bool wifiPopupOpen: false
   property bool btPopupOpen: false
   property bool brightPopupOpen: false
+  property bool clipboardPopupOpen: false
 
   function workspaceBelongsToScreen(actualId) {
     return C.Layout.isExternal(root.screen)
@@ -185,6 +186,12 @@ PanelWindow {
       parentWindow: root
       open: root.brightPopupOpen
       onDismissed: root.brightPopupOpen = false
+    }
+
+    W.ClipboardPopup {
+      parentWindow: root
+      open: root.clipboardPopupOpen
+      onDismissed: root.clipboardPopupOpen = false
     }
 
 
@@ -340,7 +347,7 @@ PanelWindow {
       anchors.rightMargin: C.Appearance.m8
       spacing: C.Appearance.m8
 
-      W.ClipboardIcon { }
+      W.ClipboardIcon { onClicked: root.clipboardPopupOpen = !root.clipboardPopupOpen }
       W.NotetakeIcon { }
     }
   }
