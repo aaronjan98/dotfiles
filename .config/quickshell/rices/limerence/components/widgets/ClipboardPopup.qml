@@ -1,60 +1,27 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
 import "../../config" as C
+import "../services" as Sv
 
 // Clipboard history popup, modeled on WifiPopup/BluetoothPopup: a native
 // quickshell PanelWindow + scrim, instead of an external fuzzel dmenu.
-// That earlier fuzzel-based approach (shot-menu's shot-region-save sibling)
-// relied on Hyprland's keyboard-focus-loss signal to close on click-outside,
-// which is indistinguishable from a hover under this host's focus settings
-// -- a native popup sidesteps that entirely: the scrim's MouseArea only
-// fires on an actual click.
+// That earlier fuzzel-based approach relied on Hyprland's keyboard-focus-loss
+// signal to close on click-outside, which never fires for clicks on
+// non-focusable targets (the bar itself, empty desktop) -- a native popup
+// sidesteps that entirely: the scrim's MouseArea only fires on an actual click.
+//
+// Open/entries state lives in the ClipboardCtl singleton (not here), since
+// Super+Ctrl+V drives it via `qs ipc call clipboard toggle` -- there's no
+// per-TopBar-instance keybind to hang that on, and every monitor's copy of
+// this popup needs to agree on whether it's open (same pattern as Notifs'
+// centerOpen singleton + NotifLayer, instantiated once per screen).
 Item {
   id: api
 
   required property QtObject parentWindow   // TopBar PanelWindow
-  property bool open: false
-  signal dismissed()
-
-  property var entries: []   // each: raw "id\tpreview" line from `cliphist list`
-
-  function requestClose() { dismissed() }
-
-  function entryId(line) {
-    const i = line.indexOf("\t")
-    return i < 0 ? line : line.slice(0, i)
-  }
-
-  function entryPreview(line) {
-    const i = line.indexOf("\t")
-    return i < 0 ? line : line.slice(i + 1)
-  }
-
-  function refresh() {
-    listProc.running = false
-    listProc.running = true
-  }
-
-  function selectEntry(line) {
-    copyProc.command = ["sh", "-c", "cliphist decode \"$1\" | wl-copy", "sh", api.entryId(line)]
-    copyProc.running = false
-    copyProc.running = true
-    api.requestClose()
-  }
-
-  Process {
-    id: listProc
-    command: ["cliphist", "list"]
-    stdout: StdioCollector {
-      onStreamFinished: api.entries = text.split("\n").filter(l => l.length > 0)
-    }
-  }
-
-  Process { id: copyProc }
 
   // -------------------------------------------------
   // SCRIM (fullscreen) -- BEHIND popup, click-outside closes
@@ -62,7 +29,7 @@ Item {
   PanelWindow {
     id: scrim
     screen: api.parentWindow.screen
-    visible: api.open
+    visible: Sv.ClipboardCtl.open
 
     anchors.top: true
     anchors.bottom: true
@@ -78,12 +45,12 @@ Item {
 
     Item {
       anchors.fill: parent
-      focus: api.open
-      Keys.onEscapePressed: api.requestClose()
+      focus: Sv.ClipboardCtl.open
+      Keys.onEscapePressed: Sv.ClipboardCtl.hide()
 
       MouseArea {
         anchors.fill: parent
-        onClicked: api.requestClose()
+        onClicked: Sv.ClipboardCtl.hide()
       }
     }
   }
@@ -94,11 +61,11 @@ Item {
   PanelWindow {
     id: pop
     screen: api.parentWindow.screen
-    visible: api.open
+    visible: Sv.ClipboardCtl.open
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: api.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: Sv.ClipboardCtl.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     exclusiveZone: 0
 
     anchors.top: true
@@ -113,10 +80,7 @@ Item {
     implicitHeight: panel.implicitHeight
 
     onVisibleChanged: {
-      if (visible) {
-        focusRoot.forceActiveFocus()
-        api.refresh()
-      }
+      if (visible) focusRoot.forceActiveFocus()
     }
 
     Rectangle {
@@ -130,8 +94,8 @@ Item {
 
       implicitHeight: content.implicitHeight + 24
 
-      opacity: api.open ? 1 : 0
-      scale: api.open ? 1 : 0.92
+      opacity: Sv.ClipboardCtl.open ? 1 : 0
+      scale: Sv.ClipboardCtl.open ? 1 : 0.92
       Behavior on opacity { NumberAnimation { duration: 140 } }
       Behavior on scale { NumberAnimation { duration: 140 } }
 
@@ -143,9 +107,9 @@ Item {
       Item {
         id: focusRoot
         anchors.fill: parent
-        focus: api.open
+        focus: Sv.ClipboardCtl.open
 
-        Keys.onEscapePressed: api.requestClose()
+        Keys.onEscapePressed: Sv.ClipboardCtl.hide()
 
         ColumnLayout {
           id: content
@@ -160,7 +124,7 @@ Item {
             Text { text: "Clipboard History"; color: "white"; font.pixelSize: 14; font.weight: 600 }
             Item { Layout.fillWidth: true }
             Text {
-              text: api.entries.length + (api.entries.length === 1 ? " item" : " items")
+              text: Sv.ClipboardCtl.entries.length + (Sv.ClipboardCtl.entries.length === 1 ? " item" : " items")
               color: Qt.rgba(1,1,1,0.75)
               font.pixelSize: 12
             }
@@ -183,7 +147,7 @@ Item {
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: api.refresh()
+                onClicked: Sv.ClipboardCtl.refresh()
               }
             }
 
@@ -200,7 +164,7 @@ Item {
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: api.requestClose()
+                onClicked: Sv.ClipboardCtl.hide()
               }
             }
           }
@@ -220,14 +184,14 @@ Item {
 
               Text {
                 Layout.fillWidth: true
-                visible: api.entries.length === 0
+                visible: Sv.ClipboardCtl.entries.length === 0
                 text: "No clipboard history."
                 color: Qt.rgba(1,1,1,0.7)
                 font.pixelSize: 12
               }
 
               Repeater {
-                model: api.entries
+                model: Sv.ClipboardCtl.entries
 
                 Rectangle {
                   required property var modelData
@@ -242,7 +206,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 8
                     verticalAlignment: Text.AlignVCenter
-                    text: api.entryPreview(modelData)
+                    text: Sv.ClipboardCtl.entryPreview(modelData)
                     color: "white"
                     font.pixelSize: 12
                     elide: Text.ElideRight
@@ -251,7 +215,7 @@ Item {
                   MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: api.selectEntry(modelData)
+                    onClicked: Sv.ClipboardCtl.selectEntry(modelData)
                   }
                 }
               }

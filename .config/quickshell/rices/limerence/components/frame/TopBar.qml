@@ -6,6 +6,7 @@ import QtQuick.Layouts
 
 import "../../config" as C
 import "../widgets" as W
+import "../services" as Sv
 import "../state" as S
 
 PanelWindow {
@@ -46,7 +47,6 @@ PanelWindow {
   property bool wifiPopupOpen: false
   property bool btPopupOpen: false
   property bool brightPopupOpen: false
-  property bool clipboardPopupOpen: false
 
   function workspaceBelongsToScreen(actualId) {
     return C.Layout.isExternal(root.screen)
@@ -190,8 +190,6 @@ PanelWindow {
 
     W.ClipboardPopup {
       parentWindow: root
-      open: root.clipboardPopupOpen
-      onDismissed: root.clipboardPopupOpen = false
     }
 
 
@@ -347,7 +345,7 @@ PanelWindow {
       anchors.rightMargin: C.Appearance.m8
       spacing: C.Appearance.m8
 
-      W.ClipboardIcon { onClicked: root.clipboardPopupOpen = !root.clipboardPopupOpen }
+      W.ClipboardIcon { onClicked: Sv.ClipboardCtl.toggle() }
       W.NotetakeIcon { }
     }
   }
