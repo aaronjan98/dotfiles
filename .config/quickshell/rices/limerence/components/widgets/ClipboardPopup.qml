@@ -110,6 +110,24 @@ Item {
         focus: Sv.ClipboardCtl.open
 
         Keys.onEscapePressed: Sv.ClipboardCtl.hide()
+        Keys.onUpPressed: Sv.ClipboardCtl.moveSelection(-1)
+        Keys.onDownPressed: Sv.ClipboardCtl.moveSelection(1)
+        Keys.onReturnPressed: Sv.ClipboardCtl.selectCurrent()
+        Keys.onEnterPressed: Sv.ClipboardCtl.selectCurrent()
+
+        // Keep the keyboard-selected row scrolled into view.
+        function ensureVisible(idx) {
+          const rowH = 34, gap = 6
+          const top = idx * (rowH + gap)
+          const bottom = top + rowH
+          if (top < flick.contentY) flick.contentY = top
+          else if (bottom > flick.contentY + flick.height) flick.contentY = bottom - flick.height
+        }
+
+        Connections {
+          target: Sv.ClipboardCtl
+          function onSelectedIndexChanged() { focusRoot.ensureVisible(Sv.ClipboardCtl.selectedIndex) }
+        }
 
         ColumnLayout {
           id: content
@@ -170,6 +188,7 @@ Item {
           }
 
           Flickable {
+            id: flick
             Layout.fillWidth: true
             Layout.preferredHeight: 360
             clip: true
@@ -196,12 +215,14 @@ Item {
                 Rectangle {
                   id: row
                   required property var modelData
+                  required property int index
+                  readonly property bool selected: Sv.ClipboardCtl.selectedIndex === row.index
                   Layout.fillWidth: true
                   Layout.preferredHeight: 34
                   radius: 10
-                  color: rowArea.containsMouse ? Qt.rgba(1,1,1,0.22) : Qt.rgba(1,1,1,0.10)
+                  color: row.selected ? Qt.rgba(1,1,1,0.22) : Qt.rgba(1,1,1,0.10)
                   border.width: 1
-                  border.color: rowArea.containsMouse ? Qt.rgba(1,1,1,0.32) : Qt.rgba(1,1,1,0.15)
+                  border.color: row.selected ? Qt.rgba(1,1,1,0.32) : Qt.rgba(1,1,1,0.15)
                   antialiasing: true
 
                   Behavior on color { ColorAnimation { duration: 80 } }
@@ -222,6 +243,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onContainsMouseChanged: if (containsMouse) Sv.ClipboardCtl.selectedIndex = row.index
                     onClicked: Sv.ClipboardCtl.selectEntry(row.modelData)
                   }
                 }
