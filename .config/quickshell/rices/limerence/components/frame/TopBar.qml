@@ -340,6 +340,7 @@ PanelWindow {
       anchors.rightMargin: C.Appearance.m8
       spacing: C.Appearance.m8
 
+      W.ClipboardIcon { }
       W.NotetakeIcon { }
     }
   }
