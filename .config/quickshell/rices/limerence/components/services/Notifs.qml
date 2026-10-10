@@ -20,6 +20,10 @@ Item {
   property alias popups: popupModel
 
   property var _objById: ({})
+  // nid -> invoked action key. Lifted out of the button delegate so the toast and
+  // the notification center show the same "approved" state for one notification.
+  // Reassigned (not mutated) on change so QML bindings re-evaluate.
+  property var invokedIds: ({})
 
   NotificationServer {
     id: server
@@ -194,17 +198,36 @@ Item {
     if (ms === undefined || ms === null || ms <= 0) ms = 6000
     if (e.urgency === NotificationUrgency.Critical) return
 
-    const t = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
-    t.interval = ms
-    t.triggered.connect(() => {
+    // Decouple on-screen time from bus lifetime: the toast auto-hides after a
+    // short cap, but a long-lived notification stays alive on the bus for its
+    // full timeout so its actions remain invokable from the notification center
+    // (a waiting sender — notify-send --action — only returns once we expire it).
+    const VISUAL_CAP = 15000
+    const visualMs = Math.min(ms, VISUAL_CAP)
+    const expireOnVisual = (ms <= visualMs)
+
+    const tv = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
+    tv.interval = visualMs
+    tv.triggered.connect(() => {
       _remove(popupModel, e.nid)
-      // Close the tracked notification on the bus so a waiting sender returns and
-      // we don't leak server-side notifications once the toast is gone.
-      const obj = _objById[e.nid]
-      if (obj) { try { obj.expire() } catch (err) {} }
-      t.destroy()
+      if (expireOnVisual) {
+        const obj = _objById[e.nid]
+        if (obj) { try { obj.expire() } catch (err) {} }
+      }
+      tv.destroy()
     })
-    t.start()
+    tv.start()
+
+    if (!expireOnVisual) {
+      const tb = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
+      tb.interval = ms
+      tb.triggered.connect(() => {
+        const obj = _objById[e.nid]
+        if (obj) { try { obj.expire() } catch (err) {} }
+        tb.destroy()
+      })
+      tb.start()
+    }
   }
 
   function openCenter() {
@@ -228,15 +251,22 @@ Item {
       try { if (obj.dismiss) obj.dismiss(); else if (obj.close) obj.close() } catch (e) {}
       delete _objById[nid]
     }
+    if (root.invokedIds[nid] !== undefined) {
+      const next = Object.assign({}, root.invokedIds)
+      delete next[nid]
+      root.invokedIds = next
+    }
     _remove(historyModel, nid)
     _remove(popupModel, nid)
   }
 
   function clearAll() {
     for (let k in _objById) {
-      try { if (_objById[k] && _objById[k].close) _objById[k].close() } catch (e) {}
+      const o = _objById[k]
+      try { if (o && o.dismiss) o.dismiss(); else if (o && o.close) o.close() } catch (e) {}
     }
     _objById = ({})
+    root.invokedIds = ({})
     historyModel.clear()
     popupModel.clear()
     root.unread = 0
@@ -255,9 +285,14 @@ Item {
           if (!a) continue
           const k = _firstNonEmpty(a.key, a.id, a.identifier, a.action, a.name)
           if (k === key && a.invoke) {
+            // Leave the toast up so its button can show an "approved" state; the
+            // notification's own expire timer clears it shortly after.
             a.invoke()
-            // Non-resident notification closes on invoke; drop its toast too.
-            _remove(popupModel, nid)
+            // Record the invoked action so every view of this notification (toast
+            // and center) reflects it. New object so the binding re-evaluates.
+            const next = Object.assign({}, root.invokedIds)
+            next[nid] = key
+            root.invokedIds = next
             return
           }
         }

@@ -169,27 +169,38 @@ Item {
             model: root.actionsNorm_ || []
 
             delegate: Rectangle {
+              id: actionBtn
               radius: root.px(10)
               height: root.px(24)
               readonly property string lbl: (modelData && modelData.label) ? ("" + modelData.label) : "Action"
               readonly property string key: (modelData && modelData.key) ? ("" + modelData.key) : ""
+              // Derived from the service (keyed by notification id) so the toast and
+              // the notification center show the same "approved" state once clicked.
+              readonly property bool invoked: Sv.Notifs.invokedIds[root.nid_] === key
 
               width: Math.max(root.px(56), Math.min(root.px(220), label.implicitWidth + root.px(18)))
-              color: Qt.rgba(1, 1, 1, 0.10)
+              color: invoked ? Qt.rgba(0.30, 0.72, 0.42, 0.28) : Qt.rgba(1, 1, 1, 0.10)
               border.width: 1
-              border.color: Qt.rgba(1, 1, 1, 0.10)
+              border.color: invoked ? Qt.rgba(0.40, 0.85, 0.52, 0.65) : Qt.rgba(1, 1, 1, 0.10)
 
               Text {
                 id: label
                 anchors.centerIn: parent
-                text: parent.lbl
-                color: "white"
+                text: actionBtn.invoked ? "✓ Approved" : actionBtn.lbl
+                color: actionBtn.invoked ? Qt.rgba(0.78, 1.0, 0.84, 1.0) : "white"
                 font.pixelSize: root.px(11)
                 elide: Text.ElideRight
               }
 
+              // Pointer affordance while actionable; plain arrow once done.
+              HoverHandler {
+                enabled: !actionBtn.invoked
+                cursorShape: Qt.PointingHandCursor
+              }
+
               TapHandler {
-                onTapped: Sv.Notifs.invoke(root.nid_, parent.key)
+                enabled: !actionBtn.invoked
+                onTapped: Sv.Notifs.invoke(root.nid_, actionBtn.key)
               }
             }
           }
