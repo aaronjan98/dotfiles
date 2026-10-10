@@ -78,12 +78,16 @@ PanelWindow {
         readonly property real outlineW: 1
         readonly property var outlineDirs: [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]
 
-        // Light mode only: fake a thin dark outline by stamping black copies of the
-        // logo offset 1px in 8 directions behind the colour version (the same idea as
-        // Text.Outline on the battery). Crisp, so it never spreads past the corner
-        // window the way the soft shadow did.
+        // Fake a thin outline by stamping recoloured copies of the logo offset 1px
+        // in 8 directions behind the colour version (the same idea as Text.Outline
+        // on the battery). Crisp, so it never spreads past the corner window the way
+        // the soft shadow did. Rendered in BOTH modes, but the colour differs:
+        //   light — the islands' border token (primary tint @ 0.35) so the logo
+        //           reads as rimmed like the top-bar pills;
+        //   dark  — a strong pure-black rim (the lavender border reads muddy on the
+        //           dark panels, so fall back to the old black silhouette here).
         Repeater {
-          model: C.Appearance.isDark ? [] : nixGroup.outlineDirs
+          model: nixGroup.outlineDirs
           Image {
             source: nixGroup.logoSource
             width: nixGroup.width
@@ -92,11 +96,12 @@ PanelWindow {
             y: modelData[1] * nixGroup.outlineW
             fillMode: Image.PreserveAspectFit
             smooth: true
-            opacity: 0.85
             layer.enabled: true
             layer.effect: MultiEffect {
               colorization: 1.0
-              colorizationColor: Qt.rgba(0, 0, 0, 1)
+              colorizationColor: C.Appearance.isDark
+                ? Qt.rgba(0, 0, 0, 0.85)
+                : C.Appearance.pillBorderCol
             }
           }
         }
