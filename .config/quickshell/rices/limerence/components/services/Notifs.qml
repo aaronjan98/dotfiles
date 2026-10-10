@@ -46,6 +46,7 @@ Item {
 
     function dismiss(nid: int): void { root.dismiss(nid) }
     function invoke(nid: int, key: string): void { root.invoke(nid, key) }
+    function markInvoked(nid: int, key: string): void { root.markInvoked(nid, key) }
   }
 
   Process {
@@ -270,6 +271,16 @@ Item {
     historyModel.clear()
     popupModel.clear()
     root.unread = 0
+  }
+
+  // Mark an action approved in the UI without invoking it. Used when the action
+  // was already handled elsewhere (e.g. the command was run from the Context Forge
+  // UI) so the toast/center button reflects it without re-triggering the sender.
+  function markInvoked(nid, key) {
+    if (nid === undefined || nid === null || !key) return
+    const next = Object.assign({}, root.invokedIds)
+    next[nid] = "" + key
+    root.invokedIds = next
   }
 
   function invoke(nid, key) {
