@@ -68,7 +68,7 @@ Item {
             desktopEntry_: (desktopEntry !== undefined && desktopEntry !== null) ? desktopEntry : ""
             imagePath_: (imagePath !== undefined && imagePath !== null) ? imagePath : ""
 
-            actionsNorm_: (actionsNorm !== undefined && actionsNorm !== null) ? actionsNorm : []
+            actionsNorm_: Sv.Notifs.actionsFor(nid)
             actions_: (actions !== undefined && actions !== null) ? actions : []
             defaultKey_: (defaultKey !== undefined && defaultKey !== null) ? defaultKey : ""
           }

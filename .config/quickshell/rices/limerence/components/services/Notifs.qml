@@ -23,6 +23,10 @@ Item {
 
   NotificationServer {
     id: server
+    // Advertise the "actions" capability so senders (notify-send --action, apps)
+    // emit action buttons instead of being told actions are unsupported. The
+    // toast already renders actionsNorm_ and invokes them over the bus.
+    actionsSupported: true
     onNotification: (n) => root._onNotif(n)
   }
 
@@ -77,26 +81,37 @@ Item {
   function _normalizeActions(n) {
     const a = n.actions
     if (!a) return []
+    // n.actions is a QList<NotificationAction*>, not a JS array — Array.isArray is
+    // false for it, so iterate by index/length. Each item exposes identifier/text;
+    // also tolerate the legacy alternating [key, label, ...] string form.
+    const len = a.length
+    if (len === undefined || len === null || len <= 0) return []
 
-    if (Array.isArray(a) && a.length >= 2 && typeof a[0] === "string") {
-      const out = []
-      for (let i = 0; i + 1 < a.length; i += 2) out.push({ key: "" + a[i], label: "" + a[i + 1] })
-      return out
-    }
-
-    if (Array.isArray(a) && a.length > 0 && typeof a[0] === "object") {
-      const out = []
-      for (let i = 0; i < a.length; i++) {
-        const it = a[i]
-        if (!it) continue
-        const key = _firstNonEmpty(it.key, it.id, it.identifier, it.action, it.name)
-        const label = _firstNonEmpty(it.label, it.text, it.title, key)
-        if (key.length > 0) out.push({ key, label })
+    const out = []
+    for (let i = 0; i < len; i++) {
+      const it = a[i]
+      if (it === undefined || it === null) continue
+      if (typeof it === "string") {
+        const skey = it
+        const slabel = (typeof a[i + 1] === "string") ? a[++i] : skey
+        if (skey.length > 0) out.push({ key: skey, label: slabel })
+        continue
       }
-      return out
+      const key = _firstNonEmpty(it.identifier, it.key, it.id, it.action, it.name)
+      const label = _firstNonEmpty(it.text, it.label, it.title, key)
+      if (key.length > 0) out.push({ key, label })
     }
+    return out
+  }
 
-    return []
+  // Live, normalized actions for a delegate, looked up by notification id. A
+  // ListModel can't faithfully store a JS array-of-objects (it degrades to a
+  // child model exposing .count, not .length), so the toast's length check would
+  // fail on the stored copy — recompute from the live notification object here.
+  function actionsFor(nid) {
+    const obj = _objById[nid]
+    if (!obj) return []
+    return _normalizeActions(obj)
   }
 
   function _entry(n) {
@@ -147,6 +162,12 @@ Item {
   }
 
   function _onNotif(n) {
+    // Retain the notification on the D-Bus server. Without this Quickshell drops
+    // it as soon as this handler returns, closing it immediately — senders using
+    // --wait (notify-send --action) return at once and actions can never be
+    // invoked. Tracked notifications live until we expire/dismiss them below.
+    try { n.tracked = true } catch (e) {}
+
     const e = _entry(n)
     _objById[e.nid] = n
 
@@ -177,6 +198,10 @@ Item {
     t.interval = ms
     t.triggered.connect(() => {
       _remove(popupModel, e.nid)
+      // Close the tracked notification on the bus so a waiting sender returns and
+      // we don't leak server-side notifications once the toast is gone.
+      const obj = _objById[e.nid]
+      if (obj) { try { obj.expire() } catch (err) {} }
       t.destroy()
     })
     t.start()
@@ -198,7 +223,9 @@ Item {
   function dismiss(nid) {
     const obj = _objById[nid]
     if (obj) {
-      try { if (obj.close) obj.close() } catch (e) {}
+      // Notification exposes dismiss()/expire(), not close(); dismiss() is the
+      // explicit user-closed path. Keeps tracked notifications from lingering.
+      try { if (obj.dismiss) obj.dismiss(); else if (obj.close) obj.close() } catch (e) {}
       delete _objById[nid]
     }
     _remove(historyModel, nid)
@@ -227,7 +254,12 @@ Item {
           const a = obj.actions[i]
           if (!a) continue
           const k = _firstNonEmpty(a.key, a.id, a.identifier, a.action, a.name)
-          if (k === key && a.invoke) { a.invoke(); return }
+          if (k === key && a.invoke) {
+            a.invoke()
+            // Non-resident notification closes on invoke; drop its toast too.
+            _remove(popupModel, nid)
+            return
+          }
         }
       }
     } catch (e) {}
@@ -238,7 +270,7 @@ Item {
     const p = "" + pid
     if (p.length === 0) return
     hyprctl.command = ["hyprctl", "dispatch", "focuswindow", "pid:" + p]
-    hyprctl.start()
+    hyprctl.startDetached()
   }
 
   function activate(nid) {
