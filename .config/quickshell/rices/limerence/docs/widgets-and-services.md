@@ -160,6 +160,19 @@ Used by:
 
 - `NotetakeIcon.qml`
 
+### `HypridleCtl.qml`
+
+Known role:
+
+- backend for controlling the `hypridle` user service (auto-dim, screen blackout, lock)
+- polls `systemctl --user is-active hypridle` every 2.5s
+- exposes `idleEnabled` (bool), `keepAwake` (bool), `start()`, `stop()`, `toggle()`
+- includes `IpcHandler` (`hypridle`) so keybinds or CLI can call `qs ipc call hypridle toggle`
+
+Used by:
+
+- `HypridleIcon.qml`
+
 ### `SystemStats.qml`
 
 Known role:
@@ -292,6 +305,47 @@ Why it fits the system:
 
 - it is the entry point for the `notetake-*` scripts in `nixos-config`, same relationship `BatteryIcon`/`WifiIcon` have to their services, just without a popup layer
 - full workflow writeup: `Inside/Projects/notetake - live note-taking recorder.md` in the zettelkasten vault; the scripts themselves are documented in `nixos-config`'s `docs/SCRIPTS.md`
+
+### `ObsIcon.qml` / `ObsPopup.qml`
+
+Known behavior:
+
+- standalone OBS Studio icon outside/left of the right island
+- left click treats OBS like an app handle:
+  - launches OBS when absent
+  - focuses the existing OBS window when it is elsewhere
+  - hides focused OBS to `special:obs`
+- right click toggles the recording control popup
+- icon color reflects connection and recording state through `ObsCtl.qml`
+
+Popup behavior:
+
+- intentionally exposes a small recording workflow rather than full OBS internals
+- includes launch/open/hide controls for the OBS window
+- includes start/stop and pause/resume controls
+- exposes named recording presets (`Screen`, `Screen + Camera`, `Camera Only`) mapped to OBS scenes when those scenes exist
+- exposes expected audio toggles (`Mic`, `Desktop audio`) without listing every OBS input by default
+- camera visibility is currently handled through scene presets, not direct source visibility toggling
+
+Why it fits the system:
+
+- `ObsCtl.qml` owns WebSocket state and commands through `~/nixos-config/scripts/obs-ctl-daemon.py`
+- `~/.config/hypr/scripts/obs-toggle` owns Hyprland window lifecycle behavior
+- the widget stays a compact top-bar workflow and leaves detailed source/scene editing to OBS itself
+
+### `HypridleIcon.qml`
+
+Known behavior:
+
+- standalone icon outside/left of the right island in `TopBar.qml`
+- toggles `hypridle` service directly via `HypridleCtl.toggle()`
+- displays coffee-off glyph (`󰛊`) in standard topbar white/grey when `hypridle` is active (normal screen dim and lock enabled)
+- displays coffee glyph (`󰅶`) in warm caffeine amber when `hypridle` is stopped (keep-awake mode active)
+
+Why it fits the system:
+
+- bridges the NixOS-managed `hypridle` user service into a one-click topbar control
+- keeps the bar uncluttered while providing clear, instantaneous visual feedback of screen sleep inhibitor state
 
 ### `Clock.qml`
 

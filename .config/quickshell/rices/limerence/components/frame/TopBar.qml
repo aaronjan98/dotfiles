@@ -192,6 +192,10 @@ PanelWindow {
       parentWindow: root
     }
 
+    W.ObsPopup {
+      parentWindow: root
+    }
+
 
     // ---- LEFT: CPU + Mem ----
     Item {
@@ -345,8 +349,13 @@ PanelWindow {
       anchors.rightMargin: C.Appearance.m8
       spacing: C.Appearance.m8
 
+      W.ObsIcon {
+        onClicked: Sv.ObsCtl.toggleWindow()
+        onMenuRequested: Sv.ObsCtl.toggle()
+      }
       W.ClipboardIcon { onClicked: Sv.ClipboardCtl.toggle() }
       W.NotetakeIcon { }
+      W.HypridleIcon { }
     }
   }
 }
