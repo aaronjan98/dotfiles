@@ -1,0 +1,28 @@
+# Light = pale raspberry glass, dark text. The tint echoes the dark bg (1a0810)
+# so ghostty keeps its raspberry identity in both modes. Mirrors kitty's
+# colors-light.conf (which uses a green tint). Transparent so the wallpaper
+# reads through; the tint only shows where it's opaque.
+# Muted dusty raspberry — low-saturation (like kitty's near-neutral green) so it
+# blends as a subtle frosted tint rather than a loud pink, echoing ghostty's dark
+# maroon identity. Opacity lives in the main config (ghostty ignores it here).
+# Renders correctly now that the blur brightness washout is fixed (30-look.conf).
+background = cf9fae
+foreground = 37322c
+selection-background = e3d7c4
+selection-foreground = 37322c
+palette = 0=3a342c
+palette = 1=b23b2e
+palette = 2=5a7d3c
+palette = 3=a9741a
+palette = 4=3b6ea5
+palette = 5=8a4e9e
+palette = 6=2f8a84
+palette = 7=6d6456
+palette = 8=5b5244
+palette = 9=c75a46
+palette = 10=6f9550
+palette = 11=c08a2a
+palette = 12=4f84bf
+palette = 13=a267b5
+palette = 14=3fa39c
+palette = 15=37322c

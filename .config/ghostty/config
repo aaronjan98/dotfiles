@@ -1,5 +1,15 @@
-background = 1a0810
-background-opacity = 0.65
+# Colour theme follows the system colour-scheme live: set-wallpapers sets the
+# gsettings color-scheme (prefer-light/prefer-dark) from the wallpaper's
+# luminance, the desktop portal bridges it to the appearance ghostty watches,
+# and ghostty swaps themes with no reload. rice-dark reproduces the original
+# look (maroon bg + ghostty's default palette); rice-light is the warm paper
+# light scheme. Both live in ./themes/ and mirror kitty's colors-*.conf.
+theme = light:rice-light,dark:rice-dark
+# background-opacity is NOT theme-able (ghostty only honors color keys in theme
+# files), and the light:/dark: prefix only works on `theme` — so opacity is one
+# global value here, shared by light and dark. Kept at kitty's 0.5 so the light
+# scheme reads as transparent glass rather than a near-opaque white pane.
+background-opacity = 0.5
 keybind = ctrl+shift+o=toggle_background_opacity
 
 cursor-style = block

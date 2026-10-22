@@ -1,0 +1,4 @@
+# Dark = the original look: maroon-black background over ghostty's default
+# palette and foreground. Only the background is overridden, matching what the
+# config set before the light/dark split.
+background = 1a0810
