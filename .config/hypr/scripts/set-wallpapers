@@ -102,10 +102,11 @@ if command -v magick >/dev/null 2>&1; then
   # +1 pass past the midpoint. hyprctl keyword is runtime-only (a full hypr reload
   # resets it to 30-look.conf's size=4/passes=1; the next wallpaper change reapplies).
   t="$(awk -v i="$intensity" 'BEGIN{ t=(i-0.30)/0.48; if(t<0)t=0; if(t>1)t=1; printf "%.3f", t }')"
+  # Hyprland blur is dual-kawase: smoothness comes from PASSES, spread from size.
+  # A big size with 1 pass ghosts/doubles the image, so keep size moderate and use
+  # 2 passes for an even frost. size still carries the light modulation.
   bsize="$(awk -v t="$t" 'BEGIN{ printf "%d", 4 + int(t*2 + 0.5) }')"
-  # One pass keeps bright/light wallpapers crisp (two passes read too muddy there);
-  # size alone carries the light modulation. Raise for a heavier frost everywhere.
-  bpasses=1
+  bpasses=2
   "$HYPRCTL" keyword decoration:blur:size   "$bsize"   >/dev/null 2>&1 || true
   "$HYPRCTL" keyword decoration:blur:passes "$bpasses" >/dev/null 2>&1 || true
 fi
@@ -113,6 +114,21 @@ fi
 if command -v matugen >/dev/null 2>&1; then
   matugen image "$wp" --mode "$mode" >/dev/null 2>&1 \
     || echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
+fi
+
+# Flip the terminals (and GTK apps) light/dark with the wallpaper. The global
+# GNOME colour-scheme key is the pivot: ghostty watches the desktop portal that
+# this key feeds and swaps its rice-light/rice-dark themes live (no reload), and
+# GTK apps follow too. kitty doesn't follow the portal, so repoint its active
+# palette symlink (kitty.conf `include`s colors-active.conf) and send SIGUSR1 to
+# reload every running kitty in place. All best-effort.
+if command -v gsettings >/dev/null 2>&1; then
+  gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode" >/dev/null 2>&1 || true
+fi
+kitty_dir="$HOME/.config/kitty"
+if [ -e "$kitty_dir/colors-$mode.conf" ]; then
+  ln -sfn "colors-$mode.conf" "$kitty_dir/colors-active.conf"
+  pkill -USR1 kitty >/dev/null 2>&1 || true
 fi
 
 # Poke Quickshell to re-read the palette + surface (opacity) files live. We can't rely
