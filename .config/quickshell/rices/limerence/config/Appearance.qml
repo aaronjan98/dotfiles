@@ -154,7 +154,19 @@ QtObject {
   // blurs the wallpaper behind these panels, so they can stay quite translucent and
   // still read as solid glass rather than a flat wash. Light mode is kept a touch
   // more transparent than before (it looked chalky-white) now that blur backs it.
-  property color frameBg:   _rgba("surface",   "#141023", _byWall(0.45, 0.16))
+  // Content-frame fill: FROSTED GLASS tinted to the wallpaper's dominant colour. `source`
+  // is matugen's seed — the extracted dominant tone of the wallpaper (e.g. salmon for this
+  // one), and it flips dark automatically for dark wallpapers. A moderate opacity keeps it
+  // semi-transparent AND above the `ignorealpha 0.1` cutoff so Hyprland frosts the
+  // wallpaper behind it (the blurry look), while the tint matches the wallpaper so it reads
+  // cohesive rather than a grey block. The recess shadow (frameHiA) then reads as an inset
+  // on this frosted surface.
+  // Semi-opaque wallpaper-tinted overlay, like main's 0.55 frame but in the wallpaper's
+  // dominant colour (`source`) so it's light on light wallpapers instead of main's dark
+  // purple. Kept BELOW the `ignorealpha 0.55` cutoff (30-look.conf) so it is NOT frosted —
+  // a sharp see-through overlay, no gloss. At ~0.5 opacity it's a real surface, so the
+  // recess shadow reads as a soft inset rather than a floating band.
+  property color frameBg:   _rgba("source",    "#141023", 0.50)
   property color borderCol: _rgba("primary",   "#d2beff", isDark ? 0.35 : 0.50)
   property color glow1:     _rgba("primary",   "#a078ff", isDark ? 0.27 : 0.22)
   property color glow2:     _rgba("tertiary",  "#78beff", isDark ? 0.12 : 0.14)
@@ -168,11 +180,15 @@ QtObject {
   // the wallpaper behind this low-opacity fill, so the pills read as frosted glass
   // rather than flat chips (no bevel gradient). Notifications override this alpha for
   // readability, so lowering it here only affects the bar islands/bubbles.
-  // Islands: text + outlined icons sit on them, so they lean on their own outlines and
-  // the heavy blur for legibility rather than opacity. More opaque over a dark wallpaper
-  // (0.40), more transparent over a bright/busy one (0.34) so they don't read as a white
-  // block on top of the already-light frosted wallpaper.
-  property color bubbleBg: _rgba("surface_container_high", "#2a2047", _byWall(0.40, 0.20))
+  // Islands go FULLY TRANSPARENT on bright wallpapers. Key mechanism: the
+  // `layerrule = ignorealpha 0.1, quickshell` means Hyprland skips the blur wherever the
+  // panel is >~90% transparent — so an island at alpha 0 shows the RAW, unblurred,
+  // un-dimmed wallpaper and matches it exactly (bright). The earlier darkness came from
+  // alpha ~0.2, ABOVE that 0.1 cutoff, where the island got the blur (dimmed for ghostty)
+  // and read dark. So ramp the island fill to 0 on bright wallpapers (pills become their
+  // border + text floating on the wallpaper) and keep the dark-wallpaper end frosted
+  // (0.40 surface_container_high) where a translucent dark fill over blur looks right.
+  property color bubbleBg: _rgba(isDark ? "surface_container_high" : "surface", "#2a2047", _byWall(0.40, 0.0))
 
   // Content-frame edge curvature: the inner lip catches light toward the content edge
   // (brightest at the lip, fading out into the frame), so the edge reads as a soft
@@ -184,9 +200,12 @@ QtObject {
   // rather than intensity (which busyness also inflates) means a busy wallpaper gets a
   // *stronger* shadow, not a weaker one. Linear + clamped so it never vanishes or
   // gets heavy: ~0.10 over white, ~0.28 over dark.
+  // Inset shadow peak alpha, keyed to wallpaper LUMINANCE: a dark roll reads much heavier
+  // on a light overlay, so lighten it on light wallpapers (~0.13) and let it go stronger
+  // on dark ones (~0.24) where it would otherwise disappear.
   readonly property real frameHiA: {
-    var a = 0.32 - 0.34 * wallLum
-    return a < 0.08 ? 0.08 : (a > 0.28 ? 0.28 : a)
+    var a = 0.30 - 0.20 * wallLum
+    return a < 0.10 ? 0.10 : (a > 0.24 ? 0.24 : a)
   }
   // Colour of the edge roll. White reads as a lit/glossy lip; black reads as a true
   // shadow (content recessed into a shaded well). Darks show best in light mode / on
@@ -194,14 +213,18 @@ QtObject {
   readonly property color frameRollColor: "#000000"
   // How far (px) the inner edge-highlight roll stretches from the content lip out into
   // the frame. Larger = a longer, more gradual blend; smaller = a tight rim.
-  readonly property int frameRollSpan: 50
+  readonly property int frameRollSpan: 90
   // Shape of the roll (blend of two terms, see ContentFrame):
   //  - frameRollEase: steep term for the INNER-edge concentration. Higher = the shadow
   //    spikes harder right at the content lip.
   //  - frameRollTail: gentle term (near-linear) that carries a long, gradual faint
   //    shadow out toward the outer edge. Lower (→1) = longer/straighter tail.
-  readonly property real frameRollEase: 6.0
-  readonly property real frameRollTail: 1.25
+  // Peak position of the skewed shadow (fraction of the span from the content lip).
+  // Small = peak close to the content / strongly skewed inward, with a long slow outer
+  // fade. 0.08 on the 90px span puts the peak ~7px in and leaves a long runway so the
+  // tail fades fully to nothing instead of getting cut off at the span edge.
+  readonly property real frameRollEase: 0.08
+  readonly property real frameRollTail: 1.25   // unused by the gamma curve; kept for reference
   property int bubbleBorderW: Math.max(1, s(1))
   property int bubblePad: s(6)
   property int bubbleRadius: s(17)

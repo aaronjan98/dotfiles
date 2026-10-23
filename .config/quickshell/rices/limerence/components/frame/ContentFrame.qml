@@ -118,14 +118,15 @@ PanelWindow {
         radius: C.Appearance.frameRadius + index
         color: "transparent"
         border.width: 1
-        // Two-term ramp over the full span (0 at the outer edge → lip at index 0):
-        //  - a steep term (frameRollEase) spikes the shadow right at the inner lip,
-        //  - a gentle term (frameRollTail) carries a long, gradual faint tail outward,
-        // so the inner edge stays strongly concentrated without losing the outer blend.
+        // Skewed falloff across the span (0 at the content lip → 1 at the outer edge):
+        // 0 right at the content edge (eases in, so no hard border line), a quick rise to
+        // a peak just INSIDE (toward the content), then a long slow decay out toward the
+        // outer edge. frameRollEase = peak position (smaller = closer to the content /
+        // more skewed inward). Gamma-shaped: x·e^(1-x).
         border.color: {
-          var u = 1 - index / C.Appearance.frameRollSpan
-          var a = C.Appearance.frameHiA * (0.80 * Math.pow(u, C.Appearance.frameRollEase)
-                                         + 0.42 * Math.pow(u, C.Appearance.frameRollTail))
+          var t = index / C.Appearance.frameRollSpan
+          var x = t / C.Appearance.frameRollEase
+          var a = C.Appearance.frameHiA * x * Math.exp(1 - x)
           var rc = C.Appearance.frameRollColor
           return Qt.rgba(rc.r, rc.g, rc.b, a)
         }
