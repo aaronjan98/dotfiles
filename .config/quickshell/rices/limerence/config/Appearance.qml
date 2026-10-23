@@ -200,31 +200,27 @@ QtObject {
   // rather than intensity (which busyness also inflates) means a busy wallpaper gets a
   // *stronger* shadow, not a weaker one. Linear + clamped so it never vanishes or
   // gets heavy: ~0.10 over white, ~0.28 over dark.
-  // Inset shadow peak alpha, keyed to wallpaper LUMINANCE: a dark roll reads much heavier
-  // on a light overlay, so lighten it on light wallpapers (~0.13) and let it go stronger
-  // on dark ones (~0.24) where it would otherwise disappear.
   readonly property real frameHiA: {
-    var a = 0.30 - 0.20 * wallLum
-    return a < 0.10 ? 0.10 : (a > 0.24 ? 0.24 : a)
+    // Peak shadow alpha at the content-frame edge, keyed to wallpaper LUMINANCE (wallLum,
+    // 0..1 from surface.json). A dark recess reads stark over a light wallpaper, so fade
+    // it right down on pale ones (~0.19 at wallLum 0.69) and let it go strong on dark ones
+    // (up to 0.60) where it would otherwise disappear. Linear + clamped.
+    var a = 0.78 - 0.85 * wallLum;
+    return a < 0.15 ? 0.15 : (a > 0.60 ? 0.60 : a);
   }
-  // Colour of the edge roll. White reads as a lit/glossy lip; black reads as a true
-  // shadow (content recessed into a shaded well). Darks show best in light mode / on
-  // light wallpapers and can disappear against a dark frame; whites, the reverse.
+  // Colour of the edge roll. Black reads as a true shadow (content recessed into a shaded
+  // well); see recess-shadow.frag, which hardcodes black — this is kept for reference.
   readonly property color frameRollColor: "#000000"
-  // How far (px) the inner edge-highlight roll stretches from the content lip out into
-  // the frame. Larger = a longer, more gradual blend; smaller = a tight rim.
-  readonly property int frameRollSpan: 90
-  // Shape of the roll (blend of two terms, see ContentFrame):
-  //  - frameRollEase: steep term for the INNER-edge concentration. Higher = the shadow
-  //    spikes harder right at the content lip.
-  //  - frameRollTail: gentle term (near-linear) that carries a long, gradual faint
-  //    shadow out toward the outer edge. Lower (→1) = longer/straighter tail.
-  // Peak position of the skewed shadow (fraction of the span from the content lip).
-  // Small = peak close to the content / strongly skewed inward, with a long slow outer
-  // fade. 0.08 on the 90px span puts the peak ~7px in and leaves a long runway so the
-  // tail fades fully to nothing instead of getting cut off at the span edge.
-  readonly property real frameRollEase: 0.08
-  readonly property real frameRollTail: 1.25   // unused by the gamma curve; kept for reference
+  // How far (px) the outset shadow reaches from the content-frame edge into the frame
+  // (recess-shadow.frag `span`). Deliberately LARGER than the thick top/left edges (~53px)
+  // so the shadow is still fading when it hits the screen edge and "bleeds off" instead of
+  // ending inside the frame (no floating band); on the thin right/bottom trim the overshoot
+  // keeps the visible near-edge part from collapsing into an invisible sliver.
+  readonly property int frameRollSpan: 65
+  // Falloff exponent of the outset shadow (recess-shadow.frag `peakFrac`): darkest right at
+  // the content-frame edge, tapering outward. Higher = mass skewed harder toward the edge.
+  readonly property real frameRollEase: 2.0
+  readonly property real frameRollTail: 1.25   // unused; kept for reference
   property int bubbleBorderW: Math.max(1, s(1))
   property int bubblePad: s(6)
   property int bubbleRadius: s(17)

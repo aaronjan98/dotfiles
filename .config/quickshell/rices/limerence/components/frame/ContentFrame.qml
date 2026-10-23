@@ -26,6 +26,11 @@ PanelWindow {
   // Visual-only overlay: never reserves space
   WlrLayershell.layer: WlrLayer.Bottom
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
+  // Own namespace so the Hyprland blur rule can target the popups/bars ("quickshell")
+  // WITHOUT frosting this frame — the frame is a semi-transparent tint over a CRISP
+  // wallpaper (no blur), and the recess shadow would otherwise push its alpha past the
+  // ignorealpha threshold and get frosted. See hypr/conf.d/30-look.conf layerrules.
+  WlrLayershell.namespace: "quickshell-frame"
   exclusiveZone: 0
 
   anchors.top: true
@@ -96,6 +101,26 @@ PanelWindow {
   }
 
   //
+  // RECESS SHADOW: a signed-distance-field gradient baked over the frame fill. Darkens
+  // the frame by distance to the rounded content hole — a quick skewed rise just inside
+  // the frame, long smooth fade to nothing — as ONE gradient (no stacked rings, no band).
+  // Full-window so the distance field is correct on every edge; 0 inside the hole so the
+  // window is untouched. Sits above the fill, below the glow rings.
+  //
+  ShaderEffect {
+    anchors.fill: parent
+    vertexShader: Qt.resolvedUrl("recess-shadow.vert.qsb")
+    fragmentShader: Qt.resolvedUrl("recess-shadow.frag.qsb")
+    blending: true
+    readonly property vector2d resolution: Qt.vector2d(width, height)
+    readonly property vector4d holeRect: Qt.vector4d(hole.x, hole.y, hole.width, hole.height)
+    readonly property real radius: win._r
+    readonly property real span: C.Appearance.frameRollSpan
+    readonly property real peakFrac: C.Appearance.frameRollEase
+    readonly property real maxAlpha: C.Appearance.frameHiA
+  }
+
+  //
   // INWARD GLOW / INNER BORDER: drawn inside the hole (so it points inward)
   //
 
@@ -106,33 +131,7 @@ PanelWindow {
     width: hole.width
     height: hole.height
 
-    // Edge curvature: the frame's inner lip catches light toward the content edge —
-    // brightest right at the lip and fading out into the frame — so the edge reads as
-    // a soft rounded roll rather than a flat cut. Drawn OUTWARD (negative margins) and
-    // FIRST, so the colored glow rings + crisp border still rim the edge on top.
-    Repeater {
-      model: C.Appearance.frameRollSpan
-      Rectangle {
-        anchors.fill: parent
-        anchors.margins: -index
-        radius: C.Appearance.frameRadius + index
-        color: "transparent"
-        border.width: 1
-        // Skewed falloff across the span (0 at the content lip → 1 at the outer edge):
-        // 0 right at the content edge (eases in, so no hard border line), a quick rise to
-        // a peak just INSIDE (toward the content), then a long slow decay out toward the
-        // outer edge. frameRollEase = peak position (smaller = closer to the content /
-        // more skewed inward). Gamma-shaped: x·e^(1-x).
-        border.color: {
-          var t = index / C.Appearance.frameRollSpan
-          var x = t / C.Appearance.frameRollEase
-          var a = C.Appearance.frameHiA * x * Math.exp(1 - x)
-          var rc = C.Appearance.frameRollColor
-          return Qt.rgba(rc.r, rc.g, rc.b, a)
-        }
-        antialiasing: true
-      }
-    }
+    // (Recess shadow now drawn by the SDF ShaderEffect above, not stacked rings here.)
 
     // Outer-most inner glow
     Rectangle {
