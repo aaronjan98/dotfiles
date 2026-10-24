@@ -44,13 +44,16 @@ Item {
   Rectangle {
     id: card
     width: parent.width
-    radius: C.Appearance.bubbleRadius
-    color: Qt.rgba(C.Appearance.bubbleBg.r, C.Appearance.bubbleBg.g, C.Appearance.bubbleBg.b, 0.82)
+    // Match the notification centre: the unified popup surface (same wallpaper tint as the
+    // frame and every other popup) and the tighter frame radius — bubbleRadius (s(17)) read
+    // as too round for a card.
+    radius: C.Appearance.frameRadius
+    color: C.Appearance.popupBg
     antialiasing: true
     clip: true
 
     border.width: 1
-    border.color: C.Appearance.fgA(0.12)
+    border.color: C.Appearance.borderCol
 
     implicitHeight: content.implicitHeight + root.px(20)
 

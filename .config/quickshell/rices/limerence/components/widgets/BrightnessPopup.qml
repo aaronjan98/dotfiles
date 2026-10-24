@@ -76,9 +76,9 @@ Item {
       id: panel
       width: pop.implicitWidth
       radius: 14
-      color: Qt.rgba(35/255, 26/255, 60/255, 0.97)
+      color: C.Appearance.popupBg
       border.width: 1
-      border.color: Qt.rgba(210/255, 190/255, 255/255, 0.35)
+      border.color: C.Appearance.borderCol
       antialiasing: true
 
       implicitHeight: content.implicitHeight + 24

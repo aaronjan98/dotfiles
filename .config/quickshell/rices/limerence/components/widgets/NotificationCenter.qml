@@ -15,12 +15,9 @@ Rectangle {
     return Math.round(n * root.scale_)
   }
 
-  readonly property color panelBg: Qt.rgba(
-    C.Appearance.bubbleBg.r,
-    C.Appearance.bubbleBg.g,
-    C.Appearance.bubbleBg.b,
-    0.78
-  )
+  // Share the one popup surface token so the notification centre matches every other popup
+  // and the frame tint (see Appearance.popupBg).
+  readonly property color panelBg: C.Appearance.popupBg
 
   Rectangle {
     anchors.fill: parent
@@ -30,7 +27,7 @@ Rectangle {
     clip: true
 
     border.width: 1
-    border.color: C.Appearance.fgA(0.10)
+    border.color: C.Appearance.borderCol
 
     ColumnLayout {
       anchors.fill: parent

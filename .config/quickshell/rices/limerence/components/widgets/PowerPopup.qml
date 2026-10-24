@@ -77,16 +77,8 @@ PanelWindow {
       antialiasing: true
       clip: true
 
-      // Less transparent (match WiFi popup readability)
+      // Unified popup surface — same token (hence same wallpaper tint) as every other popup.
       color: C.Appearance.popupBg
-
-      // Dark glaze
-      Rectangle {
-        anchors.fill: parent
-        radius: parent.radius
-        color: Qt.rgba(0, 0, 0, C.Appearance.popupOverlayA)
-        antialiasing: true
-      }
 
       border.width: C.Appearance.border
       border.color: C.Appearance.borderCol
