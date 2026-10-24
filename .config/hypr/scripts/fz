@@ -13,8 +13,19 @@ case "$(hostname)" in
   *)            font=11; width=40; lines=12 ;;    # thinkpad-t14 (1080p) + default
 esac
 
+# Wallpaper-adaptive colours: matugen (config.toml [templates.fuzzel]) renders a set of
+# fuzzel --colour flags to this cache file on every wallpaper change, so the launcher tracks
+# the wallpaper and the light/dark mode like the rest of the shell. Pass them BEFORE "$@" so
+# an explicit caller flag still wins. If the file is missing (matugen hasn't run yet) the
+# array is empty and fuzzel falls back to the static colours in fuzzel.ini. Only `--` lines
+# are taken, so the template's comment header is ignored.
+colors_file="$HOME/.cache/quickshell/fuzzel-colors"
+color_args=()
+[ -r "$colors_file" ] && mapfile -t color_args < <(grep '^--' "$colors_file")
+
 exec fuzzel \
   --font="JetBrainsMono Nerd Font:size=${font}" \
   --width="${width}" \
   --lines="${lines}" \
+  "${color_args[@]}" \
   "$@"

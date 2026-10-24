@@ -87,6 +87,12 @@ if command -v magick >/dev/null 2>&1; then
            -format '%[fx:0.299*r+0.587*g+0.114*b]' info: 2>/dev/null || true)"
   # Busyness: stddev of luminance 0..1 (uniform ~0.10, busy ~0.25-0.30).
   sdev="$(magick "$wp" -colorspace Gray -format '%[fx:standard_deviation]' info: 2>/dev/null || true)"
+  # Colourfulness: mean HSL saturation 0..1 (true B&W ~0.00-0.02, colourful 0.08+). matugen
+  # can't seed a hue from an achromatic image, so it falls back to a built-in blue; the
+  # shell reads this to pull the wallpaper-tinted accents back to neutral grey on B&W
+  # wallpapers (Appearance.qml wallSat / _neutralize). Downscaled for speed.
+  sat="$(magick "$wp" -resize '64x64' -colorspace HSL -channel g -separate \
+           -format '%[fx:mean]' info: 2>/dev/null || true)"
   [ -n "$lum" ] && mode="$(awk -v l="$lum" 'BEGIN{print (l>0.5)?"light":"dark"}')"
 
   # Intensity 0..1: how hard the wallpaper fights panel legibility. Weighted so the
@@ -94,8 +100,8 @@ if command -v magick >/dev/null 2>&1; then
   # Appearance _solid() ceiling expects. Bump the weights to react harder.
   intensity="$(awk -v l="${lum:-0.3}" -v s="${sdev:-0.15}" 'BEGIN{
     v = 0.75*l + 1.5*s; if (v<0) v=0; if (v>1) v=1; printf "%.3f", v }')"
-  printf '{"intensity": %s, "luminance": %s, "stddev": %s, "mode": "%s"}\n' \
-    "$intensity" "${lum:-0}" "${sdev:-0}" "$mode" > "$HOME/.cache/quickshell/surface.json"
+  printf '{"intensity": %s, "luminance": %s, "stddev": %s, "saturation": %s, "mode": "%s"}\n' \
+    "$intensity" "${lum:-0}" "${sdev:-0}" "${sat:-0}" "$mode" > "$HOME/.cache/quickshell/surface.json"
 
   # Drive Hyprland's (global) blur from the same intensity so blur rises with opacity.
   # t renormalises intensity to the 0.30..0.78 band the panels lerp over; size 4..8,
@@ -114,6 +120,23 @@ fi
 if command -v matugen >/dev/null 2>&1; then
   matugen image "$wp" --mode "$mode" >/dev/null 2>&1 \
     || echo "set-wallpapers: matugen failed; Quickshell palette not updated" >&2
+fi
+
+# Append fuzzel's background colour: the wallpaper's dominant `source` darkened by 0.80 — the
+# SAME factor the shell's Appearance.popupBg uses — so the launcher panel matches the other
+# popups (matugen's fuzzel template renders every other fuzzel colour but not this, since
+# matugen has no relative-darken filter). a3 ≈ 0.64 alpha, matching popupBg. Best-effort.
+colors_json="$HOME/.cache/quickshell/colors.json"
+fuzzel_colors="$HOME/.cache/quickshell/fuzzel-colors"
+if [ -r "$colors_json" ] && [ -f "$fuzzel_colors" ]; then
+  src="$("$JQ" -r '.source // empty' "$colors_json" 2>/dev/null)"
+  src="${src#\#}"
+  if [ "${#src}" -ge 6 ]; then
+    dr=$(( 16#${src:0:2} * 80 / 100 ))
+    dg=$(( 16#${src:2:2} * 80 / 100 ))
+    db=$(( 16#${src:4:2} * 80 / 100 ))
+    printf -- '--background-color=%02x%02x%02xa3\n' "$dr" "$dg" "$db" >> "$fuzzel_colors"
+  fi
 fi
 
 # Flip the terminals (and GTK apps) light/dark with the wallpaper. The global

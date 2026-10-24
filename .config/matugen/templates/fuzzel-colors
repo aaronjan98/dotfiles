@@ -1,0 +1,21 @@
+# matugen template — wallpaper-adaptive fuzzel colours.
+#
+# Rendered by set-wallpapers (via ~/.config/matugen/config.toml [templates.fuzzel]) to
+# ~/.cache/quickshell/fuzzel-colors on every wallpaper change. The ~/.config/hypr/scripts/fz
+# launcher reads this file and passes each line as a fuzzel flag, so fuzzel recolours to the
+# wallpaper (and flips light/dark with it) exactly like the Quickshell shell — instead of the
+# static purple hardcoded in fuzzel.ini (which stays only as the fallback if this file is
+# missing). hex_stripped gives RRGGBB; the trailing 2 hex digits are the alpha fuzzel wants.
+# NOTE: --background-color is NOT here — set-wallpapers appends it after matugen runs, using
+# the `source` dominant darkened by the same 0.80 factor as the shell's popupBg, so fuzzel's
+# panel matches the other popups. (matugen has no relative-darken filter.)
+--text-color={{colors.on_surface.default.hex_stripped}}ff
+--prompt-color={{colors.primary.default.hex_stripped}}ff
+--input-color={{colors.on_surface.default.hex_stripped}}ff
+--placeholder-color={{colors.on_surface_variant.default.hex_stripped}}aa
+--match-color={{colors.primary.default.hex_stripped}}ff
+--selection-color={{colors.secondary_container.default.hex_stripped}}ff
+--selection-text-color={{colors.on_secondary_container.default.hex_stripped}}ff
+--selection-match-color={{colors.primary.default.hex_stripped}}ff
+--border-color={{colors.outline.default.hex_stripped}}cc
+--counter-color={{colors.on_surface_variant.default.hex_stripped}}aa

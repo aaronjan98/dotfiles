@@ -12,3 +12,10 @@
 [templates.quickshell]
 input_path = "/home/aj/.config/matugen/templates/quickshell-colors.json"
 output_path = "/home/aj/.cache/quickshell/colors.json"
+
+# Wallpaper-adaptive fuzzel colours. Rendered to the cache; the ~/.config/hypr/scripts/fz
+# launcher passes each --flag line to fuzzel so the launcher matches the wallpaper (and
+# flips light/dark) like the shell, instead of the static purple in fuzzel.ini.
+[templates.fuzzel]
+input_path = "/home/aj/.config/matugen/templates/fuzzel-colors"
+output_path = "/home/aj/.cache/quickshell/fuzzel-colors"
