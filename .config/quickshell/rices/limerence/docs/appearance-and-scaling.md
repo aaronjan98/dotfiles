@@ -38,6 +38,53 @@ JSON is missing or caught mid-write, so the shell always has valid colours.
 To extend the recolour to other apps (kitty/GTK), add `[templates.*]` blocks to the
 matugen config — nothing in the shell changes.
 
+## Content-frame recess shadow (SDF shader)
+
+The soft shadow that makes the content read as recessed into the frame is drawn by a
+single `ShaderEffect` in `components/frame/ContentFrame.qml`, not by stacked rings.
+(It replaced an earlier glow-ring `Repeater` "roll" that could only ever render as a
+band/clip.) The shader is a signed-distance-field gradient:
+
+- **Files**: `components/frame/recess-shadow.frag` + `.vert`, compiled to `.frag.qsb`
+  / `.vert.qsb`. Qt6 loads the `.qsb`, so **both `.qsb` files must be committed** —
+  there is no build step. A matching vertex shader is required (the default
+  `ShaderEffect` vertex shader did not link `qt_TexCoord0` on the OpenGL backend), and
+  its UBO must be **byte-identical** to the fragment's. Recompile after editing:
+  ```bash
+  qsb --glsl "300es,330,440" --hlsl 50 --msl 12 -o recess-shadow.frag.qsb recess-shadow.frag
+  ```
+  (`qsb` ships with qtshadertools; find it under its `/nix/store/...-qtshadertools-*/bin/`.)
+- **Shape**: `sdRoundedBox` distance to the content hole; shadow is **darkest right at
+  the content-frame edge** and fades **outward** into the frame fill. The span
+  (`frameRollSpan`) is deliberately sized **larger than the thick frame edges**, so the
+  shadow is still fading when it reaches the screen edge and **bleeds off** instead of
+  ending inside the frame as a floating band.
+
+**Frame geometry reality (why bleed-off matters).** The frame fill is thick on the
+top/left (~53px — the bars reserve that via `topHFramework`/`leftW`) but a thin trim on
+the right/bottom (`framePadRight`/`framePadBottom` = `s(2)` ≈ 4px). A fade that reaches
+0 *within* the fill therefore collapses into an invisible sliver on the thin edges; the
+oversized span lets the near-edge part stay visible there (bleeds off the screen). Note
+also that a tiled/cell-quantised window floats *inside* the hole with gaps, so the
+shadow hugs the **frame (hole) edge**, not the window itself.
+
+**Tokens** (in `Appearance.qml`):
+- `frameHiA` — peak shadow alpha, **wallpaper-adaptive** (`0.78 − 0.85·wallLum`, clamped
+  0.15–0.60): faint on light wallpapers (a dark recess reads stark over a pale frame),
+  strong on dark ones where it would otherwise vanish. `wallLum` comes from
+  `~/.cache/quickshell/surface.json` (written by set-wallpapers, reloaded over the same
+  palette IPC).
+- `frameRollSpan` — outward reach in px (the oversized bleed-off span).
+- `frameRollEase` — falloff exponent (higher = mass skewed harder to the content edge).
+- `frameRollColor` / `frameRollTail` — legacy; the shader hardcodes black and ignores
+  the tail term.
+
+**Blur / namespace.** The content frame is a semi-transparent tint over a **crisp**
+(un-frosted) wallpaper. It sets `WlrLayershell.namespace: "quickshell-frame"`, and the
+Hyprland blur rules in `hypr/conf.d/30-look.conf` are anchored to `^quickshell$` so they
+match the bars/popups but **not** the frame. Without this, the recess shadow pushes the
+frame's alpha past the `ignorealpha` threshold and the whole frame gets frosted.
+
 ## What belongs in `Appearance.qml`
 
 Broadly, this file should own:
