@@ -69,11 +69,11 @@ also that a tiled/cell-quantised window floats *inside* the hole with gaps, so t
 shadow hugs the **frame (hole) edge**, not the window itself.
 
 **Tokens** (in `Appearance.qml`):
-- `frameHiA` — peak shadow alpha, **wallpaper-adaptive** (`0.78 − 0.85·wallLum`, clamped
-  0.15–0.60): faint on light wallpapers (a dark recess reads stark over a pale frame),
+- `frameHiA` — peak shadow alpha, **wallpaper-adaptive** (`0.70 − 0.85·wallLum`, clamped
+  0.12–0.52): faint on light wallpapers (a dark recess reads stark over a pale frame),
   strong on dark ones where it would otherwise vanish. `wallLum` comes from
   `~/.cache/quickshell/surface.json` (written by set-wallpapers, reloaded over the same
-  palette IPC).
+  palette IPC). `frameBg` (the tint it sits on) is `source` @ 0.42.
 - `frameRollSpan` — outward reach in px (the oversized bleed-off span).
 - `frameRollEase` — falloff exponent (higher = mass skewed harder to the content edge).
 - `frameRollColor` / `frameRollTail` — legacy; the shader hardcodes black and ignores
@@ -84,6 +84,55 @@ shadow hugs the **frame (hole) edge**, not the window itself.
 Hyprland blur rules in `hypr/conf.d/30-look.conf` are anchored to `^quickshell$` so they
 match the bars/popups but **not** the frame. Without this, the recess shadow pushes the
 frame's alpha past the `ignorealpha` threshold and the whole frame gets frosted.
+
+## Wallpaper-adaptive surfaces: tints, islands, popups, launcher
+
+Everything that tints over the wallpaper derives from the matugen palette and adapts per
+wallpaper. Three helpers in `Appearance.qml` do the shaping:
+
+- **`_neutralize(c)`** — grayscale guard. matugen can't extract a hue from a black-and-white
+  wallpaper, so its seed (`source`) falls back to a built-in **blue** (`#4285f4`); left alone,
+  every B&W wallpaper would give a blue frame/glow. `_neutralize` measures the wallpaper's
+  saturation (`wallSat`, from surface.json; tight band 0.02–0.07 via `_tintKill`) and, as it
+  approaches 0, blends the seeded colour toward a **grey at the wallpaper's own brightness**
+  (`wallLum`) — so a white-dominant B&W wallpaper gets a *white* frame, a dark one a *dark*
+  frame. Colourful wallpapers are untouched. Applied to `frameBg`, `borderCol`, `glow1/2/3`.
+- **`_darken(c, f)`** — relative RGB scale (used ×0.80 on `popupBg`). Relative on purpose: an
+  *absolute* lightness set would lighten an already-dark dominant colour.
+
+**Bar islands** (`bubbleBg`) key their fill opacity to wallpaper **busyness** (`wallStdev`),
+because busyness — not brightness — is what makes floating text/dots illegible. Smooth
+wallpaper (stddev ≤ ~0.14) → ~0.14 airy, near-transparent islands; busy (≥ ~0.24) → ~0.48,
+above the frost cutoff so Hyprland backs each island with a frosted-glass chip. Tone is
+`surface_container_highest` (light-grey glass), **not** `surface` (near-white → a solid white
+block at high alpha).
+
+**Every popup shares one surface.** `popupBg = _darken(_neutralize(_rgba("source", …, 0.64)),
+0.80)` — the **same `source` tint as the frame**, so popups read as the same material, a touch
+darker so they sit behind it. The 0.64 alpha is deliberately high enough that the tint wins
+over the (frosted) backdrop — at a low alpha a popup takes on whatever wallpaper is behind it
+(a toast in a red corner went red) instead of the frame colour. `WifiPopup`, `BluetoothPopup`,
+`BrightnessPopup`, `PowerPopup`, `NotificationCenter`, and `NotificationToast` all bind to
+`popupBg` + `borderCol` (previously they hardcoded a dark-purple panel, which in light mode was
+dark-text-on-dark). Notification toasts also use `frameRadius` (not the rounder `bubbleRadius`).
+
+**fuzzel** (Super+Space launcher) is a separate app — layer namespace **`launcher`**. It's made
+adaptive without touching its static `fuzzel.ini` (kept as the offline fallback):
+- matugen renders its text/prompt/selection/border colours from the palette via
+  `~/.config/matugen/templates/fuzzel-colors` (+ `[templates.fuzzel]` in the matugen config) to
+  `~/.cache/quickshell/fuzzel-colors`.
+- its **background** is appended by `set-wallpapers` as the dominant `source` **darkened by the
+  same 0.80** as `popupBg` (matugen has no relative-darken filter), so the launcher matches the
+  popups exactly.
+- `~/.config/hypr/scripts/fz` reads that cache file and passes each `--…` line as a flag (before
+  `"$@"`, so callers still override).
+- `30-look.conf` frosts `^launcher$` too, and the island/popup frost cutoff is `ignorealpha
+  0.30` (down from 0.55) so the thinner glass still frosts. The PowerPopup scrim (`0.28`) sits
+  just under 0.30 and stays unfrosted — mind that band when changing popup alphas.
+
+**`surface.json`** (written by set-wallpapers) now carries `intensity`, `luminance`, `stddev`,
+`saturation`, and `mode`; `Appearance.qml` reads them as `wallIntensity` / `wallLum` /
+`wallStdev` / `wallSat` and recomputes live over the palette IPC reload.
 
 ## What belongs in `Appearance.qml`
 
