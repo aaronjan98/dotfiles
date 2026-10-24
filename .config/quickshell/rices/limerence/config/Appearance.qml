@@ -86,6 +86,18 @@ QtObject {
   // Raw mean luminance of the wallpaper (0..1), used on its own to key the recess
   // shadow (see frameHiA) — brightness, unlike intensity, isn't inflated by busyness.
   property real wallLum: 0.5
+  // Mean saturation of the wallpaper (0..1), from surface.json. A black-and-white
+  // wallpaper sits near 0; matugen can't extract a hue from an achromatic image and falls
+  // back to its built-in blue seed (#4285f4), so without this the frame tint reads blue
+  // over a B&W wallpaper. _neutralize() uses it to pull the wallpaper-seeded accents back
+  // toward grey exactly when the wallpaper itself has (almost) no colour. Defaults high
+  // (treat as colourful) so the shell looks right before the first surface.json read.
+  property real wallSat: 0.3
+  // Busyness of the wallpaper (0..1 = stddev of luminance; uniform ~0.10, busy ~0.25-0.30),
+  // from surface.json. The bar islands key their fill opacity to this (see bubbleBg): a busy
+  // wallpaper is where floating text/icons lose legibility, so there the fill is pushed above
+  // the frost cutoff and Hyprland backs each island with frosted glass. Defaults mid.
+  property real wallStdev: 0.18
   property FileView _surfaceFile: FileView {
     path: Quickshell.env("HOME") + "/.cache/quickshell/surface.json"
     onLoaded: {
@@ -93,6 +105,8 @@ QtObject {
         var o = JSON.parse(text())
         if (o && typeof o.intensity === "number") appearance.wallIntensity = o.intensity
         if (o && typeof o.luminance === "number") appearance.wallLum = o.luminance
+        if (o && typeof o.saturation === "number") appearance.wallSat = o.saturation
+        if (o && typeof o.stddev === "number") appearance.wallStdev = o.stddev
       } catch (e) { /* keep last good on a partial write */ }
     }
   }
@@ -132,6 +146,31 @@ QtObject {
     return Qt.rgba(c.r, c.g, c.b, a)
   }
 
+  // How hard to neutralise the wallpaper-seeded accents: 1 (fully grey) for a truly
+  // achromatic wallpaper, ramping to 0 (untouched) once the wallpaper carries real colour.
+  // Tight band (0.02..0.07 mean saturation) so ONLY genuine B&W wallpapers get pulled;
+  // even a faintly-colourful wallpaper keeps its tint. See wallSat.
+  readonly property real _tintKill: {
+    var t = (wallSat - 0.02) / (0.07 - 0.02)
+    return t < 0 ? 1.0 : (t > 1 ? 0.0 : 1.0 - t)
+  }
+  // Blend a colour toward a GREY at the wallpaper's mean brightness (wallLum) by _tintKill,
+  // preserving alpha. On a colourful wallpaper _tintKill is 0 and the colour is returned
+  // unchanged, so this only bites on grayscale wallpapers — where it replaces matugen's
+  // fallback blue with a neutral grey that MATCHES the wallpaper's dominant tone: white on a
+  // white-dominant B&W wallpaper, dark on a dark one (not a fixed mid-grey).
+  function _neutralize(c) {
+    if (_tintKill <= 0) return c
+    return Qt.rgba(c.r + (wallLum - c.r)*_tintKill,
+                   c.g + (wallLum - c.g)*_tintKill,
+                   c.b + (wallLum - c.b)*_tintKill, c.a)
+  }
+  // Scale a colour's RGB toward black by factor f (<1 darkens), preserving alpha. Relative,
+  // so it darkens every wallpaper's tint by the same proportion (unlike an absolute lightness
+  // set, which would lighten an already-dark dominant colour). set-wallpapers applies the
+  // SAME 0.80 factor to fuzzel's background so the launcher matches these popups.
+  function _darken(c, f) { return Qt.rgba(c.r*f, c.g*f, c.b*f, c.a) }
+
   // Which scheme matugen gave us. set-wallpapers picks --mode by wallpaper
   // luminance, so on a light wallpaper `on_surface` comes back DARK and on a dark
   // wallpaper it comes back LIGHT. Deriving the mode from the text colour means the
@@ -164,31 +203,39 @@ QtObject {
   // Semi-opaque wallpaper-tinted overlay, like main's 0.55 frame but in the wallpaper's
   // dominant colour (`source`) so it's light on light wallpapers instead of main's dark
   // purple. Kept BELOW the `ignorealpha 0.55` cutoff (30-look.conf) so it is NOT frosted —
-  // a sharp see-through overlay, no gloss. At ~0.5 opacity it's a real surface, so the
-  // recess shadow reads as a soft inset rather than a floating band.
-  property color frameBg:   _rgba("source",    "#141023", 0.50)
-  property color borderCol: _rgba("primary",   "#d2beff", isDark ? 0.35 : 0.50)
-  property color glow1:     _rgba("primary",   "#a078ff", isDark ? 0.27 : 0.22)
-  property color glow2:     _rgba("tertiary",  "#78beff", isDark ? 0.12 : 0.14)
-  property color glow3:     _rgba("secondary", "#ff8cdc", isDark ? 0.08 : 0.10)
+  // a sharp see-through overlay, no gloss. At ~0.42 opacity it's a real surface but leans
+  // see-through, so both the tint and the recess shadow read subtle rather than as a slab.
+  // All five are wallpaper-seeded, so all five go through _neutralize: on a B&W wallpaper
+  // they collapse to grey (no stray blue frame/glow from matugen's fallback seed); on a
+  // colourful wallpaper _neutralize is a no-op and they keep the wallpaper's hue.
+  property color frameBg:   _neutralize(_rgba("source",    "#141023", 0.42))
+  property color borderCol: _neutralize(_rgba("primary",   "#d2beff", isDark ? 0.35 : 0.50))
+  property color glow1:     _neutralize(_rgba("primary",   "#a078ff", isDark ? 0.27 : 0.22))
+  property color glow2:     _neutralize(_rgba("tertiary",  "#78beff", isDark ? 0.12 : 0.14))
+  property color glow3:     _neutralize(_rgba("secondary", "#ff8cdc", isDark ? 0.08 : 0.10))
 
   // ---- bubbles ----
-  // Islands (bar pills, bubbles, notifications) sit a clear step up the tonal
-  // ladder from the frame backdrop (surface) and are more opaque than it (0.62 >
-  // frameBg's 0.55) so they read as raised chips rather than translucent patches.
-  // Islands are translucent glass: the Hyprland `layerrule = blur, quickshell` frosts
-  // the wallpaper behind this low-opacity fill, so the pills read as frosted glass
-  // rather than flat chips (no bevel gradient). Notifications override this alpha for
-  // readability, so lowering it here only affects the bar islands/bubbles.
-  // Islands go FULLY TRANSPARENT on bright wallpapers. Key mechanism: the
-  // `layerrule = ignorealpha 0.1, quickshell` means Hyprland skips the blur wherever the
-  // panel is >~90% transparent — so an island at alpha 0 shows the RAW, unblurred,
-  // un-dimmed wallpaper and matches it exactly (bright). The earlier darkness came from
-  // alpha ~0.2, ABOVE that 0.1 cutoff, where the island got the blur (dimmed for ghostty)
-  // and read dark. So ramp the island fill to 0 on bright wallpapers (pills become their
-  // border + text floating on the wallpaper) and keep the dark-wallpaper end frosted
-  // (0.40 surface_container_high) where a translucent dark fill over blur looks right.
-  property color bubbleBg: _rgba(isDark ? "surface_container_high" : "surface", "#2a2047", _byWall(0.40, 0.0))
+  // Island (bar pill / bubble) fill opacity, keyed to wallpaper BUSYNESS (wallStdev), which
+  // is what actually governs legibility: text and workspace dots floating on a *smooth*
+  // wallpaper read fine, but on a *busy* one they sit on a jumble of light and dark pixels
+  // and disappear. So instead of the old "fade to nothing on bright wallpapers" (which did
+  // the opposite of what busy wallpapers need), the fill RISES with busyness:
+  //   • smooth wallpaper (stddev ≤ ~0.14) → ~0.14 alpha: airy, near-transparent islands.
+  //   • busy wallpaper (stddev ≥ ~0.24)   → ~0.48 alpha: ABOVE the `ignorealpha 0.30` cutoff
+  //     in 30-look.conf, so Hyprland frosts the wallpaper behind each island — but a THIN
+  //     glass, so the blurred wallpaper still shows through and the island takes on the
+  //     wallpaper's own colours/tone (matches it) rather than sitting under an opaque slab.
+  // The crossover (~0.19 stddev) is where a wallpaper starts to need the glass. Notifications
+  // override this alpha for their own readability, so this only tunes the bar islands/bubbles.
+  readonly property real _bubbleA: {
+    var t = (wallStdev - 0.14) / (0.24 - 0.14)
+    if (t < 0) t = 0; else if (t > 1) t = 1
+    return 0.14 + (0.48 - 0.14) * t
+  }
+  // Tone: surface_container_highest (NOT the near-white `surface`) so a frosted island reads
+  // as light-grey glass, matching the popups — at high alpha `surface` would be a solid white
+  // block instead of glass.
+  property color bubbleBg: _rgba("surface_container_highest", "#2a2047", _bubbleA)
 
   // Content-frame edge curvature: the inner lip catches light toward the content edge
   // (brightest at the lip, fading out into the frame), so the edge reads as a soft
@@ -203,10 +250,13 @@ QtObject {
   readonly property real frameHiA: {
     // Peak shadow alpha at the content-frame edge, keyed to wallpaper LUMINANCE (wallLum,
     // 0..1 from surface.json). A dark recess reads stark over a light wallpaper, so fade
-    // it right down on pale ones (~0.19 at wallLum 0.69) and let it go strong on dark ones
-    // (up to 0.60) where it would otherwise disappear. Linear + clamped.
-    var a = 0.78 - 0.85 * wallLum;
-    return a < 0.15 ? 0.15 : (a > 0.60 ? 0.60 : a);
+    // it right down on pale ones (~0.12 at wallLum 0.69) and let it go strong on dark ones
+    // (up to 0.52) where it would otherwise disappear. Linear + clamped. The whole curve
+    // sits a notch below its first tuning (intercept 0.78→0.70, clamp 0.15–0.60→0.12–0.52)
+    // to make the recess subtler across ALL wallpapers while keeping the dark-darker /
+    // light-lighter dynamic.
+    var a = 0.70 - 0.85 * wallLum;
+    return a < 0.12 ? 0.12 : (a > 0.52 ? 0.52 : a);
   }
   // Colour of the edge roll. Black reads as a true shadow (content recessed into a shaded
   // well); see recess-shadow.frag, which hardcodes black — this is kept for reference.
@@ -230,7 +280,17 @@ QtObject {
   // ---- popups ----
   // More opaque than bubbleBg for readability, and one tone above the islands so a
   // popup still separates from any island chips inside it.
-  property color popupBg: _rgba("surface_container_highest", "#2f2452", _byWall(0.82, 0.74))
+  // Popup surface — the SAME wallpaper tint as the content frame: frameBg's `source` role,
+  // neutralised identically, but more opaque (0.64 vs the frame's 0.42). The higher alpha is
+  // deliberate: popups are large frosted panels that can sit over ANY part of the wallpaper
+  // (a toast in a red corner, a menu over green), and at a low alpha the blurred backdrop
+  // dominates the hue so the panel takes on whatever is behind it instead of the frame tint.
+  // 0.64 lets the source tint win, so every popup reads the same tint regardless of backdrop.
+  // _darken(…, 0.80) then takes it a tad DARKER than the raw dominant colour (the frame uses
+  // the dominant at full brightness) so the panels sit visually behind the frame. EVERY popup
+  // (wifi / bluetooth / brightness / power / notification centre / toasts) binds to this ONE
+  // token, so they match each other; set-wallpapers darkens fuzzel's bg by the same 0.80.
+  property color popupBg: _darken(_neutralize(_rgba("source", "#2f2452", 0.64)), 0.80)
   property real popupOverlayA: 0.28
 
   // Popup geometry tokens used all over Wifi/Bluetooth/Brightness/Power popups
