@@ -1,6 +1,11 @@
 /* ============================================================
    userChrome.css — minimal chrome for Hyprland
-   Profile: c3r3xk2q.default (the active profile per profiles.ini)
+
+   Canonical copy. Firefox profile folders carry a random per-install salt,
+   so this doesn't live inside one directly — ~/.config/hypr/scripts/
+   firefox-userchrome-link symlinks it into whichever profile profiles.ini
+   currently marks Default, re-run at every Hyprland startup. Don't edit a
+   copy inside ~/.mozilla/firefox/*/chrome/ directly; it'll be replaced.
 
    Requires: toolkit.legacyUserProfileCustomizations.stylesheets = true
    That pref is set declaratively by programs.firefox.autoConfig in

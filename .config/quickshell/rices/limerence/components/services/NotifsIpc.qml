@@ -19,6 +19,7 @@ Item {
     // optional helpers
     function dismiss(nid: int): void { Sv.Notifs.dismiss(nid) }
     function invoke(nid: int, key: string): void { Sv.Notifs.invoke(nid, key) }
+    function markInvoked(nid: int, key: string): void { Sv.Notifs.markInvoked(nid, key) }
   }
 }
 

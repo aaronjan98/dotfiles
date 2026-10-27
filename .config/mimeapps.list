@@ -1,5 +1,6 @@
 
 [Default Applications]
+inode/directory=org.gnome.Nautilus.desktop
 x-scheme-handler/discord=vesktop.desktop
 image/png=org.kde.gwenview.desktop
 image/jpeg=org.kde.gwenview.desktop

@@ -20,9 +20,17 @@ Item {
   property alias popups: popupModel
 
   property var _objById: ({})
+  // nid -> invoked action key. Lifted out of the button delegate so the toast and
+  // the notification center show the same "approved" state for one notification.
+  // Reassigned (not mutated) on change so QML bindings re-evaluate.
+  property var invokedIds: ({})
 
   NotificationServer {
     id: server
+    // Advertise the "actions" capability so senders (notify-send --action, apps)
+    // emit action buttons instead of being told actions are unsupported. The
+    // toast already renders actionsNorm_ and invokes them over the bus.
+    actionsSupported: true
     onNotification: (n) => root._onNotif(n)
   }
 
@@ -38,6 +46,7 @@ Item {
 
     function dismiss(nid: int): void { root.dismiss(nid) }
     function invoke(nid: int, key: string): void { root.invoke(nid, key) }
+    function markInvoked(nid: int, key: string): void { root.markInvoked(nid, key) }
   }
 
   Process {
@@ -77,26 +86,37 @@ Item {
   function _normalizeActions(n) {
     const a = n.actions
     if (!a) return []
+    // n.actions is a QList<NotificationAction*>, not a JS array — Array.isArray is
+    // false for it, so iterate by index/length. Each item exposes identifier/text;
+    // also tolerate the legacy alternating [key, label, ...] string form.
+    const len = a.length
+    if (len === undefined || len === null || len <= 0) return []
 
-    if (Array.isArray(a) && a.length >= 2 && typeof a[0] === "string") {
-      const out = []
-      for (let i = 0; i + 1 < a.length; i += 2) out.push({ key: "" + a[i], label: "" + a[i + 1] })
-      return out
-    }
-
-    if (Array.isArray(a) && a.length > 0 && typeof a[0] === "object") {
-      const out = []
-      for (let i = 0; i < a.length; i++) {
-        const it = a[i]
-        if (!it) continue
-        const key = _firstNonEmpty(it.key, it.id, it.identifier, it.action, it.name)
-        const label = _firstNonEmpty(it.label, it.text, it.title, key)
-        if (key.length > 0) out.push({ key, label })
+    const out = []
+    for (let i = 0; i < len; i++) {
+      const it = a[i]
+      if (it === undefined || it === null) continue
+      if (typeof it === "string") {
+        const skey = it
+        const slabel = (typeof a[i + 1] === "string") ? a[++i] : skey
+        if (skey.length > 0) out.push({ key: skey, label: slabel })
+        continue
       }
-      return out
+      const key = _firstNonEmpty(it.identifier, it.key, it.id, it.action, it.name)
+      const label = _firstNonEmpty(it.text, it.label, it.title, key)
+      if (key.length > 0) out.push({ key, label })
     }
+    return out
+  }
 
-    return []
+  // Live, normalized actions for a delegate, looked up by notification id. A
+  // ListModel can't faithfully store a JS array-of-objects (it degrades to a
+  // child model exposing .count, not .length), so the toast's length check would
+  // fail on the stored copy — recompute from the live notification object here.
+  function actionsFor(nid) {
+    const obj = _objById[nid]
+    if (!obj) return []
+    return _normalizeActions(obj)
   }
 
   function _entry(n) {
@@ -147,6 +167,12 @@ Item {
   }
 
   function _onNotif(n) {
+    // Retain the notification on the D-Bus server. Without this Quickshell drops
+    // it as soon as this handler returns, closing it immediately — senders using
+    // --wait (notify-send --action) return at once and actions can never be
+    // invoked. Tracked notifications live until we expire/dismiss them below.
+    try { n.tracked = true } catch (e) {}
+
     const e = _entry(n)
     _objById[e.nid] = n
 
@@ -173,13 +199,36 @@ Item {
     if (ms === undefined || ms === null || ms <= 0) ms = 6000
     if (e.urgency === NotificationUrgency.Critical) return
 
-    const t = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
-    t.interval = ms
-    t.triggered.connect(() => {
+    // Decouple on-screen time from bus lifetime: the toast auto-hides after a
+    // short cap, but a long-lived notification stays alive on the bus for its
+    // full timeout so its actions remain invokable from the notification center
+    // (a waiting sender — notify-send --action — only returns once we expire it).
+    const VISUAL_CAP = 15000
+    const visualMs = Math.min(ms, VISUAL_CAP)
+    const expireOnVisual = (ms <= visualMs)
+
+    const tv = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
+    tv.interval = visualMs
+    tv.triggered.connect(() => {
       _remove(popupModel, e.nid)
-      t.destroy()
+      if (expireOnVisual) {
+        const obj = _objById[e.nid]
+        if (obj) { try { obj.expire() } catch (err) {} }
+      }
+      tv.destroy()
     })
-    t.start()
+    tv.start()
+
+    if (!expireOnVisual) {
+      const tb = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
+      tb.interval = ms
+      tb.triggered.connect(() => {
+        const obj = _objById[e.nid]
+        if (obj) { try { obj.expire() } catch (err) {} }
+        tb.destroy()
+      })
+      tb.start()
+    }
   }
 
   function openCenter() {
@@ -198,8 +247,15 @@ Item {
   function dismiss(nid) {
     const obj = _objById[nid]
     if (obj) {
-      try { if (obj.close) obj.close() } catch (e) {}
+      // Notification exposes dismiss()/expire(), not close(); dismiss() is the
+      // explicit user-closed path. Keeps tracked notifications from lingering.
+      try { if (obj.dismiss) obj.dismiss(); else if (obj.close) obj.close() } catch (e) {}
       delete _objById[nid]
+    }
+    if (root.invokedIds[nid] !== undefined) {
+      const next = Object.assign({}, root.invokedIds)
+      delete next[nid]
+      root.invokedIds = next
     }
     _remove(historyModel, nid)
     _remove(popupModel, nid)
@@ -207,12 +263,24 @@ Item {
 
   function clearAll() {
     for (let k in _objById) {
-      try { if (_objById[k] && _objById[k].close) _objById[k].close() } catch (e) {}
+      const o = _objById[k]
+      try { if (o && o.dismiss) o.dismiss(); else if (o && o.close) o.close() } catch (e) {}
     }
     _objById = ({})
+    root.invokedIds = ({})
     historyModel.clear()
     popupModel.clear()
     root.unread = 0
+  }
+
+  // Mark an action approved in the UI without invoking it. Used when the action
+  // was already handled elsewhere (e.g. the command was run from the Context Forge
+  // UI) so the toast/center button reflects it without re-triggering the sender.
+  function markInvoked(nid, key) {
+    if (nid === undefined || nid === null || !key) return
+    const next = Object.assign({}, root.invokedIds)
+    next[nid] = "" + key
+    root.invokedIds = next
   }
 
   function invoke(nid, key) {
@@ -227,7 +295,17 @@ Item {
           const a = obj.actions[i]
           if (!a) continue
           const k = _firstNonEmpty(a.key, a.id, a.identifier, a.action, a.name)
-          if (k === key && a.invoke) { a.invoke(); return }
+          if (k === key && a.invoke) {
+            // Leave the toast up so its button can show an "approved" state; the
+            // notification's own expire timer clears it shortly after.
+            a.invoke()
+            // Record the invoked action so every view of this notification (toast
+            // and center) reflects it. New object so the binding re-evaluates.
+            const next = Object.assign({}, root.invokedIds)
+            next[nid] = key
+            root.invokedIds = next
+            return
+          }
         }
       }
     } catch (e) {}
@@ -238,7 +316,7 @@ Item {
     const p = "" + pid
     if (p.length === 0) return
     hyprctl.command = ["hyprctl", "dispatch", "focuswindow", "pid:" + p]
-    hyprctl.start()
+    hyprctl.startDetached()
   }
 
   function activate(nid) {

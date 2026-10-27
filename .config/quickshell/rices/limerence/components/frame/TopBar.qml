@@ -6,6 +6,7 @@ import QtQuick.Layouts
 
 import "../../config" as C
 import "../widgets" as W
+import "../services" as Sv
 import "../state" as S
 
 PanelWindow {
@@ -190,6 +191,15 @@ PanelWindow {
       onDismissed: root.brightPopupOpen = false
     }
 
+    W.ClipboardPopup {
+      parentWindow: root
+    }
+
+    W.ObsPopup {
+      parentWindow: root
+    }
+
+
     // ---- LEFT: CPU + Mem ----
     Item {
       id: leftIsland
@@ -332,6 +342,23 @@ PanelWindow {
           }
         }
       }
+    }
+
+    // ---- standalone application icons, outside the right island ----
+    Row {
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.verticalCenterOffset: root.islandYOffset
+      anchors.right: rightIsland.left
+      anchors.rightMargin: C.Appearance.m8
+      spacing: C.Appearance.m8
+
+      W.ObsIcon {
+        onClicked: Sv.ObsCtl.toggleWindow()
+        onMenuRequested: Sv.ObsCtl.toggle()
+      }
+      W.ClipboardIcon { onClicked: Sv.ClipboardCtl.toggle() }
+      W.NotetakeIcon { }
+      W.HypridleIcon { }
     }
   }
 }
