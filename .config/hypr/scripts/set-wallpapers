@@ -142,19 +142,33 @@ fi
 # Flip the terminals (and GTK apps) light/dark with the wallpaper. The global
 # GNOME colour-scheme key is the pivot: ghostty watches the desktop portal that
 # this key feeds and swaps its rice-light/rice-dark themes live (no reload), and
-# GTK apps follow too. kitty doesn't follow the portal, so repoint its active
-# palette symlink (kitty.conf `include`s colors-active.conf) and send SIGUSR1 to
-# reload every running kitty in place. Obsidian (Electron) also watches this key
-# via its own `prefers-color-scheme`/matchMedia support — as long as its "Base
-# color scheme" setting is "Adapt to system" — so it needs no handling here; its
-# "theme-glass" snippet is scoped per `.theme-dark`/`.theme-light` instead of
-# forcing one look on both, so Obsidian's own class flip is enough. RStudio has
-# no live-reload path at all (confirmed: it never re-applies a changed
-# editor_theme pref to an already-open window, no matter how the pref is set),
-# so there's no point trying to make it instant — just keep rstudio-prefs.json
-# correct so every launch opens in the right mode. All best-effort.
+# most GTK apps follow too. kitty doesn't follow the portal, so repoint its
+# active palette symlink (kitty.conf `include`s colors-active.conf) and send
+# SIGUSR1 to reload every running kitty in place. Obsidian (Electron) also
+# watches this key via its own `prefers-color-scheme`/matchMedia support — as
+# long as its "Base color scheme" setting is "Adapt to system" — so it needs no
+# handling here; its "theme-glass" snippet is scoped per
+# `.theme-dark`/`.theme-light` instead of forcing one look on both, so
+# Obsidian's own class flip is enough. RStudio has no live-reload path at all
+# (confirmed: it never re-applies a changed editor_theme pref to an
+# already-open window, no matter how the pref is set), so there's no point
+# trying to make it instant — just keep rstudio-prefs.json correct so every
+# launch opens in the right mode.
+#
+# Firefox's chrome (toolbar/menus) reads the actual GTK theme NAME, not just
+# the color-scheme hint (confirmed via `dconf dump /org/gnome/desktop/interface/`
+# — color-scheme was flipping correctly the whole time, but gtk-theme was
+# hardcoded at "Adwaita-dark" and the chrome never saw anything else), so it
+# has to flip too, to whichever of the two bundled Adwaita variants matches
+# the mode. Getting WEBSITE content to follow along as well needed a second,
+# separate fix — forcing widget.use-xdg-desktop-portal.settings on via
+# ~/nixos-config/hosts/common/firefox-autoconfig.js, see the comment there.
+# All best-effort.
 if command -v gsettings >/dev/null 2>&1; then
   gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode" >/dev/null 2>&1 || true
+  gtk_theme="Adwaita"
+  [ "$mode" = "dark" ] && gtk_theme="Adwaita-dark"
+  gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" >/dev/null 2>&1 || true
 fi
 kitty_dir="$HOME/.config/kitty"
 if [ -e "$kitty_dir/colors-$mode.conf" ]; then
