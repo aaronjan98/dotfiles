@@ -144,7 +144,15 @@ fi
 # this key feeds and swaps its rice-light/rice-dark themes live (no reload), and
 # GTK apps follow too. kitty doesn't follow the portal, so repoint its active
 # palette symlink (kitty.conf `include`s colors-active.conf) and send SIGUSR1 to
-# reload every running kitty in place. All best-effort.
+# reload every running kitty in place. Obsidian (Electron) also watches this key
+# via its own `prefers-color-scheme`/matchMedia support — as long as its "Base
+# color scheme" setting is "Adapt to system" — so it needs no handling here; its
+# "theme-glass" snippet is scoped per `.theme-dark`/`.theme-light` instead of
+# forcing one look on both, so Obsidian's own class flip is enough. RStudio has
+# no live-reload path at all (confirmed: it never re-applies a changed
+# editor_theme pref to an already-open window, no matter how the pref is set),
+# so there's no point trying to make it instant — just keep rstudio-prefs.json
+# correct so every launch opens in the right mode. All best-effort.
 if command -v gsettings >/dev/null 2>&1; then
   gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode" >/dev/null 2>&1 || true
 fi
@@ -152,6 +160,15 @@ kitty_dir="$HOME/.config/kitty"
 if [ -e "$kitty_dir/colors-$mode.conf" ]; then
   ln -sfn "colors-$mode.conf" "$kitty_dir/colors-active.conf"
   pkill -USR1 kitty >/dev/null 2>&1 || true
+fi
+rstudio_prefs="$HOME/.config/rstudio/rstudio-prefs.json"
+if [ -e "$rstudio_prefs" ] && command -v "$JQ" >/dev/null 2>&1; then
+  rstudio_theme="Cobalt"
+  [ "$mode" = "light" ] && rstudio_theme="Paper Light"
+  "$JQ" --arg theme "$rstudio_theme" '.editor_theme = $theme' "$rstudio_prefs" \
+    > "$rstudio_prefs.tmp" 2>/dev/null \
+    && mv "$rstudio_prefs.tmp" "$rstudio_prefs" \
+    || rm -f "$rstudio_prefs.tmp"
 fi
 
 # Poke Quickshell to re-read the palette + surface (opacity) files live. We can't rely
