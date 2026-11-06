@@ -185,6 +185,20 @@ if [ -e "$rstudio_prefs" ] && command -v "$JQ" >/dev/null 2>&1; then
     || rm -f "$rstudio_prefs.tmp"
 fi
 
+# btop: same "correct on next launch" deal as RStudio above — no live-reload
+# path either (no config-file watch, no reload signal), but btop is normally
+# only open for a short scratchpad session (Super+Shift+B) rather than left
+# running for hours, so this is less of a loss here. Themes live in
+# ~/.config/btop/themes/ (copied out of the nix store so the reference
+# doesn't break on the next btop version bump) and are referenced by bare
+# name — btop resolves that against its own themes dir.
+btop_conf="$HOME/.config/btop/btop.conf"
+if [ -e "$btop_conf" ]; then
+  btop_theme="HotPurpleTrafficLight"
+  [ "$mode" = "light" ] && btop_theme="paper"
+  sed -i "s/^color_theme = .*/color_theme = \"$btop_theme\"/" "$btop_conf"
+fi
+
 # Poke Quickshell to re-read the palette + surface (opacity) files live. We can't rely
 # on its file watch: matugen writes colors.json atomically (temp + rename), which
 # replaces the inode and defeats inotify. The shell exposes an IPC target for this.
