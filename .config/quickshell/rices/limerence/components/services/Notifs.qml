@@ -25,6 +25,11 @@ Item {
   // Reassigned (not mutated) on change so QML bindings re-evaluate.
   property var invokedIds: ({})
 
+  // Apps whose notifications may render action buttons. Advertising the "actions"
+  // capability (needed for Context Forge's Approve) makes every app send actions,
+  // so without this allowlist Discord et al. show stray View/Activate buttons.
+  readonly property var actionButtonApps: ["Context Forge"]
+
   NotificationServer {
     id: server
     // Advertise the "actions" capability so senders (notify-send --action, apps)
@@ -116,7 +121,10 @@ Item {
   function actionsFor(nid) {
     const obj = _objById[nid]
     if (!obj) return []
-    return _normalizeActions(obj)
+    // Only opted-in apps get visible action buttons (see actionButtonApps).
+    if (root.actionButtonApps.indexOf(_s(obj.appName)) < 0) return []
+    // The "default" action is the click-anywhere activation, not a button.
+    return _normalizeActions(obj).filter(a => a.key !== "default")
   }
 
   function _entry(n) {
