@@ -267,6 +267,13 @@ PanelWindow {
       }
     }
 
+    // ----- Kanata mode island (project-memory/kanata-island.md, Phase 1) -----
+    W.KanataIsland {
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.bottom: powerIcon.top
+      anchors.bottomMargin: C.Appearance.m6
+    }
+
     // ----- Bottom power button -----
     W.PowerIcon {
       id: powerIcon

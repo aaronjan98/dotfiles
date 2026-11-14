@@ -306,6 +306,21 @@ QtObject {
   property int popupWidthWide: s(380)
   property int popupMaxHeight: s(420)
 
+  // ---- kanata mode island ----
+  // Per-mode tints for the left-bar Kanata mode pill (project-memory/kanata-island.md).
+  // Mapped to distinct matugen roles (not a single hue at different alphas) so the
+  // three modes stay visually distinct from each other AND still theme-flip with the
+  // wallpaper, same as every other colour in this file. `error` has no guaranteed
+  // generated role in the current matugen config, hence the fixed amber fallback for
+  // the not-yet-implemented launcher mode.
+  readonly property color modeColDefault: _c("primary", "#8ad6b8")
+  readonly property color modeColCaps: _c("secondary", "#b3ccc0")
+  readonly property color modeColMaj: _c("tertiary", "#a7cce0")
+  readonly property color modeColLauncher: _c("error", "#e0b84a")
+
+  property int modeCellSize: s(18)   // square cell each mode letter sits in
+  property int modeCellGap: s(2)
+
   // ---- pills ----
   property int pillPadX: s(10)
   property int pillPadY: s(2)

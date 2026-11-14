@@ -322,33 +322,40 @@ Relevant files:
 - New: `rices/limerence/components/widgets/CalendarPopup.qml`
 - New: `rices/limerence/components/services/CalendarService.qml`
 
-### Left bar: Kanata mode indicator island
+### Left bar: Kanata mode + language island
+**Full spec: `project-memory/kanata-island.md`** — read it before implementing. It records
+the verified Kanata TCP protocol, which layers are real modes, and the focus constraint
+that governs the accent flow.
+
 Goal:
-- Add a pill-shaped island between the NixOS favicon (CornerPatch) and the vertical workspace island
-- Displays the current Kanata layer as a vertically-stacked set of mode letters with a sliding bubble indicator over the active one
-- The entire island changes color per mode for at-a-glance identification without reading the letter
-- Island is interactive: clicking a letter switches Kanata to that mode (bidirectional, not read-only)
+- A two-pill island in the **bottom-left** corner (above the power icon), not the top-left
+- **Mode pill** (on top): current Kanata layer as stacked letters with a sliding selection
+  bubble; the pill tints per mode. Clicking a letter switches layer (bidirectional)
+- **Language pill** (behind, offset down, darker fill, same rounded shape): active accent
+  language (`en`/`es`/`pt`) with its own selection bubble. Always visible, nothing expands
+- Language decides which character AltGr+vowel types **immediately**, replacing the current
+  `accent-pick` flow where nothing is typed until you choose from a fuzzel popup
 
-Mode letters (top to bottom):
-- **N** — Normal (default layer)
-- **C** — CapsLock layer
-- **M** — Major layer
-- **L** — Launcher mode (not yet implemented in Kanata — see nixos-config ROADMAP)
-- Additional modes (e.g. script-execution mode) to be added as they are implemented
+Mode letters: **N** default, **C** capslayer, **M** majlayer, **L** launcher (future).
+`arrows` and `nums` are deliberately excluded — they are `layer-while-held`, so they would
+flicker during normal typing and are meaningless as click targets.
 
-Profile switcher:
-- A down-arrow button below the mode letters
-- Tapping it expands an inline list of available Kanata profiles (separate `.kbd` files; currently planned: `aj`, `default`)
-- Clicking a profile in the list switches to it and collapses the list; tapping the arrow again also cycles and collapses
+Phases:
+1. **Done**: Kanata TCP server on port 7979 (`services.kanata.keyboards.internal.port`
+   in nixos-config, not a `.kbd` edit) + `kanata-ctl-daemon.py` bridge, built and tested
+   against a mock server reproducing kanata's exact wire protocol. Still needed:
+   `KanataCtl.qml` + the mode pill widget + an actual `nixos-rebuild switch` to confirm
+   the daemon against the real kanata process.
+2. Language pill + the type-default-then-arrow-key-to-refine accent engine
+   (Hyprland `accent` submap + `wtype`, display-only panel with **no keyboard focus**).
 
-Communication with Kanata:
-- Requires Kanata TCP server (`tcp-port` in `defcfg`) for bidirectional control — receiving layer-change events AND sending switch-layer/switch-profile commands
-- Preferred implementation: a Quickshell `Process` or `Socket` service that connects to the Kanata TCP socket, parses layer-change messages, and sends commands on user interaction
-- See nixos-config ROADMAP for the required Kanata config changes (TCP port, launcher layer, profile files)
+The `aj`/`default` profile switcher is deferred — a third axis of state, and
+`kanata-default.kbd` doesn't exist yet.
 
 Relevant files:
-- `rices/limerence/components/frame/LeftBar.qml` — host; island goes between CornerPatch gap and workspace BubbleItem
+- `rices/limerence/components/frame/LeftBar.qml` — host; anchors above `PowerIcon`
 - `rices/limerence/config/Appearance.qml` — add per-mode color tokens
+- See nixos-config ROADMAP for the Kanata config changes
 
 ### Left bar: app launcher dock between workspace island and power button
 Goal:
