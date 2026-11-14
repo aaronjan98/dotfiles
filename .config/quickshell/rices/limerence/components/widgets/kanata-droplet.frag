@@ -12,6 +12,15 @@
 // even with identical antialiasing width, because there's no straight edge for
 // the eye to lock onto.
 //
+// A texture-sampling "lens" version of this (sampling the backdrop+letters
+// through a ShaderEffectSource and boosting their own alpha, instead of
+// painting a flat tint) was tried and REJECTED on sight, not just tuning: the
+// letters visibly doubled/ghosted at the mask's antialiased edge (the dim
+// original and the boosted sampled copy both partially visible there,
+// slightly misaligned), the lens read as too bright/flat, and the rim read as
+// a thick border once the interior was that bright too. Reverted back to this
+// flat-tint version, which is the one actually liked.
+//
 // This build has no QtQuick.Effects/Qt5Compat.GraphicalEffects/QtQuick.Shapes
 // (checked all three), so there is no blur/radial-gradient/arc primitive to
 // reach for at the QML level -- this is the same reasoning that led to
@@ -27,7 +36,7 @@ layout(std140, binding = 0) uniform buf {
     vec2 center;         // capsule centre, item-local px
     float radiusX;       // half-width, px -- CONSTANT; only radiusY moves (see above)
     float radiusY;       // half-height, px -- grows while moving, the "stretch"
-    vec3 baseColour;     // active mode's tint (Appearance.modeCol*)
+    vec3 baseColour;     // active mode's tint (crossfaded, see KanataIsland.qml's droplet.tint)
     float coreAlpha;     // peak fill alpha at the capsule's centre -- the "see-through" knob
     float rimAlpha;      // edge-band alpha -- the meniscus definition
     float crescentAlpha; // reflection peak alpha
@@ -55,10 +64,7 @@ void main() {
     // The border sits INSET from the true geometric edge (rimOffset) -- see
     // the rim comment below. distRim == 0 at that inset line, which is now
     // the ONLY edge anything renders up to; nothing (fill, rim, or
-    // reflection) extends past it. An earlier version faded the core's own
-    // fill out at the true boundary (dist == 0) instead, which left a low-
-    // opacity halo filling the 2px GAP between the crisp border and the real
-    // edge -- exactly the "glow past the border" this fixes.
+    // reflection) extends past it.
     float rimOffset = 2.0;
     float distRim = dist + rimOffset;
 
@@ -67,12 +73,9 @@ void main() {
     float aa = 1.0;
     float core = 1.0 - smoothstep(-aa, aa, distRim);
 
-    // Rim: a SOLID stroke riding right at that same inset line. 0.15 (tried
-    // right after fixing the glow-past-border bug above) was TOO tight: on
-    // the capsule's curved caps a near-hard step aliases into visible jaggies,
-    // whereas Qt's own native Rectangle border looks smooth not because it's
-    // razor-sharp but because its coverage-based AA is precise -- 0.6 is the
-    // middle ground that's still a crisp line but doesn't stairstep on a curve.
+    // Rim: a SOLID stroke riding right at that same inset line. 0.6 is loose
+    // enough to stay smooth on the capsule's curved caps (0.15 aliases into
+    // visible jaggies there).
     float rimW = 2.2;
     float rimAA = 0.6;
     float rim = smoothstep(-rimW - rimAA, -rimW, distRim) - smoothstep(-rimAA, rimAA, distRim);
@@ -91,20 +94,9 @@ void main() {
     vec3 rimColour = mix(baseColour, vec3(1.0), 0.2);
 
     // Reflection: a soft, subtle wash that HUGS the rim -- centred at the SAME
-    // rimOffset as the border above, not its own separate band further out.
-    // Earlier versions centred the reflection at a different depth than the
-    // rim, so the two formed two visually distinct rings (the border, and the
-    // reflection's own "border"); sharing rimOffset makes them coincide, with
-    // the crisp rim providing the edge definition and this wider, dimmer wash
-    // laid right over it instead of beside it. Still computed straight off
-    // `dist`, so when the capsule elongates the wash elongates with it.
-    // Masked to the INNER side of the rim's own outer edge only (distRim < 0)
-    // -- the wide gaussian used to be centred RIGHT ON that outer edge (the
-    // one line that actually has to read as crisp, the one facing the
-    // background/chassis), so its soft tail was bleeding outward across the
-    // exact boundary it needed to stay sharp. Cut off at the same rimAA the
-    // rim itself uses, so the reflection never softens anything the rim
-    // doesn't already own.
+    // rimOffset as the border above, masked to the INNER side of the rim's
+    // own outer edge only so its soft tail never bleeds across the one line
+    // that has to stay crisp.
     float ang = atan(d.y, d.x);
     float angDist = PI - abs(ang);
     float angWeight = exp(-pow(angDist / radians(110.0), 2.0));

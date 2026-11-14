@@ -183,3 +183,177 @@ running bar, with a lot of back-and-forth tuning based on direct feedback.
 - Two commits this session: an earlier WIP for Phase 1 (TCP server + daemon +
   basic mode pill), and this session's WIP for the word-label + shader
   redesign (about to be committed).
+
+---
+
+## Continuation (same day) — static colour backdrop, lens experiment (reverted), and a real animation bug
+
+Picked back up right after the commit mentioned above. User kept reporting
+"the bubble flickers/blinks/changes colour before moving" through several
+rounds of fixes that each turned out to be real but NOT the actual cause.
+The eventual real bug was a classic QML footgun that had already bitten this
+same file once earlier without being generalized from.
+
+### What was worked on
+
+1. **Continuous colour backdrop became a second shader**
+   (`kanata-trackbg.frag`/`.vert`). First tried as plain QML: a
+   `Rectangle{clip:true; radius:...}` wrapping a `Column` of flat per-word
+   `Rectangle`s plus small 2-stop `Gradient` rectangles at the seams. Looked
+   right in a quick look, but was actually broken two ways once
+   screenshotted at real pixel size: **`clip:true` does NOT mask children to
+   the rectangle's own rounded `radius` in this Qt build** — the top/bottom
+   caps rendered as empty black domes instead of filled colour — and the
+   colour blend between words was a literal `Gradient` painted over only
+   `gap`-many real device pixels (a small integer, ~10-15px), too few to
+   read as a fade rather than a hard seam. Replaced with a hand SDF mask
+   (same `sdRoundedBox` technique as `kanata-droplet.frag`/
+   `recess-shadow.frag`): the mask is exact regardless of clip support, and
+   the 3-colour blend is a `smoothstep` computed at full fragment precision
+   over a tunable `transitionWidth` (`gap * 1.6`), independent of layout.
+
+2. **Lens experiment, tried and fully reverted.** To make "the bubble picks
+   up colour from the island instead of carrying its own", tried replacing
+   the droplet's flat tint with a true lens: capture the backdrop+letters
+   (`contentLayer`) into a texture via `ShaderEffectSource`
+   (`hideSource:false`, `live:true`), sample it in the droplet's own
+   fragment shader, and inside the capsule mask push the sampled alpha
+   toward 1 (un-premultiply → boost alpha → re-premultiply) instead of
+   painting a colour. Technically worked (confirmed a real green→blue
+   gradient reading through as the shape stretched across both words) but
+   was **rejected on sight**: letters visibly doubled/ghosted at the mask's
+   antialiased edge (dim original + boosted sampled copy, slightly
+   misaligned), the result read as too bright/flat, and the rim read as a
+   thick border once the interior was that bright too. Fully reverted —
+   `kanata-trackbg.*` stayed, but the droplet went back to a flat,
+   crossfaded tint (`droplet.tint`, `Behavior`/`ColorAnimation`,
+   `Easing.InCubic`, 480ms) layered over the backdrop, not sampling it.
+   **Lesson: this build has `ShaderEffectSource` available (core QtQuick,
+   unlike the missing Effects/Shapes modules) and it DOES work for a lens
+   effect — but "technically works" and "looks good" are different bars,
+   and a lens-over-text specifically has a ghosting failure mode worth
+   expecting going in, not discovering after building it.**
+
+3. **Letters' active/inactive brightness distinction removed entirely**
+   (`wordBlock.active` property and its `fg`/`fgDim` ternary + 650ms
+   `Behavior` deleted; letters are now always `fgDim` when known, constant,
+   no animation). This was explicitly an experiment ("remove the
+   opacity... see if that fixes the blinking") to isolate one of several
+   simultaneously-changing things during a mode switch. It did NOT fix the
+   blinking — the real cause was elsewhere (see below) — but it was kept
+   anyway since removing it wasn't harmful and simplified the file; it was
+   never explicitly re-requested. **Open question for next time: now that
+   the real bug is fixed, the user may want the active-word brightening
+   back — it was never restored, just left out after the experiment.**
+
+4. **Real bug #1 (genuine, fixed): momentary kanata layers hid the droplet
+   entirely.** `nums` and `arrows` are layer-while-held in
+   `kanata-internal.kbd` — holding space ~200ms engages `nums`, holding `v`
+   engages `arrows` — and both are deliberately excluded from
+   `KanataCtl.modes` so they don't show up as extra words. That exclusion
+   alone doesn't stop `currentLayer` from actually BECOMING "nums"/"arrows"
+   for that moment, though, and `activeIndex` resolved to `-1` whenever it
+   did, which fed straight into `visible: activeIndex >= 0` on the droplet —
+   so **just holding spacebar for a beat during ordinary typing made the
+   whole indicator disappear**, nothing to do with switching modes at all.
+   Confirmed by forcing `currentLayer` to `"nums"` directly over the raw TCP
+   control socket and watching the droplet vanish. Fixed by splitting
+   `activeIndex` into a `rawIndex` (the raw, possibly -1, lookup) and a
+   guarded `activeIndex` that only UPDATES when `rawIndex >= 0` — a
+   momentary excursion to an unknown layer just never touches it, so the
+   droplet keeps resting exactly where it was.
+
+5. **Real bug #2 (the actual "jumps to the destination then animates from
+   there" cause): a live QML binding racing an explicit animation.**
+   User's own, very precise description ("it jumps to the destination
+   immediately and then animates from where it's supposed to") was the key
+   that cracked this. `droplet.topEdge`/`bottomEdge` were declared as
+   `property real topEdge: root.restTop(Math.max(0, root.activeIndex))` —
+   this is a LIVE BINDING (re-evaluated every time `root.activeIndex`
+   changes), not a one-time initial value, even though two
+   `NumberAnimation`s also target the same properties. The instant
+   `activeIndex` changed, this binding fired SYNCHRONOUSLY and snapped
+   `topEdge`/`bottomEdge` straight to the new rest position — racing
+   `topEdgeAnim`/`bottomEdgeAnim`'s own `.restart()` calls in the same
+   handler. Confirmed by temporarily logging `onTopEdgeChanged`/
+   `onBottomEdgeChanged` with `console.log(..., Date.now())`: the values
+   jumped to the EXACT new target for one frame, then jumped BACK toward
+   roughly the old value, then animated smoothly from there to the target —
+   precisely "jumps to destination, then animates from where it's supposed
+   to." Fixed by declaring both as plain literals (`property real topEdge:
+   0`) and setting the real starting value exactly once via
+   `Component.onCompleted`, so the two `NumberAnimation`s are the ONLY thing
+   that ever writes to these properties afterward — no competing reactive
+   source left to race.
+   **This is the SAME pattern already fixed once this session on
+   `root.activeIndex` itself** (also converted from a live binding to a
+   literal + guarded assignment, for the nums/arrows bug) — but that fix
+   wasn't generalized into "check every property-with-an-Animation in this
+   file for the same shape," and a comment already sitting right next to
+   `topEdge`/`bottomEdge` ("No Behavior here: these ARE the animation...")
+   gave false confidence that this specific pitfall didn't apply, because it
+   was reasoning about `Behavior` specifically rather than about declarative
+   `:` bindings in general.
+   Once fixed, the leading-edge duration (which had been slowed 110ms →
+   200ms → 300ms while chasing this, on the theory that the *design* of
+   "leading edge reaches destination fast" was itself the problem) was
+   reverted back to the original 110ms — slowing it down never touched the
+   actual race, it just gave the one-frame glitch more relative screen time
+   to be seen, which is why the user's own feedback was "it's worse now."
+
+### Key lesson (generalizable, likely to recur)
+
+**In QML, `property T x: expr` where `expr` references a reactive
+dependency is a LIVE BINDING, not a default value — even if `x` is also the
+target of an explicit `Animation`/`NumberAnimation`/`Behavior`.** The
+binding re-evaluates synchronously whenever its dependency changes, and can
+race the animation's own start/restart logic, which captures "from" based
+on the property's CURRENT value at that moment. The visible symptom is
+exactly "snaps to the final value for a frame, then jumps back near the old
+value, then animates properly" — easy to misdiagnose as the animation
+design itself (duration/easing) being wrong, when the actual fix is at the
+property declaration: use a plain literal initial value (no dependency) and
+set the real starting value once, imperatively, via `Component.onCompleted`
+(or equivalent), leaving the Animation as the sole writer from then on. This
+bit this exact file twice in one session (`root.activeIndex`, then
+`droplet.topEdge`/`bottomEdge`) — worth a deliberate grep for `property .*:
+.*root\.` (or similar reactive-expression bindings) next to any `target:`/
+`property:` reference in a `NumberAnimation`/`Behavior` elsewhere in this
+codebase, rather than waiting to be bitten a third time.
+
+### Debugging technique that actually worked
+
+Screenshot + pixel-sampling (grim → ImageMagick crop/resize with
+`-filter point` → PIL colour sampling) was the right tool for anything about
+*layout, colour, or shape* — but it is NOT fine-grained enough to catch a
+genuine single-frame property race. What actually found bug #2 was
+temporary `console.log(value, Date.now())` instrumentation directly inside
+the relevant `onXChanged` handlers, combined with redirecting `qs`'s own
+stdout/stderr to a log file (`setsid -f bash -c 'qs -p ... > logfile 2>&1'`)
+and grepping it after triggering the interaction — either synthetically (a
+raw `exec 3<>/dev/tcp/127.0.0.1/7979` write of `{"ChangeLayer":{"new":".."}}`
+is functionally identical to a real click, since both just ask kanata to
+broadcast a `LayerChange` that the daemon relays the same way either way)
+or, when synthetic reproduction kept NOT showing the bug the user could
+reliably see live, by asking the user to trigger it for real while logging
+was active. The lesson there: if a synthetic repro of a backend-level event
+doesn't reproduce a UI bug the user sees from a real interaction, suspect
+the RENDERING/property layer, not the backend path — don't keep trying to
+make the synthetic repro "more realistic."
+
+### Current state (as of this commit)
+
+- `trackBg`: SDF capsule mask, static 3-colour smoothstep blend,
+  `modeZoneAlpha = 0.14`.
+- `droplet`: flat crossfaded tint (`droplet.tint`, `Behavior`/
+  `ColorAnimation`, `Easing.InCubic`, 480ms), `coreAlpha = 0.55`,
+  `rimAlpha = 1.0`, `crescentAlpha = 0.14`.
+- Letters: always `fgDim` (known) / `fgA(0.25)` (unknown) — no active-state
+  brightening, no per-letter `Behavior` (see open question above).
+- `activeIndex`: literal initial value + guarded `onRawIndexChanged`
+  assignment (ignores momentary `nums`/`arrows`).
+- `droplet.topEdge`/`bottomEdge`: literal initial values + one-time
+  `Component.onCompleted` seed; `NumberAnimation`s are the sole writer.
+- Leading/trailing edge durations back to the original 110ms/420ms
+  (direction-dependent), `InOutCubic`/`OutCubic`.
+- User confirmed this state as "working how I wanted it to."

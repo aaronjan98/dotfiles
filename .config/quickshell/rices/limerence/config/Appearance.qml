@@ -320,6 +320,13 @@ QtObject {
   readonly property color modeColCaps: "#3498db"      // blue
   readonly property color modeColMaj: "#e74c3c"       // red
   readonly property color modeColLauncher: _c("error", "#e0b84a")
+  // Fill alpha for each mode's STATIC background zone painted on the chassis
+  // itself (KanataIsland.qml) -- these zones never animate; what used to be
+  // the droplet snapping to a new baseColour the instant activeIndex changed
+  // (before it had even finished moving) is now just always-visible colour,
+  // so switching modes reads as the droplet floating to a different
+  // already-coloured spot rather than the droplet itself recolouring.
+  property real modeZoneAlpha: 0.14
 
   // Sized to read as THINNER than the domain dot island (dotSize +
   // bubblePad*2), not just matching it -- the widget uses its own slim
