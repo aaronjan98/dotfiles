@@ -30,9 +30,9 @@ Item {
   // unclickable in the widget) so a missing layer reads as a config problem,
   // not a vanished mode.
   readonly property var modes: [
-    { key: "default",   letter: "N", colour: C.Appearance.modeColDefault },
-    { key: "capslayer", letter: "C", colour: C.Appearance.modeColCaps },
-    { key: "majlayer",  letter: "M", colour: C.Appearance.modeColMaj },
+    { key: "default",   word: "Norm", colour: C.Appearance.modeColDefault },
+    { key: "capslayer", word: "Cap",  colour: C.Appearance.modeColCaps },
+    { key: "majlayer",  word: "Maj",  colour: C.Appearance.modeColMaj },
   ]
 
   function send(obj) { proc.write(JSON.stringify(obj) + "\n") }

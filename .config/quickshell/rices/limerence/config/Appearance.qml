@@ -308,18 +308,45 @@ QtObject {
 
   // ---- kanata mode island ----
   // Per-mode tints for the left-bar Kanata mode pill (project-memory/kanata-island.md).
-  // Mapped to distinct matugen roles (not a single hue at different alphas) so the
-  // three modes stay visually distinct from each other AND still theme-flip with the
-  // wallpaper, same as every other colour in this file. `error` has no guaranteed
-  // generated role in the current matugen config, hence the fixed amber fallback for
-  // the not-yet-implemented launcher mode.
-  readonly property color modeColDefault: _c("primary", "#8ad6b8")
-  readonly property color modeColCaps: _c("secondary", "#b3ccc0")
-  readonly property color modeColMaj: _c("tertiary", "#a7cce0")
+  // FIXED colours, deliberately NOT routed through matugen roles (_c/_rgba) like
+  // everything else in this file -- these are a semantic traffic-light identity
+  // (green=normal, blue=caps, red=major), and matugen's primary/secondary/tertiary
+  // are whatever hues the current wallpaper happens to generate, which would silently
+  // break that identity on a wallpaper change. Launcher keeps the matugen-role
+  // lookup since it has no requested fixed colour yet.
+  // Punchier/more saturated than a plain tailwind-400 pick -- needed to still read
+  // as a clear colour once the droplet's fill alpha drops low for transparency.
+  readonly property color modeColDefault: "#2ecc71"   // green
+  readonly property color modeColCaps: "#3498db"      // blue
+  readonly property color modeColMaj: "#e74c3c"       // red
   readonly property color modeColLauncher: _c("error", "#e0b84a")
 
-  property int modeCellSize: s(18)   // square cell each mode letter sits in
-  property int modeCellGap: s(2)
+  // Sized to read as THINNER than the domain dot island (dotSize +
+  // bubblePad*2), not just matching it -- the widget uses its own slim
+  // chassis (modeCellPad) rather than the shared bubblePad, which is too
+  // generous for a column this narrow. modeLetterFont is deliberately tiny;
+  // at these pixel sizes legibility comes mostly from font.bold on the
+  // active letter, not from point size.
+  property int modeCellSize: s(12)
+  // This is the gap BETWEEN word-blocks (Norm / Cap / Maj) only -- letters
+  // within one word use KanataIsland.qml's own zero-valued letterGap, so this
+  // can be generous without re-spacing the letters themselves.
+  property int modeCellGap: s(10)
+  // Chassis padding, HORIZONTAL -- governs the island's own width
+  // (pill.width = track.width + modeCellPad*2 in KanataIsland.qml), so this
+  // must stay independent of the vertical one below: bumping a single shared
+  // pad value for more vertical room also widened the whole island, which
+  // wasn't wanted. Also what bounds the droplet's widthInset (a fraction of
+  // this, never more than it) so the droplet stays closely nested inside the
+  // island's width rather than flush against or overflowing past it.
+  property int modeCellPad: s(3)
+  // Chassis padding, VERTICAL ONLY -- top/bottom room in the chassis, and what
+  // bounds the droplet's vMargin (a fraction of this). Bigger than the
+  // horizontal one on purpose: extra room here doesn't affect the island's
+  // width at all, only how far it reaches above the top letter / below the
+  // bottom one.
+  property int modeCellPadV: s(7)
+  property int modeLetterFont: s(9)
 
   // ---- pills ----
   property int pillPadX: s(10)

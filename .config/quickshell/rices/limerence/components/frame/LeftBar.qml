@@ -202,6 +202,7 @@ PanelWindow {
 
     // ----- Center domain dots -----
     W.BubbleItem {
+      id: domainBubble
       anchors.verticalCenter: parent.verticalCenter
       anchors.horizontalCenter: parent.horizontalCenter
 
@@ -268,10 +269,14 @@ PanelWindow {
     }
 
     // ----- Kanata mode island (project-memory/kanata-island.md, Phase 1) -----
+    // Centered in the GAP between the domain dot island and the power button,
+    // not anchored to either -- a plain y binding instead of anchors because
+    // "midpoint between two unrelated items' edges" has no anchor-line form.
+    // Recomputes live as domainBubble resizes (e.g. displayDomains changing).
     W.KanataIsland {
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.bottom: powerIcon.top
-      anchors.bottomMargin: C.Appearance.m6
+      y: domainBubble.y + domainBubble.height
+        + (powerIcon.y - (domainBubble.y + domainBubble.height) - height) / 2
     }
 
     // ----- Bottom power button -----
