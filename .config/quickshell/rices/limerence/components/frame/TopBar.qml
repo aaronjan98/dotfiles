@@ -353,8 +353,8 @@ PanelWindow {
       spacing: C.Appearance.m8
 
       W.ObsIcon {
-        onClicked: Sv.ObsCtl.toggleWindow()
-        onMenuRequested: Sv.ObsCtl.toggle()
+        onClicked: Sv.ObsCtl.toggle()
+        onMenuRequested: Sv.ObsCtl.toggleWindow()
       }
       W.ClipboardIcon { onClicked: Sv.ClipboardCtl.toggle() }
       W.NotetakeIcon { }

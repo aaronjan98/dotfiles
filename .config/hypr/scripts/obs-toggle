@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HYPRCTL="${HYPRCTL:-/run/current-system/sw/bin/hyprctl}"
+JQ="${JQ:-/run/current-system/sw/bin/jq}"
+OBS_CMD="${OBS_CMD:-obs}"
+SPECIAL_WS="special:obs"
+
+action="${1:-toggle}"
+
+case "$action" in
+  toggle|open|focus|hide|launch) ;;
+  *)
+    echo "usage: obs-toggle [toggle|open|focus|hide|launch]" >&2
+    exit 2
+    ;;
+esac
+
+# Ensure this also works from launch contexts that do not inherit Hyprland's
+# instance signature, matching the pattern used by the workspace scripts.
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE-}" ]; then
+  sig_dir="/run/user/$(id -u)/hypr"
+  if [ -d "$sig_dir" ]; then
+    sig="$(ls -1 "$sig_dir" 2>/dev/null | head -n1 || true)"
+    if [ -n "$sig" ]; then
+      export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+    fi
+  fi
+fi
+
+clients_json="$("$HYPRCTL" clients -j 2>/dev/null || echo '[]')"
+if ! "$JQ" -e . >/dev/null 2>&1 <<<"$clients_json"; then
+  clients_json='[]'
+fi
+
+# Match on wm class only. A title-substring fallback used to also be here
+# ("OBS Studio" anywhere in the title) but that's a real misfire risk --
+# any browser tab titled e.g. "How to Use OBS Studio -- Tutorial" would
+# match it. The real app's class is always exactly this.
+obs_addr="$(
+  "$JQ" -r '
+    map(select((.class // "") == "com.obsproject.Studio"))
+    | sort_by(.focusHistoryID // 999999)
+    | .[0].address // empty
+  ' <<<"$clients_json"
+)"
+
+active_addr="$("$HYPRCTL" activewindow -j | "$JQ" -r '.address // empty')"
+
+current_workspace() {
+  "$HYPRCTL" activeworkspace -j | "$JQ" -r '.name // "1"'
+}
+
+# "special:obs" is used purely as inert storage for hide/toggle -- it is
+# never shown via `togglespecialworkspace`. That dispatcher makes a special
+# workspace a monitor-wide overlay that stays visible across every regular
+# workspace until explicitly toggled off again; using it for "open" made OBS
+# stick on top of whatever workspace you navigated to afterwards.
+launch_obs() {
+  "$HYPRCTL" dispatch exec "$OBS_CMD"
+}
+
+focus_obs() {
+  if [[ -z "$obs_addr" ]]; then
+    launch_obs
+    return
+  fi
+
+  local cur_ws
+  cur_ws="$(current_workspace)"
+  "$HYPRCTL" dispatch movetoworkspacesilent "$cur_ws,address:$obs_addr"
+  "$HYPRCTL" dispatch focuswindow "address:$obs_addr"
+}
+
+hide_obs() {
+  [[ -n "$obs_addr" ]] || exit 0
+  "$HYPRCTL" dispatch movetoworkspacesilent "$SPECIAL_WS,address:$obs_addr"
+
+  # Hyprland auto-reveals a special workspace as a side effect of ANY
+  # focuswindow dispatch targeting a window living inside it -- confirmed
+  # directly (a plain `focuswindow` on a hidden OBS brought the whole
+  # special workspace back as a sticky overlay). That includes Hyprland's
+  # own implicit focus-restore when another surface releases keyboard focus
+  # (e.g. the quickshell control popup's OnDemand layer closing): if OBS
+  # was the compositor's last-focused real window, closing the popup hands
+  # focus back to it and silently re-reveals the workspace.
+  #
+  # Only defend against this if OBS was actually focused just now -- if
+  # something else was focused, nothing is pointing back at OBS, and
+  # redirecting focus here would just steal it from whatever you were
+  # actually using.
+  #
+  # The redirect target MUST be a window already on *this* workspace.
+  # `focuswindow` always switches the active workspace to match its
+  # target -- picking the globally-most-recent window (e.g. a terminal on
+  # some other workspace) silently yanks you there. Confirmed directly:
+  # this is what caused "hide" to jump to workspace 1.
+  if [[ "$active_addr" == "$obs_addr" ]]; then
+    local cur_ws next_addr
+    cur_ws="$(current_workspace)"
+    next_addr="$(
+      "$JQ" -r --arg addr "$obs_addr" --arg ws "$cur_ws" '
+        map(select(.address != $addr and (.workspace.name // "") == $ws))
+        | sort_by(.focusHistoryID // 999999)
+        | .[0].address // empty
+      ' <<<"$clients_json"
+    )"
+    if [[ -n "$next_addr" ]]; then
+      "$HYPRCTL" dispatch focuswindow "address:$next_addr"
+    fi
+  fi
+
+  # Belt-and-suspenders: if the special workspace is still (or again)
+  # showing for any other reason, force it closed explicitly rather than
+  # trusting that it never got shown. Toggling a special workspace off
+  # does not change your active regular workspace, so this is always safe.
+  local shown_name
+  shown_name="$("$HYPRCTL" monitors -j | "$JQ" -r --arg ws "$SPECIAL_WS" '[.[].specialWorkspace.name] | map(select(. == $ws)) | .[0] // empty')"
+  if [[ -n "$shown_name" ]]; then
+    "$HYPRCTL" dispatch togglespecialworkspace obs
+  fi
+}
+
+case "$action" in
+  launch)
+    [[ -n "$obs_addr" ]] || launch_obs
+    ;;
+  open|focus)
+    focus_obs
+    ;;
+  hide)
+    hide_obs
+    ;;
+  toggle)
+    if [[ -z "$obs_addr" ]]; then
+      launch_obs
+    elif [[ "$active_addr" == "$obs_addr" ]]; then
+      hide_obs
+    else
+      focus_obs
+    fi
+    ;;
+esac
