@@ -268,15 +268,35 @@ PanelWindow {
       }
     }
 
-    // ----- Kanata mode island (project-memory/kanata-island.md, Phase 1) -----
+    // ----- Kanata mode + language island (project-memory/kanata-island.md) -----
     // Centered in the GAP between the domain dot island and the power button,
     // not anchored to either -- a plain y binding instead of anchors because
     // "midpoint between two unrelated items' edges" has no anchor-line form.
     // Recomputes live as domainBubble resizes (e.g. displayDomains changing).
-    W.KanataIsland {
+    //
+    // The lang pill (Phase 2) attaches BELOW the mode pill via NEGATIVE
+    // Column spacing, producing the overlap the doc's visual design calls
+    // for. z is set explicitly because Column paints later children on top
+    // by default (lang pill is listed second so it stacks below), which is
+    // backwards from what's wanted at the overlap seam -- the mode pill's
+    // own border must draw OVER the lang pill, not the other way round.
+    Column {
+      id: kanataGroup
       anchors.horizontalCenter: parent.horizontalCenter
+      spacing: -C.Appearance.langOverlap
       y: domainBubble.y + domainBubble.height
         + (powerIcon.y - (domainBubble.y + domainBubble.height) - height) / 2
+
+      W.KanataIsland {
+        id: kanataIsland
+        anchors.horizontalCenter: parent.horizontalCenter
+        z: 1
+      }
+      W.LangIsland {
+        anchors.horizontalCenter: parent.horizontalCenter
+        matchWidth: kanataIsland.width
+        z: 0
+      }
     }
 
     // ----- Bottom power button -----

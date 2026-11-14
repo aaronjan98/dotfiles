@@ -7,6 +7,7 @@ singleton NotetakeCtl 1.0 NotetakeCtl.qml
 singleton ClipboardCtl 1.0 ClipboardCtl.qml
 singleton ObsCtl 1.0 ObsCtl.qml
 singleton KanataCtl 1.0 KanataCtl.qml
+singleton AccentCtl 1.0 AccentCtl.qml
 singleton HypridleCtl 1.0 HypridleCtl.qml
 singleton Notifs 1.0 Notifs.qml
 NotifsIpc 1.0 NotifsIpc.qml

@@ -355,6 +355,82 @@ QtObject {
   property int modeCellPadV: s(7)
   property int modeLetterFont: s(9)
 
+  // ---- kanata language island ----
+  // Companion pill to the mode island above (project-memory/kanata-island.md,
+  // Phase 2) -- attaches BELOW it, overlapping, same rounded shape. Fill is
+  // DERIVED from bubbleBg rather than a hardcoded colour so it tracks the
+  // wallpaper-keyed _bubbleA opacity logic instead of fighting it; this is
+  // just the darken factor applied on top ("behind and darker" is the only
+  // signal that sells "this pill is underneath" -- see the visual design
+  // section of the doc).
+  property real langPillDarken: 1.3
+  // How far the lang pill tucks under the mode pill above it -- negative
+  // Column spacing in LeftBar.qml, AND (see LangIsland.qml's `visible` item)
+  // the exact depth above which nothing of the lang pill is painted at all.
+  // Three earlier attempts tried to make the OVERLAPPING region itself look
+  // right -- full bubbleRadius (21px, ate into "Maj"'s "j"), a shallower
+  // 11px (left a crescent where the lang pill's own rounded top corner
+  // poked past the mode pill's), squared top corners at 14px (fixed the
+  // crescent, but the border stroke along that now-flat top edge was still
+  // a visible line crossing "Maj", confirmed on a screenshot) -- and all
+  // three kept failing for the same underlying reason: the mode pill's fill
+  // is translucent by design, so ANYTHING painted behind it in the overlap
+  // band shows through to some degree, no matter how its corners or
+  // borders are shaped. Fixed for real by not painting anything there:
+  // LangIsland.qml's visual Rectangle is now clipped by a sibling Item
+  // whose top edge sits at exactly this depth, so above it there's
+  // genuinely nothing to bleed through -- just the mode pill's own
+  // translucency showing the real desktop behind it, same as if the lang
+  // pill didn't exist up there at all. This value is now purely cosmetic
+  // (how much of the lang pill reads as "tucked under"), not load-bearing
+  // for any corner-matching or bleed-through concern.
+  property int langOverlap: s(11)
+  // How far ABOVE the mode pill's very bottom tip the lang pill's visible
+  // region actually starts -- a SEPARATE depth from langOverlap above,
+  // because using the same value for both left the sides disconnected: the
+  // mode pill's own rounded bottom corner recedes inward well before its
+  // absolute bottom edge (same ~13px effective-radius clamp noted above),
+  // and clipping the lang pill away all the way down to that exact bottom
+  // edge (what langOverlap-for-both was doing) meant that in the band where
+  // the mode pill's corner has already receded, NEITHER pill painted
+  // anything at the sides -- a real empty gap, not a seam. This value
+  // matches that recede depth instead, so the lang pill's flat, full-width
+  // top fills exactly the gap the mode pill's own curve leaves behind.
+  // Deliberately a touch LESS than that ~13px (not more): going past it
+  // starts reintroducing the original bleed-through this was all here to
+  // avoid, now over the very bottom sliver of "Maj"'s "j" instead of its
+  // whole row -- much less noticeable, but no reason to invite it back.
+  property int langClipRise: s(5)
+  // Language codes are two characters ("en"/"es"/"pt") shown on ONE row each
+  // (unlike the mode pill's word-spelled-downward layout) -- the ASCII mockup
+  // in the doc shows them horizontal, and there's no reason to spell a
+  // 2-letter code vertically. Font matches modeLetterFont; this pill's own
+  // row height is a touch taller since there's no lowercase-vs-capital row
+  // height split to lean on here.
+  // Settled back near the original size -- shrinking the rows themselves
+  // (tried at s(10)/s(12)) was the wrong lever for "make the pill smaller"
+  // and just made "en"/"es"/"pt" read as cramped. The actual ask was to
+  // shift the CONTENT down a bit, which is langPadTop's job below, not
+  // this.
+  property int langCellHeight: s(13)
+  property int langCellGap: s(3)
+  property int langLetterFont: s(9)
+  // Top/bottom chassis padding are DELIBERATELY asymmetric, unlike the mode
+  // pill's single modeCellPadV -- the top has to absorb the full langOverlap
+  // depth (so "en" stays clear of the mode pill's own content AND clear of
+  // its translucent fill) plus real breathing room on top of that minimum,
+  // while the bottom just needs a thin cap -- its OWN dedicated value below,
+  // not modeCellPadV (reused at first, but that ties this pill's bottom cap
+  // to the mode pill's own tuned spacing). (langPadTop - langOverlap +
+  // langPadBottom) is the actual visible gap between "Maj"'s last row and
+  // "en" -- tune THIS, not langOverlap/langClipRise, if that gap ever needs
+  // to change, since those two are pinned to what the corner-nesting
+  // geometry needs. langPadBottom was trimmed too far in the same pass
+  // (s(3)) and left "pt" sitting right against the bottom cap -- back to a
+  // real margin there.
+  property int langPadTop: s(12)
+  property int langPadBottom: s(7)
+
   // ---- pills ----
   property int pillPadX: s(10)
   property int pillPadY: s(2)
