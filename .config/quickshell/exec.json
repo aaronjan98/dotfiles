@@ -8,6 +8,7 @@
     "cloud":    ["firefox", "https://cloud.janovitch.com"],
     "amazon":   ["firefox", "https://www.amazon.com"],
     "radarr":   ["firefox", "http://radarr.home"],
+    "torrent":  ["firefox", "http://torrent.home"],
     "movies":   ["firefox", "http://movies.home"],
     "sonarr":   ["firefox", "http://sonarr.home"],
     "obsidian": ["obsidian-remote", "new-window"],
