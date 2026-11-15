@@ -367,7 +367,7 @@ Item {
           // the mode's own saturated hue.
           readonly property vector3d baseColour: Qt.vector3d(
             droplet.tint.r, droplet.tint.g, droplet.tint.b)
-          readonly property real coreAlpha: 0.55
+          readonly property real coreAlpha: 0.4
           readonly property real rimAlpha: 1.0
           readonly property real crescentAlpha: 0.14
         }

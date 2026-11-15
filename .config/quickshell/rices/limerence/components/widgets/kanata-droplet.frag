@@ -81,17 +81,24 @@ void main() {
     float rim = smoothstep(-rimW - rimAA, -rimW, distRim) - smoothstep(-rimAA, rimAA, distRim);
     rim = clamp(rim, 0.0, 1.0);
 
+    // Darken the hue itself before any of the lighter/darker/rim mixing below
+    // -- user found the droplet too bright overall, especially over the
+    // green (Norm) mode zone. A flat multiply on the base hue, rather than
+    // reducing the white-lift amounts further down, keeps the SAME lit/rim
+    // look and proportions, just starting from a deeper colour.
+    vec3 tintedBase = baseColour * 0.45;
+
     // Core tint: vertical gradient (lighter near the top, truer hue near the
     // bottom) standing in for a radial light falloff -- cheap, but reads as
     // "round and lit" well enough at this size.
     float g = clamp(d.y / max(radiusY, 0.0001) * 0.5 + 0.5, 0.0, 1.0);
-    vec3 lighter = mix(baseColour, vec3(1.0), 0.55);
-    vec3 darker = baseColour * 0.85;
+    vec3 lighter = mix(tintedBase, vec3(1.0), 0.55);
+    vec3 darker = tintedBase * 0.85;
     vec3 coreColour = mix(lighter, darker, g);
     // A pale near-white wash reads as "soft highlight", not "solid border" --
     // the TRUE, more saturated hue (only a slight white lift, 0.65 -> 0.2)
     // is what a flat, solid-coloured outline actually looks like.
-    vec3 rimColour = mix(baseColour, vec3(1.0), 0.2);
+    vec3 rimColour = mix(tintedBase, vec3(1.0), 0.2);
 
     // Reflection: a soft, subtle wash that HUGS the rim -- centred at the SAME
     // rimOffset as the border above, masked to the INNER side of the rim's
