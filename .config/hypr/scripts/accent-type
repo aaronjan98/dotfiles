@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# accent-type <base-letter>
+#
+# Replaces accent-pick (project-memory/kanata-island.md, Phase 2 in the
+# quickshell repo). Types the PLAIN base letter immediately -- no popup, no
+# wait -- then opens the quickshell accent panel and the Hyprland `accent`
+# submap so the arrow keys can cycle IN PLACE to an accented variant
+# (accent-cycle), replacing the character just typed. Bound in
+# conf.d/20-binds.conf to the same MOD5+vowel / MOD5 SHIFT+vowel chords
+# accent-pick used, so muscle memory is unchanged.
+set -euo pipefail
+
+input="${1:-}"
+[ -n "$input" ] || exit 0
+
+base_lower=$(printf '%s' "$input" | tr '[:upper:]' '[:lower:]')
+upper=false
+[ "$input" != "$base_lower" ] && upper=true
+
+accents_json="$HOME/.config/quickshell/accents.json"
+lang_file="$HOME/.local/state/quickshell/accent-lang"
+state_file="${XDG_RUNTIME_DIR:-/tmp}/accent-state.json"
+
+# A file, not `qs ipc`, because this runs on the keystroke's own critical
+# path -- a `cat` is free, a round-trip to quickshell is not (see the doc's
+# "Language state" section). Missing file (first run, before any language
+# was ever clicked in the lang pill) just means "en", same as AccentCtl's
+# own default.
+lang=$(cat "$lang_file" 2>/dev/null || true)
+[ -n "$lang" ] || lang="en"
+
+# accents.json is the ONE source of truth for the variant table (shared
+# with AccentCtl.qml/LangIsland.qml) -- never duplicate it into this script.
+# Falls back to "en" if the active language has no entry for this letter
+# (shouldn't happen with the shipped table, but a missing/edited table
+# entry should degrade to typing the plain vowel, not silently do nothing).
+variants_json=$(jq -c --arg lang "$lang" --arg base "$base_lower" \
+  '(.variants[$lang][$base] // .variants.en[$base] // [])' "$accents_json" 2>/dev/null) || variants_json="[]"
+
+# AltGr may still be physically held down (it's the modifier that triggered
+# this very bind) -- `-m altgr` asks wtype's own virtual-keyboard session to
+# release it before typing, in the same invocation as the text itself (per
+# the man page, a session's modifiers reset on exit anyway, so this only
+# matters combined with the type call, not as a separate command). Flagged
+# in the doc as "a risk to test early", not a guaranteed fix.
+wtype -m altgr "$input"
+
+# Nothing configured for this letter (not a vowel, or a table edit removed
+# it) -- the plain letter above is already the whole job; no accents to
+# cycle through means no panel/submap either.
+if [ "$variants_json" = "[]" ] || [ "$variants_json" = "null" ]; then
+  exit 0
+fi
+
+mapfile -t variants < <(jq -r '.[]' <<<"$variants_json")
+
+# index 0 in the cycle means "the plain base letter, already typed above" --
+# NOT the first accented variant. accent-cycle and the panel both treat the
+# typed-character list as [base, variants[0], variants[1], ...], so index 0
+# is the base and index i>0 is variants[i-1]. This is the opposite of the
+# first version of this script, which typed the accented DEFAULT instantly;
+# changed because that wasn't actually what was wanted -- the plain letter
+# should be what lands immediately, with accents only ever a deliberate
+# arrow-key choice away.
+jq -nc --arg base "$base_lower" --argjson upper "$upper" --argjson variants "$variants_json" \
+  '{base: $base, upper: $upper, variants: $variants, index: 0}' > "$state_file"
+
+display_csv="$input,$(IFS=,; echo "${variants[*]}")"
+qs -p "$HOME/.config/quickshell/rices/current/shell.qml" ipc call accent present "$input" "$display_csv" 0 >/dev/null 2>&1 || true
+
+hyprctl dispatch submap accent >/dev/null 2>&1 || true

@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# accent-cycle next|prev
+#
+# Project-memory/kanata-island.md, Phase 2. Only reachable from inside the
+# Hyprland `accent` submap (conf.d/20-binds.conf), which accent-type opens --
+# never a live keybind the rest of the time. Reads the in-progress pick
+# state accent-type wrote (and this script keeps updating), backspaces the
+# previously-typed character, types the newly-selected one in its place, and
+# tells the quickshell accent panel to move its highlight to match.
+#
+# The cycle is [base-letter, variants[0], variants[1], ...] -- index 0 means
+# "the plain letter accent-type already typed", not the first accent. This
+# matches accent-type's own indexing (see that script) and the panel's
+# display list, which is literally this same array passed through.
+set -euo pipefail
+
+dir="${1:-next}"
+state_file="${XDG_RUNTIME_DIR:-/tmp}/accent-state.json"
+[ -r "$state_file" ] || exit 0
+
+n_variants=$(jq '.variants | length' "$state_file" 2>/dev/null) || exit 0
+total=$((n_variants + 1))
+[ "$total" -gt 1 ] || exit 0
+
+idx=$(jq '.index' "$state_file")
+upper=$(jq -r '.upper' "$state_file")
+base=$(jq -r '.base' "$state_file")
+
+if [ "$dir" = "prev" ]; then
+  idx=$(( (idx - 1 + total) % total ))
+else
+  idx=$(( (idx + 1) % total ))
+fi
+
+if [ "$idx" -eq 0 ]; then
+  next="$base"
+else
+  next=$(jq -r --argjson i "$((idx - 1))" '.variants[$i]' "$state_file")
+fi
+[ "$upper" = "true" ] && next="${next^^}"
+
+# Drop out of the `accent` submap before typing, then re-enter right after.
+# REQUIRED, not cosmetic: confirmed by direct trace logging that wtype's own
+# injected keystrokes get fed back through Hyprland's compositor-level bind
+# matcher while a submap is active (same as any real keypress -- Hyprland
+# doesn't distinguish virtual-keyboard input from hardware input for bind
+# purposes), and wtype's dynamically-remapped keycode for typing an accented
+# character was being misread as matching one of THIS submap's own
+# Return/Escape/space binds -- every single accent-cycle call was
+# immediately followed by accent-commit firing twice, undoing the very
+# character it just typed. Submap-less for this one wtype call, the
+# keystrokes just reach the focused app like any other typed text.
+hyprctl dispatch submap reset >/dev/null 2>&1 || true
+
+# One BackSpace for the single character typed last (by accent-type or a
+# previous accent-cycle call) -- pixel/behaviour-confirmed to delete exactly
+# one grapheme in ghostty/kitty/GTK/Firefox and (insert-mode only) nvim; see
+# the doc's "Two risks to test early" for the one known exception (nvim
+# NORMAL mode, where BackSpace moves the cursor instead -- accepted, you
+# don't type accents there).
+wtype -k BackSpace
+wtype "$next"
+
+hyprctl dispatch submap accent >/dev/null 2>&1 || true
+
+jq --argjson i "$idx" '.index = $i' "$state_file" > "$state_file.tmp" && mv "$state_file.tmp" "$state_file"
+
+qs -p "$HOME/.config/quickshell/rices/current/shell.qml" ipc call accent select "$idx" >/dev/null 2>&1 || true

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# accent-commit
+#
+# Project-memory/kanata-island.md, Phase 2. Exits the Hyprland `accent`
+# submap and hides the quickshell accent panel -- bound to Return/Escape/
+# space inside that submap (conf.d/20-binds.conf). This is the ONLY way out
+# once a pick is open (deliberately no inactivity auto-commit, see
+# AccentCtl.qml) besides starting a new pick with another AltGr+vowel.
+set -euo pipefail
+
+hyprctl dispatch submap reset >/dev/null 2>&1 || true
+qs -p "$HOME/.config/quickshell/rices/current/shell.qml" ipc call accent hide >/dev/null 2>&1 || true
+rm -f "${XDG_RUNTIME_DIR:-/tmp}/accent-state.json"
