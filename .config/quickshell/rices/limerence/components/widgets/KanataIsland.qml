@@ -257,6 +257,8 @@ Item {
             root.modes[1].colour.r, root.modes[1].colour.g, root.modes[1].colour.b)
           readonly property vector3d colourC: Qt.vector3d(
             root.modes[2].colour.r, root.modes[2].colour.g, root.modes[2].colour.b)
+          readonly property vector3d colourD: Qt.vector3d(
+            root.modes[3].colour.r, root.modes[3].colour.g, root.modes[3].colour.b)
           // Midpoint of the `gap` between word i and word i+1 -- where each
           // fade is centred. +vMargin converts from track-local Y (0 at the
           // first letter row) into this item's OWN local Y (0 at its top,
@@ -264,6 +266,7 @@ Item {
           // height/y comment on trackBg above).
           readonly property real boundary0: root.blockStartY(1) - root.gap / 2 + root.vMargin
           readonly property real boundary1: root.blockStartY(2) - root.gap / 2 + root.vMargin
+          readonly property real boundary2: root.blockStartY(3) - root.gap / 2 + root.vMargin
           // Wider than the literal `gap` on purpose -- at `gap` exactly, the
           // fade is real but spans too few device pixels at this UI scale to
           // read as gradual; widening it just makes the SAME fade more

@@ -310,16 +310,17 @@ QtObject {
   // Per-mode tints for the left-bar Kanata mode pill (project-memory/kanata-island.md).
   // FIXED colours, deliberately NOT routed through matugen roles (_c/_rgba) like
   // everything else in this file -- these are a semantic traffic-light identity
-  // (green=normal, blue=caps, red=major), and matugen's primary/secondary/tertiary
-  // are whatever hues the current wallpaper happens to generate, which would silently
-  // break that identity on a wallpaper change. Launcher keeps the matugen-role
-  // lookup since it has no requested fixed colour yet.
-  // Punchier/more saturated than a plain tailwind-400 pick -- needed to still read
-  // as a clear colour once the droplet's fill alpha drops low for transparency.
-  readonly property color modeColDefault: "#2ecc71"   // green
-  readonly property color modeColCaps: "#3498db"      // blue
-  readonly property color modeColMaj: "#e74c3c"       // red
-  readonly property color modeColLauncher: _c("error", "#e0b84a")
+  // (green=normal, blue=caps, red=major, yellow=exec), and matugen's
+  // primary/secondary/tertiary are whatever hues the current wallpaper happens
+  // to generate, which would silently break that identity on a wallpaper change.
+  // All four are Flat UI Colors (flatuicolors.com) picks -- Emerald/Peter
+  // River/Alizarin/Sun Flower -- punchier/more saturated than a plain
+  // tailwind-400 pick, needed to still read as a clear colour once the
+  // droplet's fill alpha drops low for transparency.
+  readonly property color modeColDefault: "#2ecc71"   // green  (Emerald)
+  readonly property color modeColCaps: "#3498db"      // blue   (Peter River)
+  readonly property color modeColMaj: "#e74c3c"       // red    (Alizarin)
+  readonly property color modeColExec: "#f1c40f"      // yellow (Sun Flower)
   // Fill alpha for each mode's STATIC background zone painted on the chassis
   // itself (KanataIsland.qml) -- these zones never animate; what used to be
   // the droplet snapping to a new baseColour the instant activeIndex changed

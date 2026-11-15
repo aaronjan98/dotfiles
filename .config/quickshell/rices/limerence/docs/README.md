@@ -74,6 +74,10 @@ This Quickshell configuration builds a custom shell UI for Hyprland with five ma
 - [`notifications.md`](./notifications.md)
   - explains the notification subsystem as a whole
   - shows how `Notifs.qml`, `NotifLayer.qml`, `NotificationToast.qml`, `NotificationCenter.qml`, and the bar icon relate to each other
+- [`kanata-island.md`](./kanata-island.md)
+  - explains the left-bar Kanata mode/lang pills, the AltGr accent-type flow, and exec mode (the one-shot app/URL launcher) as one subsystem
+  - shows how `KanataCtl.qml`, `AccentCtl.qml`, `AccentIpc.qml`, `KanataIsland.qml`, `LangIsland.qml`, and `AccentPanel.qml` relate to each other, plus the nixos-config-side daemon and `.kbd` pieces
+  - documents exec mode's current key map and the live-reload/deploy gotchas (daemon doesn't auto-respawn, `FileView.watchChanges`, `.kbd` needing a real rebuild)
 - [`appearance-and-scaling.md`](./appearance-and-scaling.md)
   - explains `Appearance.qml`
   - explains how sizing and scaling are intended to work
@@ -133,12 +137,14 @@ Read in this order:
    - understand where data and behavior come from
 6. `notifications.md`
    - understand the notification pipeline as a system
-7. `appearance-and-scaling.md`
+7. `kanata-island.md`
+   - understand the mode/lang pills, accent flow, and exec mode as a system
+8. `appearance-and-scaling.md`
    - understand how to make visual changes safely
 
 ## Current status of this documentation
 
-This documentation covers the main shell composition, workspace model, core bar widgets, the Wi-Fi and Bluetooth popup pattern, the `WifiNm` service, the `SystemStats` data provider, and the notification pipeline.
+This documentation covers the main shell composition, workspace model, core bar widgets, the Wi-Fi and Bluetooth popup pattern, the `WifiNm` service, the `SystemStats` data provider, the notification pipeline, and the Kanata island subsystem (mode/lang pills, accent flow, exec mode).
 
 Please see the full files for component specifications on:
 

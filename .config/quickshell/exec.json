@@ -1,0 +1,19 @@
+{
+  "actions": {
+    "youtube":  ["firefox", "https://youtube.com?authuser=1"],
+    "vesktop":  ["vesktop"],
+    "firefox":  ["firefox"],
+    "home":     ["firefox", "http://home.home"],
+    "photos":   ["firefox", "http://photos.home"],
+    "cloud":    ["firefox", "https://cloud.janovitch.com"],
+    "amazon":   ["firefox", "https://www.amazon.com"],
+    "radarr":   ["firefox", "http://radarr.home"],
+    "movies":   ["firefox", "http://movies.home"],
+    "sonarr":   ["firefox", "http://sonarr.home"],
+    "obsidian": ["obsidian-remote", "new-window"],
+    "ghostty":  ["ghostty"],
+    "kitty":    ["kitty"],
+    "tiktok":   ["firefox", "https://tiktok.com"],
+    "links":    ["firefox", "http://links.home"]
+  }
+}

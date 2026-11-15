@@ -95,7 +95,7 @@ server standing in for kanata (built, not run against the real kanata process �
 
 Starting kanata logs `NOTE: kanata was compiled to never allow cmd`. The `Cmd`,
 `CmdOutput` and `CmdLog` actions parse but are refused at runtime. This **invalidates
-the nixos-config ROADMAP plan to implement launcher mode via `cmd` actions.**
+the nixos-config ROADMAP plan to implement exec mode via `cmd` actions.**
 
 Three ways out, in preference order:
 
@@ -171,7 +171,7 @@ vertically and **overlapping**, anchored above the power icon in the bottom-left
   sliding pill (`C.Appearance.animMsFast`, `Easing.OutCubic`).
 - The **mode pill tints per mode** so the current mode is readable without reading the
   letter. New `Appearance.qml` tokens: `modeColDefault`, `modeColCaps`, `modeColMaj`,
-  `modeColLauncher`.
+  `modeColExec`.
 - The lang pill does **not** tint per language — one tint is enough signal, and two
   competing colour channels in a 2cm island is noise.
 
@@ -275,7 +275,7 @@ readonly property var modes: [
 ]
 ```
 
-`L` (launcher) and any future script-execution mode get appended here once the
+`Exec` and any future script-execution mode get appended here once the
 corresponding layer exists in the `.kbd`. Entries whose `key` is not in `layers` should
 render dimmed-and-unclickable rather than vanish, so a missing layer is visible as a
 config problem instead of silently absent.
@@ -466,9 +466,37 @@ service actually opens 7979 after switch (not yet observed).
 
 ## Open items
 
-- Decide whether `MessagePush`-based launcher mode (option 1 above) supersedes the
-  nixos-config ROADMAP's `cmd`-based launcher plan. It almost certainly should —
-  that item needs rewriting either way, since `cmd` is compiled out.
+- ~~Decide whether `MessagePush`-based exec mode supersedes the nixos-config
+  ROADMAP's `cmd`-based launcher plan~~ — **done**: it does.
+- ~~Deploy and real-keypress-test Phase 3~~ — **done**. Deployed via
+  `nixos-rebuild switch` + `kanata-internal` restart on the ThinkPad; entry
+  tap, several mapped keys (including `obsidian`, see below), and the
+  unmapped-key no-op were all confirmed working with real keypresses.
+  Clean reference doc for the settled architecture + full current key map:
+  `rices/limerence/docs/kanata-island.md`. Two real bugs found and fixed
+  during this deployment, both now documented there in detail:
+  - the daemon (`kanata-ctl-daemon.py`) was a long-running process from
+    BEFORE the `MessagePush`-relay code was added to it — Python doesn't
+    hot-reload, and Quickshell's own QML live-reload does not restart an
+    already-running `Process` child, so it silently kept running stale code
+    across several edits. Fix needed a full Quickshell restart, not just
+    killing the daemon PID (which does NOT auto-respawn).
+  - `exec.json` edits had no effect until `FileView.watchChanges: true` was
+    added to its loader in `KanataCtl.qml` — without it, a `FileView` only
+    re-reads on the next full component reload, not on a live file edit.
+  - Separately (not a bug in this subsystem): Obsidian's Local REST API
+    `workspace:new-window` command returns `HTTP 204` (success) but does not
+    reliably create a new Hyprland-visible window when invoked via the API
+    rather than a real UI interaction — confirmed via `hyprctl clients`
+    window count staying flat across multiple calls that all reported
+    success. The `o` key uses this same command (matching the existing
+    fuzzel "Obsidian (Spawn Window)" entry, `nixos-config/modules/obsidian-ipc.nix`)
+    and was later confirmed working after the Quickshell restart above —
+    likely the earlier failures were the stale-daemon/config bug, not the
+    REST command itself.
+  - Final key map has 15 entries (13 original + `t`=tiktok, `l`=links.home
+    added afterward) — see `docs/kanata-island.md`'s table rather than
+    duplicating it here; it will drift, this note won't be kept in sync.
 - The `aj` / `default` multi-profile switcher from the original ROADMAP entry (a
   down-arrow below the mode letters) is **deferred**. It is a third axis of state on an
   island that now has two, and `kanata-default.kbd` does not exist yet. Revisit after
